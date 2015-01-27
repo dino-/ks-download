@@ -4,7 +4,7 @@
 {-# LANGUAGE DeriveGeneric, OverloadedStrings #-}
 {-# OPTIONS_GHC -fno-warn-unused-binds #-}
 
-module Ksdl.Database.Inspection
+module Ks.Locate.Database.Inspection
    ( mkDoc, saveDoc )
    where
 
@@ -16,10 +16,10 @@ import GHC.Generics ( Generic )
 import System.Directory ( removeFile )
 import System.FilePath
 
-import qualified Ksdl.Inspection as I
-import Ksdl.LocOpts
-import Ksdl.Places.Match
-import qualified Ksdl.Places.Place as P
+import qualified Ks.Inspection as I
+import Ks.Locate.Opts
+import Ks.Locate.Places.Match
+import qualified Ks.Locate.Places.Place as P
 
 
 data Document = Document

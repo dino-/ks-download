@@ -3,7 +3,7 @@
 
 {-# LANGUAGE DeriveGeneric, OverloadedStrings #-}
 
-module Ksdl.Inspection
+module Ks.Inspection
    ( Inspection (..)
    , nullInspection
    , parseDate

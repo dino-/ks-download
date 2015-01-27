@@ -14,15 +14,15 @@ import System.IO
    , hSetBuffering, stdout, stderr
    )
 
-import Ksdl
-import Ksdl.Config
-import Ksdl.Database.Inspection
-import Ksdl.Inspection
-import Ksdl.LocOpts
-import Ksdl.Log
-import Ksdl.Places.Geocoding ( forwardLookup )
-import Ksdl.Places.Match ( match )
-import Ksdl.Places.Place ( coordsToPlaces )
+import Ks.Inspection
+import Ks.Locate.Config
+import Ks.Locate.Locate
+import Ks.Locate.Database.Inspection
+import Ks.Locate.Opts
+import Ks.Locate.Places.Geocoding ( forwardLookup )
+import Ks.Locate.Places.Match ( match )
+import Ks.Locate.Places.Place ( coordsToPlaces )
+import Ks.Log
 
 
 main :: IO ()

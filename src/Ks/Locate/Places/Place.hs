@@ -4,7 +4,7 @@
 {-# LANGUAGE DeriveGeneric, OverloadedStrings #-}
 {-# OPTIONS_GHC -fno-warn-unused-binds #-}
 
-module Ksdl.Places.Place
+module Ks.Locate.Places.Place
    ( Place (..)
    , coordsToPlaces )
    where
@@ -19,11 +19,11 @@ import Network.HTTP ( urlEncode )
 import Network.HTTP.Conduit ( simpleHttp )
 import Text.Printf ( printf )
 
-import Ksdl
-import Ksdl.Config
-import Ksdl.Log
-import Ksdl.Places.Geocoding ( GeoLatLng (..) )
-import Ksdl.Places.NameWords ( toList )
+import Ks.Locate.Config
+import Ks.Locate.Locate
+import Ks.Locate.Places.Geocoding ( GeoLatLng (..) )
+import Ks.Locate.Places.NameWords ( toList )
+import Ks.Log
 
 
 data PlLatLng = PlLatLng

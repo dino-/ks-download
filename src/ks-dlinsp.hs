@@ -11,8 +11,8 @@ import System.IO
    , hSetBuffering, stdout, stderr
    )
 
-import Ksdl.InspSource.Common
-import qualified Ksdl.InspSource.NcWake as NcWake
+import Ks.DlInsp.Source.Common
+import qualified Ks.DlInsp.Source.NcWake as NcWake
 
 
 main :: IO ()

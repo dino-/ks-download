@@ -12,7 +12,7 @@ Data downloader and parser for the KitchenSnitch project
 ## Installing
 
 A file or link containing a Google API key is required at
-this location relative to where you run ks-location:
+this location relative to where you run ks-locate:
 
    ./GoogleAPIKey
 

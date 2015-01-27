@@ -10,7 +10,7 @@ module InspectionUUID
 import Test.HUnit
 import Text.Printf ( printf )
 
-import Ksdl.Inspection
+import Ks.Inspection
 
 
 tests :: Test

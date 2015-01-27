@@ -1,7 +1,7 @@
 -- License: BSD3 (see LICENSE)
 -- Author: Dino Morelli <dino@ui3.info>
 
-module Ksdl.LocOpts
+module Ks.Locate.Opts
    ( Options (..)
    , parseOpts, usageText
    )
@@ -58,7 +58,7 @@ usageText :: String
 usageText = (usageInfo header options) ++ "\n" ++ footer
    where
       header = init $ unlines
-         [ "Usage: ks-location [OPTIONS] FILE|DIR"
+         [ "Usage: ks-locate [OPTIONS] FILE|DIR"
          , "Look up inspections with Google Geocoding and Places"
          , ""
          , "Options:"

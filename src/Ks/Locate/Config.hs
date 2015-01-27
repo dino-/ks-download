@@ -1,7 +1,7 @@
 -- License: BSD3 (see LICENSE)
 -- Author: Dino Morelli <dino@ui3.info>
 
-module Ksdl.Config
+module Ks.Locate.Config
    ( Config (..)
    , loadConfig )
    where

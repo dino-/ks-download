@@ -3,7 +3,7 @@
 
 {-# LANGUAGE KindSignatures, OverloadedStrings, RankNTypes #-}
 
-module Ksdl.Places.Geocoding
+module Ks.Locate.Places.Geocoding
    ( GeoLatLng (..), forwardLookup )
    where
 
@@ -16,10 +16,10 @@ import Network.HTTP ( urlEncode )
 import Network.HTTP.Conduit ( simpleHttp )
 import Text.Printf ( printf )
 
-import Ksdl
-import Ksdl.Config
-import Ksdl.Inspection
-import Ksdl.Log
+import Ks.Inspection
+import Ks.Locate.Locate
+import Ks.Locate.Config
+import Ks.Log
 
 
 data GeoLatLng = GeoLatLng Double Double

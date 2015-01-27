@@ -4,7 +4,7 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# OPTIONS_GHC -fno-warn-unused-do-bind #-}
 
-module Ksdl.Places.Match
+module Ks.Locate.Places.Match
    ( Match, match )
    where
 
@@ -16,10 +16,10 @@ import qualified Data.Text.Lazy as TL
 import qualified Data.Text.Format as TF
 import Prelude hiding ( takeWhile )
 
-import Ksdl
-import qualified Ksdl.Inspection as I
-import Ksdl.Log
-import qualified Ksdl.Places.Place as P
+import Ks.Locate.Locate
+import qualified Ks.Inspection as I
+import Ks.Log
+import qualified Ks.Locate.Places.Place as P
 
 
 type Match = (I.Inspection, P.Place)

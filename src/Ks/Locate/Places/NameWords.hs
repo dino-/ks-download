@@ -3,7 +3,7 @@
 
 {-# LANGUAGE OverloadedStrings #-}
 
-module Ksdl.Places.NameWords
+module Ks.Locate.Places.NameWords
    ( toList
    )
    where
@@ -13,9 +13,9 @@ import qualified Data.Map as Map
 import Data.Text
 import Prelude hiding ( filter, map )
 
-import Ksdl
-import Ksdl.Config
-import Ksdl.Inspection
+import Ks.Inspection
+import Ks.Locate.Config
+import Ks.Locate.Locate
 
 
 toList :: Ksdl [Text]

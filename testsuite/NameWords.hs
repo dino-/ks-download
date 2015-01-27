@@ -12,10 +12,10 @@ import Data.Text hiding ( map )
 import Test.HUnit
 import Text.Printf ( printf )
 
-import Ksdl
-import Ksdl.Config
-import Ksdl.Inspection
-import Ksdl.Places.NameWords ( toList )
+import Ks.Inspection
+import Ks.Locate.Config
+import Ks.Locate.Locate
+import Ks.Locate.Places.NameWords ( toList )
 
 
 tests :: Test
