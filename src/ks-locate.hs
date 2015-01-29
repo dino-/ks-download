@@ -37,12 +37,12 @@ main = do
 
    -- Load the config file
    config <- do
-      c <- loadConfig "ksdl.conf"
+      c <- loadConfig $ (optConfDir options) </> "ksdl.conf"
 
       -- The Places API key could be packed into the above config
       -- file if desired, but we're loading it from a different
       -- file and slipping it into the Config data here.
-      k <- loadPlacesKey
+      k <- loadPlacesKey options
       return $ c { googleApiKey = k }
 
    initLogging $ logPriority config
@@ -107,7 +107,7 @@ loadInspection path = do
 
 
 -- Google Places API key
-loadPlacesKey :: IO String
-loadPlacesKey =
+loadPlacesKey :: Options -> IO String
+loadPlacesKey options =
    (unwords . words) `fmap`  -- ..strip any trailing whitespace
-   readFile "GoogleAPIKey"
+   (readFile $ (optConfDir options) </> "GoogleAPIKey")
