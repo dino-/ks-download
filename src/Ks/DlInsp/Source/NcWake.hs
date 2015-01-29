@@ -13,7 +13,7 @@ import Text.HTML.TagSoup
 import Text.Printf ( printf )
 
 import qualified Ks.Inspection as I
-import Ks.DlInsp.Source.Common
+import Ks.DlInsp.Source.Types
 
 
 urlPrefix :: String
