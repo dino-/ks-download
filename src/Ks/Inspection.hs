@@ -40,7 +40,7 @@ data Inspection = Inspection
    deriving Generic
 
 instance Show Inspection
-   where show = displayInspection
+   where show = formatForDisplay
 
 instance FromJSON Inspection
 instance ToJSON Inspection
@@ -76,8 +76,8 @@ saveInspection dir insp =
    BL.writeFile (dir </> ("insp_" ++ _id insp)) $ encode insp
 
 
-displayInspection :: Inspection -> String
-displayInspection (Inspection i src n a [y, m, d] sc viol crit r _) =
+formatForDisplay :: Inspection -> String
+formatForDisplay (Inspection i src n a [y, m, d] sc viol crit r _) =
    printf mask i (unpack n) y m d sc viol crit (showRe r) src (unpack a)
 
    where
@@ -91,4 +91,4 @@ displayInspection (Inspection i src n a [y, m, d] sc viol crit r _) =
       showRe True  = "Re"
       showRe False = "Ins"
 
-displayInspection _ = undefined
+formatForDisplay _ = undefined
