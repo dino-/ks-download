@@ -3,14 +3,18 @@
 
 module Ks.Locate.Config
    ( Config (..)
-   , GoogleKey (..)
+   , keyString
    , loadConfig )
    where
 
 import Data.List ( isPrefixOf )
 import qualified Data.Map as Map
 import qualified Data.Text as T
+import System.Directory ( doesFileExist )
+import System.FilePath
 import System.Log
+
+import Ks.Locate.Opts
 
 
 newtype GoogleKey = GoogleKey String
@@ -28,12 +32,18 @@ data Config = Config
    deriving (Read, Show)
 
 
-loadConfig :: FilePath -> IO Config
-loadConfig path = do
-   parseResult <- (reads . removeComments) `fmap` readFile path
-   case parseResult of
+loadConfig :: Options -> IO Config
+loadConfig options = do
+   let confPath = (optConfDir options) </> "ksdl.conf"
+   parseResult <- (reads . removeComments) `fmap` readFile confPath
+   conf <- case parseResult of
       [(c, _)] -> return c
-      _        -> error $ "ERROR parsing config file: " ++ path
+      _        -> error $ "ERROR parsing config file: " ++ confPath
+
+   -- A Google API key in a file by itself will supercede the one
+   -- in the conf file
+   maybe (return conf) (\k -> return $ conf { googleApiKey = k })
+      =<< loadGoogleKey options
 
 
 {- Auto-derived Read instancing has no idea how to handle Haskell source
@@ -44,3 +54,21 @@ removeComments = unlines . map removeComment . lines
    where
       removeComment =
          unwords . (takeWhile (not . isPrefixOf "--")) . words
+
+
+-- Google Places API key
+loadGoogleKey :: Options -> IO (Maybe GoogleKey)
+loadGoogleKey options = do
+   let keyPath = (optConfDir options) </> "GoogleAPIKey"
+   exists <- doesFileExist keyPath
+   if exists
+      then do
+         k <- (GoogleKey .  -- ..and construct the proper type
+            unwords . words) `fmap`  -- ..strip any trailing whitespace
+            (readFile keyPath)
+         return $ Just k
+      else return Nothing
+
+
+keyString :: GoogleKey -> String
+keyString (GoogleKey ks) = ks

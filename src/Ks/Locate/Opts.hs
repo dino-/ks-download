@@ -3,6 +3,7 @@
 
 module Ks.Locate.Opts
    ( Options (..)
+   , defaultOptions
    , parseOpts, usageText
    )
    where

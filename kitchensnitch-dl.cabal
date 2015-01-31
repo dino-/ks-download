@@ -76,6 +76,7 @@ test-suite           test-Locate
                      , base >= 3 && < 5
                      , bytestring
                      , containers
+                     , directory
                      , filepath
                      , hslogger
                      , HUnit
