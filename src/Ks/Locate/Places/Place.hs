@@ -97,7 +97,7 @@ displayAndReturn (Places ps) = do
 
 mkPlacesUrl :: GeoLatLng -> Ksdl String
 mkPlacesUrl (GeoLatLng lat' lng') = do
-   key <- asks (googleApiKey . getConfig)
+   (GoogleKey key) <- asks (googleApiKey . getConfig)
 
    nameWords <- toList
    liftIO $ noticeM lname $ "Places name words list: "

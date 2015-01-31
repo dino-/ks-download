@@ -107,7 +107,8 @@ loadInspection path = do
 
 
 -- Google Places API key
-loadPlacesKey :: Options -> IO String
+loadPlacesKey :: Options -> IO GoogleKey
 loadPlacesKey options =
-   (unwords . words) `fmap`  -- ..strip any trailing whitespace
+   (GoogleKey .  -- ..and construct the proper type
+   unwords . words) `fmap`  -- ..strip any trailing whitespace
    (readFile $ (optConfDir options) </> "GoogleAPIKey")

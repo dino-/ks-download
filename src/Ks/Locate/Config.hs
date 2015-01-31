@@ -3,6 +3,7 @@
 
 module Ks.Locate.Config
    ( Config (..)
+   , GoogleKey (..)
    , loadConfig )
    where
 
@@ -12,9 +13,13 @@ import qualified Data.Text as T
 import System.Log
 
 
+newtype GoogleKey = GoogleKey String
+   deriving (Read, Show)
+
+
 data Config = Config
    { logPriority :: Priority
-   , googleApiKey :: String
+   , googleApiKey :: GoogleKey
    , geocodingApiDelay :: Int
    , namewordsStopwords :: [T.Text]
    , namewordsSpecialCases :: Map.Map T.Text [T.Text]
