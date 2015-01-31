@@ -42,7 +42,7 @@ main = do
       -- The Places API key could be packed into the above config
       -- file if desired, but we're loading it from a different
       -- file and slipping it into the Config data here.
-      k <- loadPlacesKey options
+      k <- loadGoogleKey options
       return $ c { googleApiKey = k }
 
    initLogging $ logPriority config
@@ -107,8 +107,8 @@ loadInspection path = do
 
 
 -- Google Places API key
-loadPlacesKey :: Options -> IO GoogleKey
-loadPlacesKey options =
+loadGoogleKey :: Options -> IO GoogleKey
+loadGoogleKey options =
    (GoogleKey .  -- ..and construct the proper type
    unwords . words) `fmap`  -- ..strip any trailing whitespace
    (readFile $ (optConfDir options) </> "GoogleAPIKey")
