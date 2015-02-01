@@ -7,7 +7,7 @@ module Ks.DlInsp.Source.Downloaders
 import qualified Data.Map as M
 
 import qualified Ks.DlInsp.Source.NcWake as NcWake
-import Ks.DlInsp.Source.Types
+import Ks.DlInsp.Types
 
 
 downloaders :: M.Map String Downloader

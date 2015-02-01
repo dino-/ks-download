@@ -2,11 +2,6 @@
 - It may be time to put info in changelog.md
 - Look into accessing CouchBase directly from Haskell
 - Is there a different url encoding API than what's in Network.HTTP?
-- ks-dlinsp
-   - Need arguments for specifying what to download:
-        [-s, --start-date yyyymmdd] defaulting to today
-        -d, --days  How many days backwards from today
-     Will need to compute start/end dates from this for nc_wake
 - Ks.Inspection
    - Should we really be using Data.ByteString.Lazy.Char8 for
      saveInspection? Try with just Data.ByteString.Lazy or even

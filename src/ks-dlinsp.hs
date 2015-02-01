@@ -31,5 +31,4 @@ main = do
 
    let mbDownloader = M.lookup (optSource options) downloaders
    maybe (putStrLn usageText >> exitFailure)
-      (\dl -> dl (optDestDir options) (optPageLimit options))
-      mbDownloader
+      (\dl -> dl options) mbDownloader

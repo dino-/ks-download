@@ -17,16 +17,8 @@ import System.Console.GetOpt
 import Text.Regex
 
 import Ks.DlInsp.Source.Downloaders
+import Ks.DlInsp.Types
 
-
-data Options = Options
-   { optSource :: String
-   , optDestDir :: FilePath
-   , optEndDate :: Day
-   , optDays :: Int
-   , optPageLimit :: Maybe Int
-   , optHelp :: Bool
-   }
 
 defaultOptions :: IO Options
 defaultOptions = do

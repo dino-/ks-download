@@ -7,13 +7,14 @@ module Ks.DlInsp.Source.NcWake
 import Data.List ( intercalate, isInfixOf, isPrefixOf )
 import Data.Maybe ( fromMaybe )
 import qualified Data.Text as T
+import Data.Time.Calendar ( addDays, toGregorian )
 --import Debug.Trace ( trace )
 import Network.HTTP
 import Text.HTML.TagSoup
 import Text.Printf ( printf )
 
+import Ks.DlInsp.Types
 import qualified Ks.Inspection as I
-import Ks.DlInsp.Source.Types
 
 
 urlPrefix :: String
@@ -25,16 +26,18 @@ inspectionSrc = "nc_wake"
 
 
 download :: Downloader
-download dir pageLimit = do
+download options = runDl options $ do
    allPageUrls <- getPageUrls
    let pageCount = length allPageUrls
-   printf "Downloading %d of %d pages\n\n"
+   pageLimit <- asks optPageLimit
+   liftIO $ printf "Downloading %d of %d pages\n\n"
       (fromMaybe pageCount pageLimit) pageCount
 
    let pageUrls = maybe allPageUrls (\n -> take n allPageUrls) pageLimit
 
    let getters = map getFacilities pageUrls  -- [IO [Inspection]]
-   mapM_ (\ml -> ml >>= mapM_ (I.saveInspection dir)) getters
+   dir <- asks optDestDir
+   liftIO $ mapM_ (\ml -> ml >>= mapM_ (I.saveInspection dir)) getters
 
 
 -- Get all (4) facilities from a page at the supplied URL
@@ -125,19 +128,22 @@ extractViolation tags = (crit, text)
 
 
 -- Get the URLs of all search result pages
-getPageUrls :: IO [String]
+getPageUrls :: Dl [String]
 getPageUrls = do
-   tags <- parseTags `fmap` openURL mkPost
+   post <- mkPost
+   tags <- liftIO $ parseTags `fmap` openURL post
    return $ map (fromAttrib "href" . head) .
       sections (~== "<a class=teaser>") $ tags
 
 
 -- Used for debugging to store the search results page locally
 -- for inspection
+{- FIXME
 savePage :: IO ()
 savePage = do
    src <- openURL mkPost
    writeFile "temp.html" src
+-}
 
 
 -- Retrieve a page
@@ -148,32 +154,41 @@ openURL p = getResponseBody =<< simpleHTTP p
 {- These things are for the first form post to get all of the page URLs
 -}
 
-mkPost :: Request_String
-mkPost = postRequestWithBody
-   (urlPrefix ++ "reports.cfm")
-   "application/x-www-form-urlencoded"
-   $ intercalate "&" searchParams
+mkPost :: Dl Request_String
+mkPost = do
+   ps <- searchParams
+   return $ postRequestWithBody
+      (urlPrefix ++ "reports.cfm")
+      "application/x-www-form-urlencoded"
+      $ intercalate "&" ps
 
 
-searchParams :: [String]
-searchParams =
-   [ "f=search"
-   , "strSearch1="
-   , "relevance1=fName"
-   , "strSearch2="
-   , "relevance2=fName"
-   , "strSearch3="
-   , "relevance3=fName"
-   , "lscore="
-   , "hscore="
-   , "ftype=Restaurant"
-   , "fzipcode=Any"
-   , "rcritical=Any"
-   , "sMonth=8"
-   , "sDay=20"
-   , "sYear=2014"
-   , "eMonth=1"
-   , "eDay=19"
-   , "eYear=2015"
-   , "func=Search"
-   ]
+searchParams :: Dl [String]
+searchParams = do
+   endDate <- asks optEndDate
+   let (ey, em, ed) = toGregorian endDate
+   offs <- asks optDays
+   let (sy, sm, sd) = toGregorian .
+         (addDays $ fromIntegral (-offs)) $ endDate
+
+   return $
+      [ "f=search"
+      , "strSearch1="
+      , "relevance1=fName"
+      , "strSearch2="
+      , "relevance2=fName"
+      , "strSearch3="
+      , "relevance3=fName"
+      , "lscore="
+      , "hscore="
+      , "ftype=Restaurant"
+      , "fzipcode=Any"
+      , "rcritical=Any"
+      , "sMonth=" ++ (show sm)
+      , "sDay=" ++ (show sd)
+      , "sYear=" ++ (show sy)
+      , "eMonth=" ++ (show em)
+      , "eDay=" ++ (show ed)
+      , "eYear=" ++ (show ey)
+      , "func=Search"
+      ]

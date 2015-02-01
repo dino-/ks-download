@@ -37,6 +37,7 @@ executable           ks-dlinsp
                      , containers
                      , filepath
                      , HTTP
+                     , mtl
                      , regex-compat
                      , tagsoup
                      , text
