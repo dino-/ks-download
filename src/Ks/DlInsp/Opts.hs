@@ -7,11 +7,14 @@ module Ks.DlInsp.Opts
    )
    where
 
+import Control.Exception
 import Data.List ( intercalate )
 import qualified Data.Map as M
+import Data.Time
 import Data.Version ( showVersion )
 import Paths_kitchensnitch_dl ( version )
 import System.Console.GetOpt
+import Text.Regex
 
 import Ks.DlInsp.Source.Downloaders
 
@@ -19,21 +22,23 @@ import Ks.DlInsp.Source.Downloaders
 data Options = Options
    { optSource :: String
    , optDestDir :: FilePath
-   , optEndDate :: String
+   , optEndDate :: Day
    , optDays :: Int
    , optPageLimit :: Maybe Int
    , optHelp :: Bool
    }
 
-defaultOptions :: Options
-defaultOptions = Options
-   { optSource = ""
-   , optDestDir = ""
-   , optEndDate = ""
-   , optDays = 30
-   , optPageLimit = Nothing
-   , optHelp = False
-   }
+defaultOptions :: IO Options
+defaultOptions = do
+   today <- utctDay `fmap` getCurrentTime
+   return $ Options
+      { optSource = ""
+      , optDestDir = ""
+      , optEndDate = today
+      , optDays = 30
+      , optPageLimit = Nothing
+      , optHelp = False
+      }
 
 
 options :: [OptDescr (Options -> Options)]
@@ -45,7 +50,8 @@ options =
       (ReqArg (\s opts -> opts { optDestDir = s } ) "DESTDIR")
       "Directory for downloaded inspection JSON files. Required"
    , Option ['e']    ["end-date"]
-      (ReqArg (\s opts -> opts { optEndDate = s } ) "YYYYMMDD")
+      (ReqArg (\s opts -> opts { optEndDate = parseInputDate s } )
+         "YYYYMMDD")
       "Ending date for inspection searches. Default: today"
    , Option ['n'] ["num-days"]
       (ReqArg (\n opts -> opts { optDays = read n } ) "DAYS")
@@ -59,12 +65,22 @@ options =
    ]
 
 
+parseInputDate :: String -> Day
+parseInputDate str =
+   case (matchRegex (mkRegex "([0-9]{4})([0-9]{2})([0-9]{2})") str) of
+      Just [ys, ms, ds] -> fromGregorian (read ys) (read ms) (read ds)
+      _                 -> throw $ userError $
+         "Bad date format: " ++ str ++ "\n" ++ usageText
+
+
 -- Perform the args parsing
 parseOpts :: [String] -> IO (Options, [String])
-parseOpts args =
-   case getOpt Permute options args of
-      (o,n,[]  ) -> return (foldl (flip id) defaultOptions o, n)
-      (_,_,errs) -> ioError $ userError (concat errs ++ usageText)
+parseOpts args = do
+   handle ioError $ do
+      defOpts <- defaultOptions
+      case getOpt Permute options args of
+         (o,n,[]  ) -> return (foldl (flip id) defOpts o, n)
+         (_,_,errs) -> throwIO $ userError $ concat errs ++ usageText
 
 
 usageText :: String
