@@ -68,6 +68,25 @@ executable           ks-locate
                      , uuid
    ghc-options:      -Wall
 
+test-suite           test-Locate
+   type:             exitcode-stdio-1.0
+   main-is:          test-Locate.hs
+   hs-source-dirs:   src testsuite
+   build-depends:      aeson
+                     , base >= 3 && < 5
+                     , bytestring
+                     , containers
+                     , directory
+                     , filepath
+                     , hslogger
+                     , HUnit
+                     , mtl
+                     , regex-compat
+                     , text
+                     , utf8-string
+                     , uuid
+   ghc-options:      -Wall
+
 executable           ks-dump
    main-is:          ks-dump.hs
    hs-source-dirs:   src
@@ -88,25 +107,6 @@ executable           ks-dump
                      , text
                      , text-format
                      , time
-                     , utf8-string
-                     , uuid
-   ghc-options:      -Wall
-
-test-suite           test-Locate
-   type:             exitcode-stdio-1.0
-   main-is:          test-Locate.hs
-   hs-source-dirs:   src testsuite
-   build-depends:      aeson
-                     , base >= 3 && < 5
-                     , bytestring
-                     , containers
-                     , directory
-                     , filepath
-                     , hslogger
-                     , HUnit
-                     , mtl
-                     , regex-compat
-                     , text
                      , utf8-string
                      , uuid
    ghc-options:      -Wall
