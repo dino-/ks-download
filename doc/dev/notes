@@ -1,3 +1,16 @@
+## 2015-02-03 from #haskell
+
+    13:52 < dino-> quchen: hm, couchbase for Haskell. I could use
+      that, is it on hub.darcs.net or github?
+    13:54 < quchen> dino-: We're still working on it, it's not
+      finished at all yet :-\
+    13:55 < dino-> quchen: Fantastic that it's being worked on at all!
+    13:57 < quchen> dino-: Glad to hear that! Unfortunately I
+      can't open source it right now ("reasons"), but it's going
+      to be published under an open license (BSD or something) when
+      we're done.
+
+
 ## Getting and processing a year's worth of inspection data
 
 So many I did them in 4 blocks for quarters of the year:
