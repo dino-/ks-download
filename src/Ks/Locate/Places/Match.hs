@@ -22,15 +22,15 @@ import Ks.Log
 import qualified Ks.Locate.Places.Place as P
 
 
-type Match = (I.Inspection, P.Place)
+type Match = (I.IdInspection, P.Place)
 
 type MatchInternal = (Bool, Match)
 
 
 match :: [P.Place] -> Ksdl Match
 match ps = do
-   insp <- asks getInspection
-   let mis = map (combine insp) ps
+   idInsp <- asks getIdInspection
+   let mis = map (combine idInsp) ps
    let count = (sum . map bToI $ mis) :: Int
 
    when (count == 0) $ do
@@ -53,10 +53,11 @@ match ps = do
          The cleaned-up Places address is returned back to us by
          isMatch and substituted into the Place data type here.
       -}
-      combine :: I.Inspection -> P.Place -> MatchInternal
-      combine insp pl = (matched, (insp, pl { P.vicinity = newPvic }))
+      combine :: I.IdInspection -> P.Place -> MatchInternal
+      combine idInsp pl = (matched, (idInsp, pl { P.vicinity = newPvic }))
          where
-            (matched, newPvic) = isMatch (I.addr insp) (P.vicinity pl)
+            (matched, newPvic) =
+               isMatch (I.addr . I.inspection $ idInsp) (P.vicinity pl)
 
       bToI :: MatchInternal -> Int
       bToI (True,  (_, _)) = 1

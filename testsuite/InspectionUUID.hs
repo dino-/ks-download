@@ -14,21 +14,20 @@ import Ks.Inspection
 
 
 tests :: Test
-tests = TestList $ map testFacUUID testData
+tests = TestList $ map testInspUUID testData
 
 
-testFacUUID :: Inspection -> Test
-testFacUUID expected = TestCase $ do
+testInspUUID :: IdInspection -> Test
+testInspUUID expected = TestCase $ do
    let label = printf "construct UUID for: %s" (show expected)
-   let actual = setId expected
+   let actual = setId . inspection $ expected
    assertEqual label (_id expected) (_id actual)
 
 
-testData :: [Inspection]
+testData :: [IdInspection]
 testData =
-   [ Inspection
-      { _id = "e33231ae-b075-520e-9a29-44d3fe90a37a"
-      , inspection_source = "nc_wake"
+   [ IdInspection "e33231ae-b075-520e-9a29-44d3fe90a37a" $ Inspection
+      { inspection_source = "nc_wake"
       , name = "Panda King"
       , addr = "3626 Rogers RD WAKE FOREST, NC 27587"
       , date = [2014,12,10]

@@ -69,7 +69,7 @@ lookupInspection config options srcPath = do
       liftIO $ noticeM lname line
 
       insp <- loadInspection srcPath
-      local (\r -> r { getInspection = insp }) $ do
+      local (\r -> r { getIdInspection = insp }) $ do
          geo <- forwardLookup
          places <- coordsToPlaces geo
          match places
@@ -90,7 +90,7 @@ lookupInspection config options srcPath = do
          errorM lname msg
 
 
-loadInspection :: FilePath -> Ksdl Inspection
+loadInspection :: FilePath -> Ksdl IdInspection
 loadInspection path = do
    parseResult <- liftIO $ eitherDecodeStrict' `fmap` BS.readFile path
    either

@@ -41,7 +41,7 @@ download options = runDl options $ do
 
 
 -- Get all (4) facilities from a page at the supplied URL
-getFacilities :: String -> IO [I.Inspection]
+getFacilities :: String -> IO [I.IdInspection]
 getFacilities url = do
    printf "Retrieving %s\n" url
 
@@ -64,7 +64,6 @@ isolateInspTags= partitions isFacAnchor
 -- Extract the Inspection data from a facility's tags
 extractInsp :: [Tag String] -> I.Inspection
 extractInsp tags = I.Inspection
-   ""  -- Will fill in _id later, once this record is complete
    inspectionSrc
    (T.pack name)
    (T.pack . trim $ addr)

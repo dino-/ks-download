@@ -50,6 +50,7 @@ testData =
    ]
 
 
-fakeInspection :: Text -> IO Inspection
-fakeInspection name' =
-   return $ nullInspection { name = name' }
+fakeInspection :: Text -> IO IdInspection
+fakeInspection name' = do
+   let (IdInspection _ i) = nullInspection
+   return $ IdInspection "" $ i { name = name' }

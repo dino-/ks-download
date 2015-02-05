@@ -23,46 +23,26 @@ import qualified Ks.Locate.Places.Place as P
 
 
 data Document = Document
-   { doctype :: String
+   { _id :: String
+   , doctype :: String
    , inspection :: I.Inspection
    , place :: P.Place
    }
    deriving Generic
 
-instance ToJSON Document where
-   toJSON (Document ty insp pl) = object
-      [ "_id" .= I._id insp
-      , "type" .= ty
-      , "place_id" .= P.place_id pl
-      , "inspection_source" .= I.inspection_source insp
-      , "inspection" .= object
-         [ "name" .= I.name insp
-         , "addr" .= I.addr insp
-         , "date" .= (toJSON . I.date $ insp)
-         , "score" .= I.score insp
-         , "violations" .= I.violations insp
-         , "crit_violations" .= I.crit_violations insp
-         , "reinspection" .= I.reinspection insp
-         , "detail" .= I.detail insp
-         ]
-      , "place" .= object
-         [ "name" .= P.name pl
-         , "vicinity" .= P.vicinity pl
-         , "location" .= (toJSON . P.location $ pl)
-         , "types" .= P.types pl
-         ]
-      ]
+instance ToJSON Document
 
 
 mkDoc :: Match -> Document
-mkDoc (i, p) = Document "inspection" i p
+mkDoc ((I.IdInspection _id' inspection'), place') =
+   Document _id' "inspection" inspection' place'
 
 
 saveDoc :: Options -> FilePath -> Document -> IO ()
 saveDoc options srcPath doc = do
    case (optSuccessDir options) of
       Just successDir -> BL.writeFile
-         (successDir </> "ks_" ++ (I._id . inspection $ doc) <.> "json")
+         (successDir </> "ks_" ++ (_id doc) <.> "json")
          $ encode doc
       Nothing -> BL.putStrLn $ encodePretty doc
 

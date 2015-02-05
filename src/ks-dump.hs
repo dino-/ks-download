@@ -42,7 +42,7 @@ buildFileList srcDirOrFile = do
          `fmap` getDirectoryContents srcDirOrFile  -- All files
 
 
-loadInspection :: FilePath -> IO Inspection
+loadInspection :: FilePath -> IO IdInspection
 loadInspection path = do
    parseResult <- eitherDecodeStrict' `fmap` BS.readFile path
    either
@@ -50,8 +50,8 @@ loadInspection path = do
       return parseResult
 
 
-display :: Inspection -> IO ()
-display insp = putStrLn $
+display :: IdInspection -> IO ()
+display (IdInspection _id' insp) = putStrLn $
    (T.unpack . name $ insp) ++ " | " ++
    (T.unpack . addr $ insp) ++ " | " ++
-   (_id insp)
+   _id'

@@ -23,7 +23,7 @@ toList = do
    specialCases <- asks (namewordsSpecialCases . getConfig)
    list <- mkList
 
-   iname <- asks (name . getInspection)
+   iname <- asks (name . inspection . getIdInspection)
    return $ Map.findWithDefault
       list           -- Or make a list for a normal name
       iname          -- Find this name..
@@ -45,7 +45,7 @@ mkList = do
       . tr '/' ' '
       . tr '-' ' '
       . toLower
-      ) `fmap` asks (name . getInspection)
+      ) `fmap` asks (name . inspection . getIdInspection)
 
 
 headList :: [a] -> [a]

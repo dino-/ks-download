@@ -43,7 +43,7 @@ data Place = Place
    , types :: [String]
    , place_id :: Text
    }
-   deriving Show
+   deriving (Generic, Show)
 
 instance FromJSON Place where
    parseJSON (Object o) = do
@@ -55,6 +55,8 @@ instance FromJSON Place where
          <*> o .: "types"
          <*> o .: "place_id"
    parseJSON o = fail . show $ o
+
+instance ToJSON Place
 
 
 newtype Places = Places [Place]

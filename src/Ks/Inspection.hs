@@ -4,7 +4,8 @@
 {-# LANGUAGE DeriveGeneric, OverloadedStrings #-}
 
 module Ks.Inspection
-   ( Inspection (..)
+   ( IdInspection (..)
+   , Inspection (..)
    , nullInspection
    , parseDate
    , setId
@@ -26,8 +27,7 @@ import Text.Regex ( matchRegex, mkRegex )
 
 
 data Inspection = Inspection
-   { _id :: String
-   , inspection_source :: String
+   { inspection_source :: String
    , name :: Text
    , addr :: Text
    , date :: [Int]
@@ -39,15 +39,26 @@ data Inspection = Inspection
    }
    deriving Generic
 
-instance Show Inspection
-   where show = formatForDisplay
-
 instance FromJSON Inspection
 instance ToJSON Inspection
 
 
-nullInspection :: Inspection
-nullInspection = Inspection "" "" "" "" [] 0.0 0 0 False ""
+data IdInspection = IdInspection
+   { _id :: String
+   , inspection :: Inspection
+   }
+   deriving Generic
+
+instance Show IdInspection
+   where show = formatForDisplay
+
+instance ToJSON IdInspection
+instance FromJSON IdInspection
+
+
+nullInspection :: IdInspection
+nullInspection =
+   IdInspection "" (Inspection "" "" "" [] 0.0 0 0 False "")
 
 
 parseDate :: String -> [Int]
@@ -63,21 +74,24 @@ nsUUID = fromJust . fromString $
    "e95d936e-3845-582e-a0c5-3f53b3949b97"
 
 
-setId :: Inspection -> Inspection
-setId i = i { _id = toString newId }
+setId :: Inspection -> IdInspection
+setId i = IdInspection (toString newId) i
    where
       newId = generateNamed nsUUID $ UTF8.encode $ printf "%s|%s|%s|%f"
          (unpack . name $ i) (unpack . addr $ i)
          (show . date $ i) (score i)
 
 
-saveInspection :: FilePath -> Inspection -> IO ()
-saveInspection dir insp =
-   BL.writeFile (dir </> ("insp_" ++ _id insp)) $ encode insp
+saveInspection :: FilePath -> IdInspection -> IO ()
+saveInspection dir idInsp = BL.writeFile
+   (dir </> ("insp_" ++ _id idInsp) <.> "json") $ encode idInsp
 
 
-formatForDisplay :: Inspection -> String
-formatForDisplay (Inspection i src n a [y, m, d] sc viol crit r _) =
+formatForDisplay :: IdInspection -> String
+
+formatForDisplay (IdInspection i
+   (Inspection src n a [y, m, d] sc viol crit r _)) =
+
    printf mask i (unpack n) y m d sc viol crit (showRe r) src (unpack a)
 
    where
