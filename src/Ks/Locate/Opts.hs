@@ -9,7 +9,7 @@ module Ks.Locate.Opts
    where
 
 import Data.Version ( showVersion )
-import Paths_kitchensnitch_dl ( version )
+import Paths_ks_download ( version )
 import System.Console.GetOpt
 
 

@@ -12,7 +12,7 @@ import Data.List ( intercalate )
 import qualified Data.Map as M
 import Data.Time
 import Data.Version ( showVersion )
-import Paths_kitchensnitch_dl ( version )
+import Paths_ks_download ( version )
 import System.Console.GetOpt
 import Text.Regex
 
