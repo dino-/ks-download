@@ -7,7 +7,7 @@ module Ks.DlInsp.Source.NcWake
 import Data.List ( intercalate, isInfixOf, isPrefixOf )
 import Data.Maybe ( fromMaybe )
 import qualified Data.Text as T
-import Data.Time.Calendar ( addDays, toGregorian )
+import Data.Time.Calendar ( toGregorian )
 --import Debug.Trace ( trace )
 import Network.HTTP
 import Text.HTML.TagSoup
@@ -164,11 +164,8 @@ mkPost = do
 
 searchParams :: Dl [String]
 searchParams = do
-   endDate <- asks optEndDate
-   let (ey, em, ed) = toGregorian endDate
-   offs <- asks optDays
-   let (sy, sm, sd) = toGregorian .
-         (addDays $ fromIntegral (-offs)) $ endDate
+   (sy, sm, sd) <- toGregorian `fmap` asks optStartDate
+   (ey, em, ed) <- toGregorian `fmap` asks optEndDate
 
    return $
       [ "f=search"

@@ -19,8 +19,8 @@ import System.FilePath ()
 data Options = Options
    { optSource :: String
    , optDestDir :: FilePath
+   , optStartDate :: Day
    , optEndDate :: Day
-   , optDays :: Int
    , optPageLimit :: Maybe Int
    , optHelp :: Bool
    }

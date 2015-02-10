@@ -22,12 +22,12 @@ import Ks.DlInsp.Types
 
 defaultOptions :: IO Options
 defaultOptions = do
-   today <- utctDay `fmap` getCurrentTime
+   yesterday <- (addDays (-1) . utctDay) `fmap` getCurrentTime
    return $ Options
       { optSource = ""
       , optDestDir = ""
-      , optEndDate = today
-      , optDays = 30
+      , optStartDate = yesterday
+      , optEndDate = yesterday
       , optPageLimit = Nothing
       , optHelp = False
       }
@@ -35,19 +35,20 @@ defaultOptions = do
 
 options :: [OptDescr (Options -> Options)]
 options =
-   [ Option ['s'] ["source"]
+   [ Option ['i'] ["insp-source"]
       (ReqArg (\s opts -> opts { optSource = s } ) "SOURCE")
       "Inspection source. Required. See SOURCE below."
    , Option ['d'] ["dest-dir"]
       (ReqArg (\s opts -> opts { optDestDir = s } ) "DESTDIR")
       "Directory for downloaded inspection JSON files. Required"
+   , Option ['s']    ["start-date"]
+      (ReqArg (\s opts -> opts { optStartDate = parseInputDate s } )
+         "YYYYMMDD")
+      "Starting date for inspection searches. Default: yesterday"
    , Option ['e']    ["end-date"]
       (ReqArg (\s opts -> opts { optEndDate = parseInputDate s } )
          "YYYYMMDD")
-      "Ending date for inspection searches. Default: today"
-   , Option ['n'] ["num-days"]
-      (ReqArg (\n opts -> opts { optDays = read n } ) "DAYS")
-      "Number of days backwards from the ending date to acquire. Default: 30"
+      "Ending date for inspection searches. Default: yesterday"
    , Option ['l'] ["page-limit"]
       (ReqArg (\l opts -> opts { optPageLimit = Just $ read l } ) "PAGES")
       "Number of pages to download (applies only to nc_wake?) Default: all of them"
@@ -85,7 +86,8 @@ usageText = (usageInfo header options) ++ "\n" ++ footer
          , "Options:"
          ]
       footer = init $ unlines
-         [ "Logging is written to stdout."
+         [ "Note: If run with no dates, you will get all of yesterday's inspections. This is a good default for daily runs."
+         , "Logging is written to stdout."
          , ""
          , "SOURCE is one of: " ++ (intercalate ", " $ M.keys downloaders)
          , ""
