@@ -18,7 +18,7 @@ import qualified Ks.Inspection as I
 
 
 urlPrefix :: String
-urlPrefix = "http://wake.digitalhealthdepartment.com/"
+urlPrefix = "http://wake-nc.healthinspections.us/"
 
 
 inspectionSrc :: String
