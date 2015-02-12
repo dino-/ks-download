@@ -1,3 +1,12 @@
+## 2015-02-11
+
+Nightly download workDirParent:
+
+    /var/local/kitchensnitch/insp_nc_wake
+
+Make sure this is in the backups!
+
+
 ## 2015-02-03 from #haskell
 
     13:52 < dino-> quchen: hm, couchbase for Haskell. I could use
