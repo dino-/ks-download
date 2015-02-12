@@ -10,7 +10,8 @@ module Ks.DlInsp.Opts
 import Control.Exception
 import Data.List ( intercalate )
 import qualified Data.Map as M
-import Data.Time
+import Data.Time ( Day (..), addDays, fromGregorian, getCurrentTime,
+   localDay, utcToLocalZonedTime, zonedTimeToLocalTime )
 import Data.Version ( showVersion )
 import Paths_ks_download ( version )
 import System.Console.GetOpt
@@ -22,7 +23,13 @@ import Ks.DlInsp.Types
 
 defaultOptions :: IO Options
 defaultOptions = do
-   yesterday <- (addDays (-1) . utctDay) `fmap` getCurrentTime
+   yesterday <-
+      (addDays (-1) .               -- ..yesterday
+      localDay .                    -- ..extract the Day
+      zonedTimeToLocalTime) `fmap`  -- ..extract the LocalTime
+      (utcToLocalZonedTime =<<      -- ..in the local time zone
+      getCurrentTime)               -- The time now
+
    return $ Options
       { optSource = ""
       , optDestDir = ""
