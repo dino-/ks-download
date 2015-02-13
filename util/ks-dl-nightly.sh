@@ -8,6 +8,10 @@ binPrefix=/home/dino/bin
 workDirParent=/home/dino/dev/kitchensnitch/data/nc-wake_daily
 #workDirParent=/var/tmp
 
+# Couchbase password
+couchPassword=PASSWORD
+
+
 workDir=${workDirParent}/nc-wake_$(date +"%Y-%m-%d" --date='yesterday')
 
 PATH=$binPrefix:"${PATH}"
@@ -37,3 +41,19 @@ ks-locate \
 
 
 # Import into Couchbase
+
+#/opt/couchbase/bin/cbdocloader -u Administrator -p $couchPassword -n localhost:8091 -b kitchen_snitch succ/ 2>&1 > ks-couch-import.log
+
+# Use these to simulate import success or failure
+# comment these lines out if using the above cbdocloader command
+echo "Fake cbdocloader success" > ks-couch-import.log; true
+#echo "Fake cbdocloader failure" > ks-couch-import.log; false
+
+couchExit=$?
+
+if [ $couchExit != 0 ]
+then
+   echo "There was a problem importing KS records from ${workDir}/succ/"
+   echo "cbdocloader exit code: $couchExit"
+   echo "see ${workDir}/ks-couch-import.log"
+fi
