@@ -39,31 +39,6 @@ nc-wake_q4  2014-10-24 2015-01-23
 
 ## 2015-01-15 New Couchbase document structure
 
-      { "_id": "uuid"
-      , "type": "inspection"
-      , "place_id": "from G Places"
-      , "inspection_source": "nc_wake"
-      , "inspection":
-         { "name": "..."
-         , "addr": "..."
-         , "date": [2014,12,30]
-         , "score": 94.7
-         , "violations": 23
-         , "crit_violations": 3
-         , "reinspection": true
-         , "detail": "http:/..."
-         }
-      , "place":
-         { "name": "..."
-         , "vicinity": "..."
-         , "location":
-            { "lat": 13.1856902
-            , "lng": -78.18342
-            }
-         }
-      }
-
-
 - Is inspection.violations.id an integer or string across different
   counties?
    - Found violation ids that are alphanumeric in NY state. Example: 2C, 4A
@@ -71,11 +46,6 @@ nc-wake_q4  2014-10-24 2015-01-23
    - Yes, the points they cost individually against the whole score for NC
    - No, there are no points or even scores for NY
 - Is reinspection a boolean or more values?
-
-
-## 2015-01-14
-
-We *do* want to continue storing inspection name and address.
 
 
 ## Isolating subsets of inspection files
@@ -131,12 +101,13 @@ Places API:
 
 
 * match names 
-* match location (from our data) to 'vicinity' (Places data)
-* note the 'score' for the string compare using your algorithm
+* match location (from our data) to `vicinity` (Places data)
+* note the `score` for the string compare using your algorithm
 * note the place_id and geometry from the Places API results
 
 
 ## first notes
 
 Starting form is here: http://wake.digitalhealthdepartment.com/reports.cfm
+
 2015-02: Starting form moved here: http://wake-nc.healthinspections.us/
