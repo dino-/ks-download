@@ -2,19 +2,23 @@
 
 # Location of the ks-download binaries and scripts
 # Needed for the cron environment
-binPrefix=/home/dino/bin
+binDir=/opt/ks-download/bin
+#binDir=/home/dino/bin
 
 # Make this a directory that's backed-up
-workDirParent=/home/dino/dev/kitchensnitch/data/nc-wake_daily
-#workDirParent=/var/tmp
+workDirParent=/var/local/kitchensnitch/nc-wake_daily
+#workDirParent=/home/dino/dev/kitchensnitch/data/nc-wake_daily
 
 # Couchbase password
-couchPassword=PASSWORD
+couchPassword=COUCH_PASSWORD
 
+
+# When running outside of this zone, need this set explicitly for `date`
+export TZ="America/New_York"
 
 workDir=${workDirParent}/nc-wake_$(date +"%Y-%m-%d" --date='yesterday')
 
-PATH=$binPrefix:"${PATH}"
+PATH=$binDir:"${PATH}"
 
 
 mkdir -p $workDir/{insp,succ,fail}
@@ -42,7 +46,7 @@ ks-locate \
 
 # Import into Couchbase
 
-#/opt/couchbase/bin/cbdocloader -u Administrator -p $couchPassword -n localhost:8091 -b kitchen_snitch succ/ 2>&1 > ks-couch-import.log
+#/opt/couchbase/bin/cbdocloader -u Administrator -p "$couchPassword" -n localhost:8081 -b testdatav2 succ/ > ks-couch-import.log 2>&1
 
 # Use these to simulate import success or failure
 # comment these lines out if using the above cbdocloader command
