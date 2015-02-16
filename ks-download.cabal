@@ -42,6 +42,7 @@ executable           ks-dlinsp
                      , tagsoup
                      , text
                      , time
+                     , tz
                      , utf8-string
                      , uuid
    ghc-options:      -Wall

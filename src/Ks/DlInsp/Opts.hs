@@ -11,7 +11,8 @@ import Control.Exception
 import Data.List ( intercalate )
 import qualified Data.Map as M
 import Data.Time ( Day (..), addDays, fromGregorian, getCurrentTime,
-   localDay, utcToLocalZonedTime, zonedTimeToLocalTime )
+   localDay )
+import Data.Time.Zones ( loadLocalTZ, utcToLocalTimeTZ )
 import Data.Version ( showVersion )
 import Paths_ks_download ( version )
 import System.Console.GetOpt
@@ -23,12 +24,12 @@ import Ks.DlInsp.Types
 
 defaultOptions :: IO Options
 defaultOptions = do
-   yesterday <-
-      (addDays (-1) .               -- ..yesterday
-      localDay .                    -- ..extract the Day
-      zonedTimeToLocalTime) `fmap`  -- ..extract the LocalTime
-      (utcToLocalZonedTime =<<      -- ..in the local time zone
-      getCurrentTime)               -- The time now
+   tz <- loadLocalTZ     -- We expect the TZ env to be set in prod
+   ut <- getCurrentTime  -- This is UTC time
+   let yesterday =
+         addDays (-1) .                -- ..yesterday
+         localDay $                    -- ..extract the Day
+         utcToLocalTimeTZ tz ut        -- The local zoned time
 
    return $ Options
       { optSource = ""
@@ -97,6 +98,10 @@ usageText = (usageInfo header options) ++ "\n" ++ footer
          , "Logging is written to stdout."
          , ""
          , "SOURCE is one of: " ++ (intercalate ", " $ M.keys downloaders)
+         , ""
+         , "For computing values for 'yesterday', this software will fish out the time zone for your system using the TZ environment variable if possible and /etc/localtime if necessary. On a UTC system (like production on AWS), you need to specify a TZ value from /usr/share/zoneinfo/ like this:"
+         , ""
+         , "   export TZ=\"America/New_York\""
          , ""
          , "Version " ++ (showVersion version) ++ "  Dino Morelli <dino@ui3.info>"
          ]

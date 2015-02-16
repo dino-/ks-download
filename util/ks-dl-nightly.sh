@@ -13,7 +13,8 @@ workDirParent=/var/local/kitchensnitch/nc-wake_daily
 couchPassword=COUCH_PASSWORD
 
 
-# When running outside of this zone, need this set explicitly for `date`
+# When running outside of this zone (or on a system using UTC),
+# need this set explicitly for both the `date` binary and ks-dlinsp
 export TZ="America/New_York"
 
 workDir=${workDirParent}/nc-wake_$(date +"%Y-%m-%d" --date='yesterday')
