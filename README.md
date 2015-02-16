@@ -58,6 +58,14 @@ Running in this way will allow `ks-locate` to find its conf files
 and use relative paths for all those directories, which is nice.
 
 
+### ks-dl-nightly.sh - Utility to run every day to do everything
+
+For `nc_wake`, no inspections are added on weekend days. The `cron`
+job shoulld look something like this:
+
+    7 1 * * tue,wed,thu,fri,sat  /opt/ks-download/bin/ks-dl-nightly.sh
+
+
 ## Building from source
 
 Make sure you have `ghc 7.8.x`, `cabal-install` and `darcs` installed.
