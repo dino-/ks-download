@@ -1,7 +1,7 @@
 #! /usr/bin/env runhaskell
 
 -- License: BSD3 (see LICENSE)
--- Author: Ren Hoek <ren@spumco.co.dk>
+-- Author: Dino Morelli <dino@ui3.info>
 
 import Distribution.Simple ( defaultMainWithHooks, postCopy,
    simpleUserHooks )
