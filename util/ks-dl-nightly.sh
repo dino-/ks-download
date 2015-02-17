@@ -47,7 +47,7 @@ ks-locate \
 
 # Import into Couchbase
 
-#/opt/couchbase/bin/cbdocloader -u Administrator -p "$couchPassword" -n localhost:8081 -b testdatav2 succ/ > ks-couch-import.log 2>&1
+#/opt/couchbase/bin/cbdocloader -u Administrator -p "$couchPassword" -n localhost:8091 -b kitchen_snitch succ/ > ks-couch-import.log 2>&1
 
 # Use these to simulate import success or failure
 # comment these lines out if using the above cbdocloader command
