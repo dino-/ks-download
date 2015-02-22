@@ -63,7 +63,7 @@ and use relative paths for all those directories, which is nice.
 For `nc_wake`, no inspections are added on weekend days. The `cron`
 job shoulld look something like this:
 
-    7 1 * * tue,wed,thu,fri,sat  /opt/ks-download/bin/ks-dl-nightly.sh
+    7 1 * * wed,thu,fri,sat,sun  /opt/ks-download/bin/ks-dl-nightly.sh
 
 
 ## Building from source

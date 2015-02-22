@@ -17,7 +17,7 @@ couchPassword=COUCH_PASSWORD
 # need this set explicitly for both the `date` binary and ks-dlinsp
 export TZ="America/New_York"
 
-workDir=${workDirParent}/nc-wake_$(date +"%Y-%m-%d" --date='yesterday')
+workDir=${workDirParent}/nc-wake_$(date +"%Y-%m-%d" --date='2 days ago')
 
 PATH=$binDir:"${PATH}"
 
@@ -26,7 +26,7 @@ mkdir -p $workDir/{insp,succ,fail}
 cd $workDir
 
 
-# Scrape new inspections for yesterday
+# Scrape new inspections from two days ago
 
 ks-dlinsp \
    --insp-source nc_wake \

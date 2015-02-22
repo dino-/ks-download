@@ -26,16 +26,16 @@ defaultOptions :: IO Options
 defaultOptions = do
    tz <- loadLocalTZ     -- We expect the TZ env to be set in prod
    ut <- getCurrentTime  -- This is UTC time
-   let yesterday =
-         addDays (-1) .                -- ..yesterday
+   let twoDaysAgo =
+         addDays (-2) .                -- ..two days ago
          localDay $                    -- ..extract the Day
          utcToLocalTimeTZ tz ut        -- The local zoned time
 
    return $ Options
       { optSource = ""
       , optDestDir = ""
-      , optStartDate = yesterday
-      , optEndDate = yesterday
+      , optStartDate = twoDaysAgo
+      , optEndDate = twoDaysAgo
       , optPageLimit = Nothing
       , optHelp = False
       }
@@ -52,11 +52,11 @@ options =
    , Option ['s']    ["start-date"]
       (ReqArg (\s opts -> opts { optStartDate = parseInputDate s } )
          "YYYYMMDD")
-      "Starting date for inspection searches. Default: yesterday"
+      "Starting date for inspection searches. Default: two days ago"
    , Option ['e']    ["end-date"]
       (ReqArg (\s opts -> opts { optEndDate = parseInputDate s } )
          "YYYYMMDD")
-      "Ending date for inspection searches. Default: yesterday"
+      "Ending date for inspection searches. Default: two days ago"
    , Option ['l'] ["page-limit"]
       (ReqArg (\l opts -> opts { optPageLimit = Just $ read l } ) "PAGES")
       "Number of pages to download (applies only to nc_wake?) Default: all of them"
@@ -94,12 +94,12 @@ usageText = (usageInfo header options) ++ "\n" ++ footer
          , "Options:"
          ]
       footer = init $ unlines
-         [ "Note: If run with no dates, you will get all of yesterday's inspections. This is a good default for daily runs."
+         [ "Note: If run with no dates, you will get all of the inspections from two days ago. The idea is to give the inspection workers time to get their data into the system and is a good default for daily runs."
          , "Logging is written to stdout."
          , ""
          , "SOURCE is one of: " ++ (intercalate ", " $ M.keys downloaders)
          , ""
-         , "For computing values for 'yesterday', this software will fish out the time zone for your system using the TZ environment variable if possible and /etc/localtime if necessary. On a UTC system (like production on AWS), you need to specify a TZ value from /usr/share/zoneinfo/ like this:"
+         , "For computing values for 'two days ago', this software will fish out the time zone for your system using the TZ environment variable if possible and /etc/localtime if necessary. On a UTC system (like production on AWS), you need to specify a TZ value from /usr/share/zoneinfo/ like this:"
          , ""
          , "   export TZ=\"America/New_York\""
          , ""
