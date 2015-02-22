@@ -52,6 +52,13 @@ loadInspection path = do
 
 display :: IdInspection -> IO ()
 display (IdInspection _id' insp) = putStrLn $
+   (show . date $ insp) ++ " | " ++
+   (T.unpack . name $ insp) ++ " | " ++
+   _id'
+{-
+display :: IdInspection -> IO ()
+display (IdInspection _id' insp) = putStrLn $
    (T.unpack . name $ insp) ++ " | " ++
    (T.unpack . addr $ insp) ++ " | " ++
    _id'
+-}
