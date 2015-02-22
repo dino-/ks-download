@@ -123,8 +123,9 @@ that you can put somewhere like `/opt/` for instance.
     $ cabal configure --prefix=/tmp/ks-download-VER
     $ cabal build
     $ cabal copy
-    $ cd tmp
-    $ tar czvf ks-download-VER ks-download-VER
+    $ pushd /tmp
+    $ tar czvf ks-download-VER.tgz ks-download-VER
+    $ popd
 
 
 ## Contact
