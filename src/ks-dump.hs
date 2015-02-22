@@ -1,6 +1,9 @@
 -- License: BSD3 (see LICENSE)
 -- Author: Dino Morelli <dino@ui3.info>
 
+{- This is a development tool for exploring the data in various ways
+-}
+
 import Control.Monad ( (>=>) )
 import Data.Aeson
 import qualified Data.ByteString as BS
