@@ -3,7 +3,7 @@
 
 {-# LANGUAGE DeriveGeneric, OverloadedStrings #-}
 
-module Ks.Inspection
+module KS.Inspection
    ( IdInspection (..)
    , Inspection (..)
    , nullInspection

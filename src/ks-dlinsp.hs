@@ -10,8 +10,8 @@ import System.IO
    , hSetBuffering, stdout, stderr
    )
 
-import Ks.DlInsp.Opts
-import Ks.DlInsp.Source.Downloaders
+import KS.DlInsp.Opts
+import KS.DlInsp.Source.Downloaders
 
 
 main :: IO ()

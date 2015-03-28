@@ -1,7 +1,7 @@
 -- License: BSD3 (see LICENSE)
 -- Author: Dino Morelli <dino@ui3.info>
 
-module Ks.Locate.Opts
+module KS.Locate.Opts
    ( Options (..)
    , defaultOptions
    , parseOpts, usageText

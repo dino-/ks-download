@@ -3,7 +3,7 @@
 
 {-# LANGUAGE OverloadedStrings #-}
 
-module Ks.Locate.Places.NameWords
+module KS.Locate.Places.NameWords
    ( toList
    )
    where
@@ -13,12 +13,12 @@ import qualified Data.Map as Map
 import Data.Text
 import Prelude hiding ( filter, map )
 
-import Ks.Inspection
-import Ks.Locate.Config
-import Ks.Locate.Locate
+import KS.Inspection
+import KS.Locate.Config
+import KS.Locate.Locate
 
 
-toList :: Ksdl [Text]
+toList :: KSDL [Text]
 toList = do
    specialCases <- asks (namewordsSpecialCases . getConfig)
    list <- mkList
@@ -30,7 +30,7 @@ toList = do
       specialCases   -- ..in these special cases
 
 
-mkList :: Ksdl [Text]
+mkList :: KSDL [Text]
 mkList = do
    stopwords <- asks (namewordsStopwords . getConfig)
    (headList

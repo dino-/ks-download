@@ -14,15 +14,15 @@ import System.IO
    , hSetBuffering, stdout, stderr
    )
 
-import Ks.Inspection
-import Ks.Locate.Config
-import Ks.Locate.Locate
-import Ks.Locate.Database.Inspection
-import Ks.Locate.Opts
-import Ks.Locate.Places.Geocoding ( forwardLookup )
-import Ks.Locate.Places.Match ( match )
-import Ks.Locate.Places.Place ( coordsToPlaces )
-import Ks.Log
+import KS.Inspection
+import KS.Locate.Config
+import KS.Locate.Locate
+import KS.Locate.Database.Inspection
+import KS.Locate.Opts
+import KS.Locate.Places.Geocoding ( forwardLookup )
+import KS.Locate.Places.Match ( match )
+import KS.Locate.Places.Place ( coordsToPlaces )
+import KS.Log
 
 
 main :: IO ()
@@ -65,7 +65,7 @@ buildFileList srcDirOrFile = do
 
 lookupInspection :: Config -> Options -> FilePath -> IO ()
 lookupInspection config options srcPath = do
-   r <- runKsdl (Env config nullInspection) $ do
+   r <- runKSDL (Env config nullInspection) $ do
       liftIO $ noticeM lname line
 
       insp <- loadInspection srcPath
@@ -90,7 +90,7 @@ lookupInspection config options srcPath = do
          errorM lname msg
 
 
-loadInspection :: FilePath -> Ksdl IdInspection
+loadInspection :: FilePath -> KSDL IdInspection
 loadInspection path = do
    parseResult <- liftIO $ eitherDecodeStrict' `fmap` BS.readFile path
    either

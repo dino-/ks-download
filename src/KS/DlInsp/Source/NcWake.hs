@@ -1,7 +1,7 @@
 -- License: BSD3 (see LICENSE)
 -- Author: Dino Morelli <dino@ui3.info>
 
-module Ks.DlInsp.Source.NcWake
+module KS.DlInsp.Source.NcWake
    where
 
 import Data.List ( intercalate, isInfixOf, isPrefixOf )
@@ -13,8 +13,8 @@ import Network.HTTP
 import Text.HTML.TagSoup
 import Text.Printf ( printf )
 
-import Ks.DlInsp.Types
-import qualified Ks.Inspection as I
+import KS.DlInsp.Types
+import qualified KS.Inspection as I
 
 
 urlPrefix :: String

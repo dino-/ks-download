@@ -18,7 +18,7 @@ import System.IO
    , hSetBuffering, stdout, stderr
    )
 
-import Ks.Inspection
+import KS.Inspection
 
 
 main :: IO ()

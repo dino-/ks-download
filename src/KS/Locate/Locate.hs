@@ -1,8 +1,8 @@
 -- License: BSD3 (see LICENSE)
 -- Author: Dino Morelli <dino@ui3.info>
 
-module Ks.Locate.Locate
-   ( Env (..), Ksdl, runKsdl
+module KS.Locate.Locate
+   ( Env (..), KSDL, runKSDL
 
    -- Re-exporting
    , asks, liftIO, local, throwError, when
@@ -12,8 +12,8 @@ module Ks.Locate.Locate
 import Control.Monad.Reader
 import Control.Monad.Error
 
-import Ks.Inspection
-import Ks.Locate.Config
+import KS.Inspection
+import KS.Locate.Config
 
 
 data Env = Env
@@ -21,7 +21,7 @@ data Env = Env
    , getIdInspection :: IdInspection
    }
 
-type Ksdl a = ReaderT Env (ErrorT String IO) a
+type KSDL a = ReaderT Env (ErrorT String IO) a
 
-runKsdl :: Env -> Ksdl a -> IO (Either String a)
-runKsdl env ev = runErrorT (runReaderT ev env)
+runKSDL :: Env -> KSDL a -> IO (Either String a)
+runKSDL env ev = runErrorT (runReaderT ev env)

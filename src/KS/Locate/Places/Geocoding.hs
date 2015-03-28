@@ -3,7 +3,7 @@
 
 {-# LANGUAGE KindSignatures, OverloadedStrings, RankNTypes #-}
 
-module Ks.Locate.Places.Geocoding
+module KS.Locate.Places.Geocoding
    ( GeoLatLng (..), forwardLookup )
    where
 
@@ -16,10 +16,10 @@ import Network.HTTP ( urlEncode )
 import Network.HTTP.Conduit ( simpleHttp )
 import Text.Printf ( printf )
 
-import Ks.Inspection
-import Ks.Locate.Locate
-import Ks.Locate.Config
-import Ks.Log
+import KS.Inspection
+import KS.Locate.Locate
+import KS.Locate.Config
+import KS.Log
 
 
 data GeoLatLng = GeoLatLng Double Double
@@ -43,7 +43,7 @@ headE _ (x : _) = return x
 headE v []      = fail . show $ v
 
 
-forwardLookup :: Ksdl GeoLatLng
+forwardLookup :: KSDL GeoLatLng
 forwardLookup = do
    url <- mkGeocodeUrl
    liftIO $ noticeM lname $ "Geocoding URL: " ++ url
@@ -60,13 +60,13 @@ forwardLookup = do
       displayAndReturn parseResult
 
 
-displayAndReturn :: GeoLatLng -> Ksdl GeoLatLng
+displayAndReturn :: GeoLatLng -> KSDL GeoLatLng
 displayAndReturn location = do
    liftIO $ noticeM lname $ show location
    return location
 
 
-mkGeocodeUrl :: Ksdl String
+mkGeocodeUrl :: KSDL String
 mkGeocodeUrl = do
    addr' <- asks (addr . inspection . getIdInspection)
    key <- asks (keyString . googleApiKey . getConfig)

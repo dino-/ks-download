@@ -4,7 +4,7 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# OPTIONS_GHC -fno-warn-unused-do-bind #-}
 
-module Ks.Locate.Places.Match
+module KS.Locate.Places.Match
    ( Match, match )
    where
 
@@ -16,10 +16,10 @@ import qualified Data.Text.Lazy as TL
 import qualified Data.Text.Format as TF
 import Prelude hiding ( takeWhile )
 
-import Ks.Locate.Locate
-import qualified Ks.Inspection as I
-import Ks.Log
-import qualified Ks.Locate.Places.Place as P
+import KS.Locate.Locate
+import qualified KS.Inspection as I
+import KS.Log
+import qualified KS.Locate.Places.Place as P
 
 
 type Match = (I.IdInspection, P.Place)
@@ -27,7 +27,7 @@ type Match = (I.IdInspection, P.Place)
 type MatchInternal = (Bool, Match)
 
 
-match :: [P.Place] -> Ksdl Match
+match :: [P.Place] -> KSDL Match
 match ps = do
    idInsp <- asks getIdInspection
    let mis = map (combine idInsp) ps

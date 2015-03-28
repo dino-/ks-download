@@ -12,11 +12,11 @@ import Data.Text hiding ( map )
 import Test.HUnit
 import Text.Printf ( printf )
 
-import Ks.Inspection
-import Ks.Locate.Config
-import Ks.Locate.Locate
-import Ks.Locate.Opts
-import Ks.Locate.Places.NameWords ( toList )
+import KS.Inspection
+import KS.Locate.Config
+import KS.Locate.Locate
+import KS.Locate.Opts
+import KS.Locate.Places.NameWords ( toList )
 
 
 tests :: Test
@@ -26,7 +26,7 @@ tests = TestList $ map testNameWords testData
 testNameWords :: (Text, [Text]) -> Test
 testNameWords (input, output) = TestCase $ do
    env <- Env <$> loadConfig defaultOptions <*> fakeInspection input
-   actual <- runKsdl env $ toList
+   actual <- runKSDL env $ toList
    let label = printf "name words for \"%s\"" (unpack input)
    assertEqual label (Right output) actual
 

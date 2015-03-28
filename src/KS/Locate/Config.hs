@@ -1,7 +1,7 @@
 -- License: BSD3 (see LICENSE)
 -- Author: Dino Morelli <dino@ui3.info>
 
-module Ks.Locate.Config
+module KS.Locate.Config
    ( Config (..)
    , keyString
    , loadConfig )
@@ -14,7 +14,7 @@ import System.Directory ( doesFileExist )
 import System.FilePath
 import System.Log
 
-import Ks.Locate.Opts
+import KS.Locate.Opts
 
 
 newtype GoogleKey = GoogleKey String

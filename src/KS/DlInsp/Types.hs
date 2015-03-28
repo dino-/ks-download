@@ -1,7 +1,7 @@
 -- License: BSD3 (see LICENSE)
 -- Author: Dino Morelli <dino@ui3.info>
 
-module Ks.DlInsp.Types
+module KS.DlInsp.Types
    ( Options (..)
    , Downloader
    , Dl, runDl

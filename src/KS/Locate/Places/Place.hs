@@ -4,7 +4,7 @@
 {-# LANGUAGE DeriveGeneric, OverloadedStrings #-}
 {-# OPTIONS_GHC -fno-warn-unused-binds #-}
 
-module Ks.Locate.Places.Place
+module KS.Locate.Places.Place
    ( Place (..)
    , coordsToPlaces )
    where
@@ -19,11 +19,11 @@ import Network.HTTP ( urlEncode )
 import Network.HTTP.Conduit ( simpleHttp )
 import Text.Printf ( printf )
 
-import Ks.Locate.Config
-import Ks.Locate.Locate
-import Ks.Locate.Places.Geocoding ( GeoLatLng (..) )
-import Ks.Locate.Places.NameWords ( toList )
-import Ks.Log
+import KS.Locate.Config
+import KS.Locate.Locate
+import KS.Locate.Places.Geocoding ( GeoLatLng (..) )
+import KS.Locate.Places.NameWords ( toList )
+import KS.Log
 
 
 data PlLatLng = PlLatLng
@@ -74,7 +74,7 @@ instance FromJSON Places where
    parseJSON o = fail . show $ o
 
 
-coordsToPlaces :: GeoLatLng -> Ksdl [Place]
+coordsToPlaces :: GeoLatLng -> KSDL [Place]
 coordsToPlaces coords = do
    url <- mkPlacesUrl coords
    liftIO $ noticeM lname $ "Places URL: " ++ url
@@ -89,7 +89,7 @@ coordsToPlaces coords = do
       displayAndReturn parseResult
 
 
-displayAndReturn :: Places -> Ksdl [Place]
+displayAndReturn :: Places -> KSDL [Place]
 displayAndReturn (Places ps) = do
    liftIO $ do
       noticeM lname "Places returned:"
@@ -97,7 +97,7 @@ displayAndReturn (Places ps) = do
    return ps
 
 
-mkPlacesUrl :: GeoLatLng -> Ksdl String
+mkPlacesUrl :: GeoLatLng -> KSDL String
 mkPlacesUrl (GeoLatLng lat' lng') = do
    key <- asks (keyString . googleApiKey . getConfig)
 
