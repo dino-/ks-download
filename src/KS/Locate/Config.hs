@@ -13,6 +13,7 @@ import qualified Data.Text as T
 import System.Directory ( doesFileExist )
 import System.FilePath
 import System.Log
+import TCE.Data.ReadConf ( readConfig )
 
 import KS.Locate.Opts
 
@@ -35,25 +36,12 @@ data Config = Config
 loadConfig :: Options -> IO Config
 loadConfig options = do
    let confPath = (optConfDir options) </> "ksdl.conf"
-   parseResult <- (reads . removeComments) `fmap` readFile confPath
-   conf <- case parseResult of
-      [(c, _)] -> return c
-      _        -> error $ "ERROR parsing config file: " ++ confPath
+   conf <- (either error id . readConfig) `fmap` readFile confPath
 
    -- A Google API key in a file by itself will supercede the one
    -- in the conf file
    maybe (return conf) (\k -> return $ conf { googleApiKey = k })
       =<< loadGoogleKey options
-
-
-{- Auto-derived Read instancing has no idea how to handle Haskell source
-   code commenting. This will strip out very simple -- style comments.
--}
-removeComments :: String -> String
-removeComments = unlines . map removeComment . lines
-   where
-      removeComment =
-         unwords . (takeWhile (not . isPrefixOf "--")) . words
 
 
 -- Google Places API key

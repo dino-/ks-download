@@ -64,6 +64,7 @@ executable           ks-locate
                      , mtl
                      , old-locale
                      , regex-compat
+                     , tce-conf
                      , text
                      , text-format
                      , time
@@ -85,6 +86,7 @@ test-suite           test-Locate
                      , HUnit
                      , mtl
                      , regex-compat
+                     , tce-conf
                      , text
                      , utf8-string
                      , uuid
