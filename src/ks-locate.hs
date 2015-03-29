@@ -17,7 +17,7 @@ import System.IO
 import KS.Inspection
 import KS.Locate.Config
 import KS.Locate.Locate
-import KS.Locate.Database.Inspection
+import KS.Locate.Database.Inspection ( mkDoc, saveDoc )
 import KS.Locate.Opts
 import KS.Locate.Places.Geocoding ( forwardLookup )
 import KS.Locate.Places.Match ( match )
