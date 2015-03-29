@@ -1,10 +1,10 @@
 -- License: BSD3 (see LICENSE)
 -- Author: Dino Morelli <dino@ui3.info>
 
-module KS.DlInsp.Types
+module KS.DLInsp.Types
    ( Options (..)
    , Downloader
-   , Dl, runDl
+   , DL, runDL
 
    -- re-exporting
    , asks, liftIO
@@ -29,7 +29,7 @@ data Options = Options
 type Downloader = Options -> IO ()
 
 
-type Dl a = (ReaderT Options IO) a
+type DL a = (ReaderT Options IO) a
 
-runDl :: Options -> Dl a -> IO a
-runDl env ev = runReaderT ev env
+runDL :: Options -> DL a -> IO a
+runDL env ev = runReaderT ev env

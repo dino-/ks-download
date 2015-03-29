@@ -1,7 +1,7 @@
 -- License: BSD3 (see LICENSE)
 -- Author: Dino Morelli <dino@ui3.info>
 
-module KS.DlInsp.Opts
+module KS.DLInsp.Opts
    ( Options (..)
    , parseOpts, usageText
    )
@@ -18,8 +18,8 @@ import Paths_ks_download ( version )
 import System.Console.GetOpt
 import Text.Regex
 
-import KS.DlInsp.Source.Downloaders
-import KS.DlInsp.Types
+import KS.DLInsp.Source.Downloaders
+import KS.DLInsp.Types
 
 
 defaultOptions :: IO Options

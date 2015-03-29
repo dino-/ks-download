@@ -1,7 +1,7 @@
 -- License: BSD3 (see LICENSE)
 -- Author: Dino Morelli <dino@ui3.info>
 
-module KS.DlInsp.Source.NcWake
+module KS.DLInsp.Source.NCWake
    where
 
 import Data.List ( intercalate, isInfixOf, isPrefixOf )
@@ -13,7 +13,7 @@ import Network.HTTP
 import Text.HTML.TagSoup
 import Text.Printf ( printf )
 
-import KS.DlInsp.Types
+import KS.DLInsp.Types
 import qualified KS.Inspection as I
 
 
@@ -26,7 +26,7 @@ inspectionSrc = "nc_wake"
 
 
 download :: Downloader
-download options = runDl options $ do
+download options = runDL options $ do
    allPageUrls <- getPageUrls
    let pageCount = length allPageUrls
    pageLimit <- asks optPageLimit
@@ -127,7 +127,7 @@ extractViolation tags = (crit, text)
 
 
 -- Get the URLs of all search result pages
-getPageUrls :: Dl [String]
+getPageUrls :: DL [String]
 getPageUrls = do
    post <- mkPost
    tags <- liftIO $ parseTags `fmap` openURL post
@@ -153,7 +153,7 @@ openURL p = getResponseBody =<< simpleHTTP p
 {- These things are for the first form post to get all of the page URLs
 -}
 
-mkPost :: Dl Request_String
+mkPost :: DL Request_String
 mkPost = do
    ps <- searchParams
    return $ postRequestWithBody
@@ -162,7 +162,7 @@ mkPost = do
       $ intercalate "&" ps
 
 
-searchParams :: Dl [String]
+searchParams :: DL [String]
 searchParams = do
    (sy, sm, sd) <- toGregorian `fmap` asks optStartDate
    (ey, em, ed) <- toGregorian `fmap` asks optEndDate
