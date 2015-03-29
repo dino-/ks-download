@@ -9,7 +9,7 @@
 
 - Fill out more of README.md
 - It may be time to put info in changelog.md
-- Look into accessing CouchBase directly from Haskell
+- Look into migrating to MongoDB
 - Is there a different url encoding API than what's in Network.HTTP?
 - Ks.Inspection
    - Should we really be using Data.ByteString.Lazy.Char8 for
