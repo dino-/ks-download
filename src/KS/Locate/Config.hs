@@ -7,7 +7,6 @@ module KS.Locate.Config
    , loadConfig )
    where
 
-import Data.List ( isPrefixOf )
 import qualified Data.Map as Map
 import qualified Data.Text as T
 import System.Directory ( doesFileExist )
