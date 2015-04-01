@@ -115,3 +115,28 @@ executable           ks-dump
                      , utf8-string
                      , uuid
    ghc-options:      -Wall
+
+executable           ks-docdump
+   main-is:          ks-docdump.hs
+   hs-source-dirs:   src
+   build-depends:      aeson
+                     , aeson-pretty
+                     , attoparsec
+                     , base >= 3 && < 5
+                     , bytestring
+                     , containers
+                     , directory
+                     , filepath
+                     , hslogger
+                     , HTTP
+                     , http-conduit
+                     , mtl
+                     , old-locale
+                     , regex-compat
+                     , tce-conf
+                     , text
+                     , text-format
+                     , time
+                     , utf8-string
+                     , uuid
+   ghc-options:      -Wall

@@ -21,7 +21,7 @@ import KS.Locate.Database.Inspection ( mkDoc, saveDoc )
 import KS.Locate.Opts
 import KS.Locate.Places.Geocoding ( forwardLookup )
 import KS.Locate.Places.Match ( match )
-import KS.Locate.Places.Place ( coordsToPlaces )
+import KS.Locate.Places.Places ( coordsToPlaces )
 import KS.Log
 
 

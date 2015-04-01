@@ -2,15 +2,16 @@
 -- Author: Dino Morelli <dino@ui3.info>
 
 {-# LANGUAGE DeriveGeneric, OverloadedStrings #-}
-{-# OPTIONS_GHC -fno-warn-unused-binds #-}
+{-# OPTIONS_GHC -fno-warn-unused-binds -fno-warn-orphans #-}
 
 module KS.Locate.Database.Inspection
-   ( mkDoc, saveDoc )
+   ( Document (..), mkDoc, loadDoc, saveDoc )
    where
 
 import Control.Monad ( when )
 import Data.Aeson
 import Data.Aeson.Encode.Pretty
+import qualified Data.ByteString as BS
 import qualified Data.ByteString.Lazy.Char8 as BL
 import GHC.Generics ( Generic )
 import System.Directory ( removeFile )
@@ -22,6 +23,8 @@ import KS.Locate.Places.Match
 import qualified KS.Locate.Places.Place as P
 
 
+instance FromJSON P.Place
+
 data Document = Document
    { _id :: String
    , doctype :: String
@@ -31,6 +34,7 @@ data Document = Document
    deriving Generic
 
 instance ToJSON Document
+instance FromJSON Document
 
 
 mkDoc :: Match -> Document
@@ -47,3 +51,7 @@ saveDoc options srcPath doc = do
       Nothing -> BL.putStrLn $ encodePretty doc
 
    when (optDelete options) $ removeFile srcPath
+
+
+loadDoc :: FilePath -> IO (Either String Document)
+loadDoc path = eitherDecodeStrict' `fmap` BS.readFile path
