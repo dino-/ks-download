@@ -3,7 +3,7 @@
 
 ## Synopsis
 
-Data downloader and parser for the KitchenSnitch project
+Data downloader and parser for the KitchenSnitch project (Haskell)
 
 
 ## Description

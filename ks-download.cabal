@@ -8,7 +8,7 @@ copyright:           2014-2015 Dino Morelli
 author:              Dino Morelli
 maintainer:          Dino Morelli <dino@ui3.info>
 stability:           experimental
-homepage:            http://foo/bar/baz.html
+homepage:            http://hub.darcs.net/dino/ks-download
 synopsis:            Data downloader and parser for the KitchenSnitch project
 description:         Bar Baz
 category:            Unknown
