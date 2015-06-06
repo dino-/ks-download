@@ -12,9 +12,9 @@ module KS.Log
    )
    where
 
-import Data.Time ( formatTime, getCurrentTime, utcToLocalZonedTime )
+import Data.Time ( defaultTimeLocale, formatTime, getCurrentTime
+   , utcToLocalZonedTime )
 import System.IO ( stdout )
-import System.Locale ( defaultTimeLocale )
 import System.Log.Handler.Simple ( streamHandler )
 import System.Log.Logger
 
