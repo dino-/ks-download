@@ -10,7 +10,7 @@ module KS.Locate.Locate
    where
 
 import Control.Monad.Reader
-import Control.Monad.Error
+import Control.Monad.Except
 
 import KS.Inspection
 import KS.Locate.Config
@@ -21,7 +21,7 @@ data Env = Env
    , getIdInspection :: IdInspection
    }
 
-type KSDL a = ReaderT Env (ErrorT String IO) a
+type KSDL a = ReaderT Env (ExceptT String IO) a
 
 runKSDL :: Env -> KSDL a -> IO (Either String a)
-runKSDL env ev = runErrorT (runReaderT ev env)
+runKSDL env ev = runExceptT (runReaderT ev env)
