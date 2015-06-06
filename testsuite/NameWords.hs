@@ -7,7 +7,6 @@ module NameWords
    ( tests )
    where
 
-import Control.Applicative
 import Data.Text hiding ( map )
 import Test.HUnit
 import Text.Printf ( printf )

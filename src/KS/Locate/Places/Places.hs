@@ -18,7 +18,6 @@ module KS.Locate.Places.Places
    ( coordsToPlaces )
    where
 
-import Control.Applicative
 import Data.Aeson
 import qualified Data.ByteString.Lazy.Char8 as BL
 import qualified Data.List as L

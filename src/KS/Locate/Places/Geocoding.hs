@@ -7,7 +7,6 @@ module KS.Locate.Places.Geocoding
    ( GeoLatLng (..), forwardLookup )
    where
 
-import Control.Applicative
 import Control.Concurrent ( threadDelay )
 import Data.Aeson
 import qualified Data.ByteString.Lazy.Char8 as BL
