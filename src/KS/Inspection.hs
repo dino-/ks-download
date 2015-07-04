@@ -10,11 +10,13 @@ module KS.Inspection
    , parseDate
    , setId
    , saveInspection
+   , loadInspection
    )
    where
 
 import qualified Codec.Binary.UTF8.String as UTF8
-import Data.Aeson ( FromJSON, ToJSON, encode )
+import Data.Aeson ( FromJSON, ToJSON, eitherDecodeStrict', encode )
+import qualified Data.ByteString as BS
 import qualified Data.ByteString.Lazy.Char8 as BL
 import Data.Maybe ( fromJust )
 import Data.Text hiding ( init, map, unlines )
@@ -85,6 +87,10 @@ setId i = IdInspection (toString newId) i
 saveInspection :: FilePath -> IdInspection -> IO ()
 saveInspection dir idInsp = BL.writeFile
    (dir </> ("insp_" ++ _id idInsp) <.> "json") $ encode idInsp
+
+
+loadInspection :: FilePath -> IO (Either String IdInspection)
+loadInspection path = eitherDecodeStrict' `fmap` BS.readFile path
 
 
 formatForDisplay :: IdInspection -> String

@@ -1,8 +1,6 @@
 -- License: BSD3 (see LICENSE)
 -- Author: Dino Morelli <dino@ui3.info>
 
-import Data.Aeson
-import qualified Data.ByteString as BS
 import Data.List ( isPrefixOf )
 import System.Directory ( copyFile, doesFileExist
    , getDirectoryContents, removeFile )
@@ -68,7 +66,7 @@ lookupInspection config options srcPath = do
    r <- runKSDL (Env config nullInspection) $ do
       liftIO $ noticeM lname line
 
-      insp <- loadInspection srcPath
+      insp <- loadInspection' srcPath
       local (\r -> r { getIdInspection = insp }) $ do
          geo <- forwardLookup
          places <- coordsToPlaces geo
@@ -90,9 +88,9 @@ lookupInspection config options srcPath = do
          errorM lname msg
 
 
-loadInspection :: FilePath -> KSDL IdInspection
-loadInspection path = do
-   parseResult <- liftIO $ eitherDecodeStrict' `fmap` BS.readFile path
+loadInspection' :: FilePath -> KSDL IdInspection
+loadInspection' path = do
+   parseResult <- liftIO $ loadInspection path
    either
       (\msg -> throwError $ "ERROR Inspection: " ++ path ++ "\n" ++ msg)
       (\insp -> (liftIO $ noticeM lname $ show insp) >> return insp)

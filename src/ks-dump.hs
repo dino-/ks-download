@@ -5,8 +5,6 @@
 -}
 
 import Control.Monad ( (>=>) )
-import Data.Aeson
-import qualified Data.ByteString as BS
 import Data.List ( isPrefixOf )
 import System.Directory ( doesFileExist
    , getDirectoryContents )
@@ -32,7 +30,7 @@ main = do
    files <- buildFileList srcDirOrFile
 
    -- Look up each inspection with Geocoding and Places
-   mapM_ (loadInspection >=> display) files
+   mapM_ (loadInspection' >=> display) files
 
 
 buildFileList :: FilePath -> IO [FilePath]
@@ -45,9 +43,9 @@ buildFileList srcDirOrFile = do
          `fmap` getDirectoryContents srcDirOrFile  -- All files
 
 
-loadInspection :: FilePath -> IO IdInspection
-loadInspection path = do
-   parseResult <- eitherDecodeStrict' `fmap` BS.readFile path
+loadInspection' :: FilePath -> IO IdInspection
+loadInspection' path = do
+   parseResult <- loadInspection path
    either
       (\msg -> error $ "ERROR Inspection: " ++ path ++ "\n" ++ msg)
       return parseResult
