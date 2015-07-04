@@ -5,12 +5,10 @@
 -}
 
 import Control.Monad ( (>=>) )
---import Data.Aeson
---import qualified Data.ByteString as BS
 import Data.List ( isPrefixOf )
 import System.Directory ( doesFileExist
    , getDirectoryContents )
---import qualified Data.Text as T
+import qualified Data.Text as T
 import System.Environment ( getArgs )
 import System.FilePath
 import System.IO
@@ -18,6 +16,7 @@ import System.IO
    , hSetBuffering, stdout, stderr
    )
 
+import qualified KS.Inspection as I
 import KS.Locate.Database.Inspection ( Document (..), loadDoc )
 
 
@@ -31,8 +30,7 @@ main = do
    -- Paths to all files we'll be processing
    files <- buildFileList srcDirOrFile
 
-   -- Look up each inspection with Geocoding and Places
-   --mapM_ (loadInspection >=> display) files
+   -- Load and display each document
    mapM_ (loadDoc >=> display) files
 
 
@@ -46,29 +44,8 @@ buildFileList srcDirOrFile = do
          `fmap` getDirectoryContents srcDirOrFile  -- All files
 
 
-{-
-loadInspection :: FilePath -> IO IdInspection
-loadInspection path = do
-   parseResult <- eitherDecodeStrict' `fmap` BS.readFile path
-   either
-      (\msg -> error $ "ERROR Inspection: " ++ path ++ "\n" ++ msg)
-      return parseResult
--}
-
-
 display :: Either String Document -> IO ()
 display (Left msg) = print msg
-display (Right doc) = print $ _id doc
-{-
-display :: IdInspection -> IO ()
-display (IdInspection _id' insp) = putStrLn $
-   (show . date $ insp) ++ " | " ++
-   (T.unpack . name $ insp) ++ " | " ++
-   _id'
-
-display :: IdInspection -> IO ()
-display (IdInspection _id' insp) = putStrLn $
-   (T.unpack . name $ insp) ++ " | " ++
-   (T.unpack . addr $ insp) ++ " | " ++
-   _id'
--}
+display (Right doc) = putStrLn
+   $  (_id doc) ++ " | "
+   ++ (T.unpack . I.name . inspection $ doc)
