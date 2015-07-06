@@ -140,3 +140,31 @@ executable           ks-docdump
                      , utf8-string
                      , uuid
    ghc-options:      -Wall
+
+executable           ks-mongo-insert
+   main-is:          ks-mongo-insert.hs
+   hs-source-dirs:   src
+   build-depends:      aeson
+                     , aeson-pretty
+                     , attoparsec
+                     , base >= 3 && < 5
+                     , bson
+                     , bytestring
+                     , containers
+                     , directory
+                     , filepath
+                     , geojson
+                     , hslogger
+                     , HTTP
+                     , http-conduit
+                     , mongoDB
+                     , mtl
+                     , old-locale
+                     , regex-compat
+                     , tce-conf
+                     , text
+                     , text-format
+                     , time
+                     , utf8-string
+                     , uuid
+   ghc-options:      -Wall

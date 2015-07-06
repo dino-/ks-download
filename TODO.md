@@ -1,3 +1,9 @@
+- Organize the new Mongo stuff
+- Going to need another conversion layer between our new Haskell Document and BSON
+- Split the mongo task up:
+   - First, convert all of the documents from couch format to mongo, on disk
+   - Then load all of those and upsert into mongo
+
 - Triangle potential population of Android users
 - Add use case and caching info to the new wiki
    - use cases:
