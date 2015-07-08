@@ -59,25 +59,25 @@ main = do
    -- Paths to all files we'll be processing
    files <- buildFileList srcDirOrFile
 
-   --mapM_ (convertAndInsert pipe) files
-   --getOne pipe
-   --getAll pipe
-   --mapM_ (saveNewFormat outDir) files
-   --mapM_ (loadAndInsert pipe) files
    case command of
+      "getone"  -> withDB getOne
       "convert" -> mapM_ (saveNewFormat outDir) files
-      "insert"  -> do
-         -- Get a connection to Mongo, they call it a 'pipe'
-         pipe <- connect m_host
+      "insert"  -> withDB (\p -> mapM_ (loadAndInsert p) files)
+      _         -> undefined
 
-         -- Authenticate with mongo, show the auth state on stdout
-         (access pipe UnconfirmedWrites m_db $ auth m_user m_pass) >>=
-            \tf -> putStrLn $ "Authenticated with Mongo: " ++ (show tf)
 
-         mapM_ (loadAndInsert pipe) files
+withDB :: (Pipe -> IO ()) -> IO ()
+withDB action = do
+      -- Get a connection to Mongo, they call it a 'pipe'
+      pipe <- connect m_host
 
-         close pipe
-      _ -> undefined
+      -- Authenticate with mongo, show the auth state on stdout
+      (access pipe UnconfirmedWrites m_db $ auth m_user m_pass) >>=
+         \tf -> putStrLn $ "Authenticated with Mongo: " ++ (show tf)
+
+      action pipe
+
+      close pipe
 
 
 getOne :: Pipe -> IO ()
