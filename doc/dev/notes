@@ -17,6 +17,22 @@ Refresher course for the developers, how does the CouchDB solution work?
 - /opt/couchbase/bin/cbdocloader
 
 
+Trying to find all of the legacy data (what did you do?)
+
+on tiddly.honuapps.com
+   ~dino/ks/imported/
+      nc-wake_2014
+         nc-wake_2014/           2999
+         nc-wake_2015-02-09/      157
+         nc-wake_daily/
+            nc-wake_2015-02-10/     8
+            nc-wake_2015-02-11/    15
+            nc-wake_2015-02-12/    17
+         newOne/
+   /var/local/kitchensnitch/nc-wake_daily/
+      [all dirs]                 1352
+
+
 ## 2015-02-13
 
 We are up-to-date with imports to 2015-02-12

@@ -7,13 +7,12 @@
 -}
 
 import Data.Aeson ( encode )
-import qualified Data.Bson as BSON
+--import qualified Data.Bson as BSON
 import qualified Data.ByteString.Lazy.Char8 as BL
 import Data.Geospatial
 import Data.List ( isPrefixOf )
-import Data.Maybe ( fromJust )
+import Data.Time ( defaultTimeLocale, formatTime )
 import Data.Time.Clock.POSIX ( utcTimeToPOSIXSeconds )
-import Data.UUID ( fromString, toASCIIBytes )
 import Database.MongoDB
 import System.Directory ( doesFileExist, getDirectoryContents )
 import qualified Data.Text as T
@@ -24,6 +23,7 @@ import System.IO
    ( BufferMode ( NoBuffering )
    , hSetBuffering, stdout, stderr
    )
+import Text.Printf ( printf )
 
 import KS.Database.Mongo
 --import qualified KS.Inspection as I
@@ -42,7 +42,8 @@ m_host = host mongoServerIP
 
 m_db, m_collection, m_user, m_pass :: T.Text
 m_db           = "ks"
-m_collection   = "insp_indiv"
+--m_collection   = "insp_indiv"  -- with UUID
+m_collection   = "insp_objid"    -- without UUID
 m_user         = "mongoks"
 m_pass         = "vaiDae8z"
 
@@ -52,16 +53,16 @@ main = do
    -- No buffering, it messes with the order of output
    mapM_ (flip hSetBuffering NoBuffering) [ stdout, stderr ]
 
-   --(srcDirOrFile : _) <- getArgs
-   --(outDir : srcDirOrFile : _) <- getArgs
-   (command : srcDirOrFile : outDir : _) <- getArgs
+   (command : srcDirOrFile : rest') <- getArgs
 
    -- Paths to all files we'll be processing
    files <- buildFileList srcDirOrFile
 
    case command of
-      "getone"  -> withDB getOne
-      "convert" -> mapM_ (saveNewFormat outDir) files
+      --"getone"  -> withDB getOne
+      "convert" -> do
+         let (outDir : _) = rest'
+         mapM_ (saveNewFormat outDir) files
       "insert"  -> withDB (\p -> mapM_ (loadAndInsert p) files)
       _         -> undefined
 
@@ -80,13 +81,16 @@ withDB action = do
       close pipe
 
 
+{- FIXME Broken by abandonment of UUID
 getOne :: Pipe -> IO ()
 getOne pipe = do
+   return ()
    d <- access pipe UnconfirmedWrites m_db $ do
       let muuid = UUID . toASCIIBytes . fromJust . fromString
             $ "ec53d9d7-c8e8-553b-9328-c10d6908a43b"
       rest =<< find (select ["_id" =: muuid] m_collection)
    print d
+-}
 
 
 getAll :: Pipe -> IO ()
@@ -105,9 +109,21 @@ saveNewFormat destDir inFile = do
       Right doc   -> do
          let mdoc = toDocument doc
          createDirectoryIfMissing True destDir
-         let outPath = destDir </> ("ks_" ++ _id mdoc) <.> "json"
-         BL.writeFile outPath $ encode mdoc
-         return $ "Wrote file " ++ outPath
+         let outPath = destDir </> (mkFileName mdoc) <.> "json"
+         exists <- doesFileExist outPath
+         if exists
+            then return $ printf "FILE EXISTS: %s <- %s" outPath inFile
+            else do
+               BL.writeFile outPath $ encode mdoc
+               return $ printf "Wrote file: %s -> %s" inFile outPath
+
+
+--mkFileName :: Document -> String
+mkFileName doc = printf "ks_%s_%s" datePart placeID
+   where
+      datePart = (formatTime defaultTimeLocale "%Y-%m-%d")
+         . date . inspection $ doc
+      placeID = T.unpack . place_id . place $ doc
 
 
 --inspToBSON :: Document -> BSON.Document
@@ -117,9 +133,7 @@ inspToBSON mdoc = insertionDoc
       pl = place mdoc
       (GeoPoint coords) = location pl
       insertionDoc =
-         [ "_id" =: UUID (toASCIIBytes . fromJust
-            . fromString . _id $ mdoc)
-         , "doctype" =: doctype mdoc
+         [ "doctype" =: doctype mdoc
          , "inspection" =:
             [ "inspection_source" =: inspection_source insp
             , "name" =: iname insp
@@ -154,15 +168,6 @@ loadAndInsert pipe path = do
          let insertionDoc = inspToBSON mdoc
          save m_collection insertionDoc
          show `fmap` runCommand [ "getLastError" =: (1::Int) ]
-   {-
-   let output = either id (show . toDocument) edoc
-   print output
-   -}
-
-{- Possibly need some functions:
-      uuidToBUUID :: UUID.UUID -> BSON.UUID
-      buuidToUUID :: BSON.UUID -> UUID.UUID
--}
 
 
 buildFileList :: FilePath -> IO [FilePath]

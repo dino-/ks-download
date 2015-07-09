@@ -8,33 +8,27 @@ module KS.Database.Mongo
    --( Document (..), mkDoc, loadDoc, saveDoc )
    where
 
-import qualified Codec.Binary.UTF8.String as UTF8
 --import Control.Monad ( when )
 import Data.Aeson
-import Data.Aeson.Encode.Pretty
+--import Data.Aeson.Encode.Pretty
 import qualified Data.ByteString as BS
 --import qualified Data.ByteString.Lazy.Char8 as BL
 import Data.Geospatial
-import Data.Maybe ( fromJust )
 import Data.Text
 import Data.Time
-import Data.UUID ( UUID, fromString, toString )
-import Data.UUID.V5 ( generateNamed )
 import GHC.Generics ( Generic )
 --import System.Directory ( removeFile )
 --import System.FilePath
-import Text.Printf ( printf )
 
 import qualified KS.Inspection as I
 import qualified KS.Locate.Database.Inspection as D
-import KS.Locate.Opts
+--import KS.Locate.Opts
 --import KS.Locate.Places.Match
 import qualified KS.Locate.Places.Place as P
 
 
 data Document = Document
-   { _id :: String   -- New UUID made from place_id
-   , doctype :: String
+   { doctype :: String
    , inspection :: Inspection
    , place :: Place
    }
@@ -46,7 +40,6 @@ instance FromJSON Document
 
 toDocument :: D.Document -> Document
 toDocument (D.Document _ ty din dpl) = Document
-   (newUUID (P.place_id dpl) (date newInsp))
    ty
    newInsp
    (toPlace dpl)
@@ -96,27 +89,6 @@ instance FromJSON Place
 toPlace :: P.Place -> Place
 toPlace (P.Place n v (P.PlLatLng lat lng) ts p_id) = Place
    n v (GeoPoint [lng, lat]) ts p_id
-
-
--- This was generated from "honuapps.com" with the nil namespace
--- FIXME This should be factored somewhere common
-nsUUID :: UUID
-nsUUID = fromJust . fromString $
-   "e95d936e-3845-582e-a0c5-3f53b3949b97"
-
-
--- FIXME This should be factored somewhere common
---    genUUID :: Text -> UUID
--- or
---    genUUID :: String -> UUID
-{-
-newUUID :: Text -> UTCTime -> UUID
-newUUID placeId ut = generateNamed nsUUID . UTF8.encode
-   $ printf "%s|%s" (unpack placeId) (formatTime defaultTimeLocale "%s" ut)
--}
-newUUID :: Text -> UTCTime -> String
-newUUID placeId ut = toString . generateNamed nsUUID . UTF8.encode
-   $ printf "%s|%s" (unpack placeId) (formatTime defaultTimeLocale "%s" ut)
 
 
 {-
