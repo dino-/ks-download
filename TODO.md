@@ -1,4 +1,5 @@
-- Figure out where the missing data is, import everything again to be clear on it
+- Change mongo password (actually everything), it's insecure now
+- [done] Figure out where the missing data is, import everything again to be clear on it
 - Organize the new Mongo stuff
 - Going to need another conversion layer between our new Haskell Document and BSON
 - Split the mongo task up:

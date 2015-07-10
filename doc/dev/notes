@@ -1,6 +1,10 @@
-## 2015-07-04
+## New redesign of the codebase
 
-Working on changing over to MongoDB
+- inspection download
+   - This will still need UUIDs because we have no good way to ID these prior to Google Places match
+
+
+## Importing the data into Mongo
 
 - The example Mongo introduction stuff is suggesting that we may want to store one document for an entire place, and have all of the inspections in that document.
    - This has various implications but the biggest one is that the generated _id will not work any longer.
@@ -22,15 +26,30 @@ Trying to find all of the legacy data (what did you do?)
 on tiddly.honuapps.com
    ~dino/ks/imported/
       nc-wake_2014
-         nc-wake_2014/           2999
-         nc-wake_2015-02-09/      157
+         nc-wake_2014/           3000     2014-01-24 - 2015-01-23
+         nc-wake_2015-02-09/      157     2015-02-24 - 2015-02-09
          nc-wake_daily/
             nc-wake_2015-02-10/     8
             nc-wake_2015-02-11/    15
             nc-wake_2015-02-12/    17
          newOne/
    /var/local/kitchensnitch/nc-wake_daily/
-      [all dirs]                 1352
+      [all dirs]                 1352     2015-02-13 - present
+
+Everything from imported/ above in one dir. This represents all
+data before we automated daily downloading
+
+   ~dino/ks/nc-wake_2014-01-24_2015-02-12/   3179
+
+New mongodb server is up-to-date through 2015-07-09. Not yet automated for dailies after that date.
+
+For purposes of populating a new db, everything we were interested in up to 2015-02-12 is in this file:
+
+    data/nc-wake_2014-01-24_2015-02-12.tgz
+
+This means no longer mucking around with
+
+    data/nc-wake_2014, data/nc-wake_2014_q1..., data/nc-wake_2015-02-20, etc.
 
 
 ## 2015-02-13
