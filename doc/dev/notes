@@ -1,7 +1,33 @@
 ## New redesign of the codebase
 
-- inspection download
-   - This will still need UUIDs because we have no good way to ID these prior to Google Places match
+- ks-library
+   - New version of KS.Inspection with changes detailed below
+      - No longer need the IdInspection type at all
+   - New version of KS.Locate.Places.Place with changes from KS.Database.Mongo
+- ks-download
+   - raw inspection download (ks-dlinsp)
+      - Figure out how to eliminate UUIDs from this as well
+      - What happens:
+         - main figures out which Downloader to use (based on args)
+         - Downloader scrapes the web pages
+         - Constructs a list of KS.Inspection data and calls saveInspection for each
+   - Google Places location (ks-locate)
+   - inspection insertion into Mongo (ks-mongo-insert)
+   - one-off tool for converting KS.Inspection-based json files into modern ones
+      - No UUID inside
+      - Filenames change (no UUID)
+      - date :: UTCTime
+- ks-server
+   - insert on-disk documents (Google Places matched above) into MongoDB
+      - What happens:
+         - Iterate over a set of ks...json documents
+         - Read them into ?? data structures
+         - Fashion BSON from this
+         - `save` those into a MongoDB collection
+      - KS.Database.Mongo contains code from ks-mongo-insert for
+        de/serializating our new Document with BSON. Also saving
+        and loading.
+      - This project will have its own conf file separate from .ksdl or whatever it's called
 
 
 ## Importing the data into Mongo
