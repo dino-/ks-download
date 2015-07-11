@@ -4,7 +4,7 @@
 {-# LANGUAGE DeriveGeneric, OverloadedStrings #-}
 {-# OPTIONS_GHC -fno-warn-unused-binds -fno-warn-orphans #-}
 
-module KS.Locate.Database.Inspection
+module KS.Data.Document
    ( Document (..), mkDoc, loadDoc, saveDoc )
    where
 
@@ -20,10 +20,10 @@ import System.Directory ( removeFile )
 import System.FilePath
 import Text.Printf
 
-import qualified KS.Inspection as I
+import qualified KS.Data.Inspection as I
+import qualified KS.Data.Place as P
 import KS.Locate.Opts
 import KS.Locate.Places.Match
-import qualified KS.Locate.Places.Place as P
 
 
 data Document = Document

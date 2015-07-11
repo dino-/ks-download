@@ -17,9 +17,9 @@ import qualified Data.Text.Format as TF
 import Prelude hiding ( takeWhile )
 
 import KS.Locate.Locate
-import qualified KS.Inspection as I
+import qualified KS.Data.Inspection as I
+import qualified KS.Data.Place as P
 import KS.Log
-import qualified KS.Locate.Places.Place as P
 
 
 type Match = (I.Inspection, P.Place)

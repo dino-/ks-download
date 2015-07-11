@@ -12,7 +12,7 @@ module KS.Locate.Locate
 import Control.Monad.Reader
 import Control.Monad.Except
 
-import KS.Inspection
+import KS.Data.Inspection
 import KS.Locate.Config
 
 

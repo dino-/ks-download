@@ -3,7 +3,7 @@
 
 {-# LANGUAGE DeriveGeneric, OverloadedStrings #-}
 
-module KS.Inspection
+module KS.Data.Inspection
    ( Inspection (..)
    , nullInspection
    , parseDate

@@ -15,7 +15,7 @@ import Network.HTTP ( urlEncode )
 import Network.HTTP.Conduit ( simpleHttp )
 import Text.Printf ( printf )
 
-import KS.Inspection
+import KS.Data.Inspection
 import KS.Locate.Locate
 import KS.Locate.Config
 import KS.Log

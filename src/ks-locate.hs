@@ -12,10 +12,10 @@ import System.IO
    , hSetBuffering, stdout, stderr
    )
 
-import KS.Inspection
+import KS.Data.Document ( mkDoc, saveDoc )
+import KS.Data.Inspection
 import KS.Locate.Config
 import KS.Locate.Locate
-import KS.Locate.Database.Inspection ( mkDoc, saveDoc )
 import KS.Locate.Opts
 import KS.Locate.Places.Geocoding ( forwardLookup )
 import KS.Locate.Places.Match ( match )

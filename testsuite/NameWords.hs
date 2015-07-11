@@ -11,7 +11,7 @@ import Data.Text hiding ( map )
 import Test.HUnit
 import Text.Printf ( printf )
 
-import KS.Inspection
+import KS.Data.Inspection
 import KS.Locate.Config
 import KS.Locate.Locate
 import KS.Locate.Opts

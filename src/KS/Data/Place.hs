@@ -3,7 +3,7 @@
 
 {-# LANGUAGE DeriveGeneric #-}
 
-module KS.Locate.Places.Place
+module KS.Data.Place
    ( PlLatLng (..), Place (..) )
    where
 

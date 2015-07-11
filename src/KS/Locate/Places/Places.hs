@@ -27,11 +27,11 @@ import Network.HTTP ( urlEncode )
 import Network.HTTP.Conduit ( simpleHttp )
 import Text.Printf ( printf )
 
+import KS.Data.Place
 import KS.Locate.Config
 import KS.Locate.Locate
 import KS.Locate.Places.Geocoding ( GeoLatLng (..) )
 import KS.Locate.Places.NameWords ( toList )
-import KS.Locate.Places.Place
 import KS.Log
 
 

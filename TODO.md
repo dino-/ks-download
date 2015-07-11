@@ -1,5 +1,7 @@
 - Do something with that scrubName business
 - Can we factor out the formatTime stuff we're doing at least twice in this code? Make it part of the ks-library
+- Decouple KS.Data.Document from Locate.Options!
+- Need some real logging in ks-dbinsert
 - Change mongo password (actually everything), it's insecure now
 - [done] Figure out where the missing data is, import everything again to be clear on it
 - Organize the new Mongo stuff

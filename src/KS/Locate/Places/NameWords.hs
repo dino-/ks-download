@@ -13,7 +13,7 @@ import qualified Data.Map as Map
 import Data.Text
 import Prelude hiding ( filter, map )
 
-import KS.Inspection
+import KS.Data.Inspection
 import KS.Locate.Config
 import KS.Locate.Locate
 

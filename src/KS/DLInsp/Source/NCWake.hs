@@ -14,7 +14,7 @@ import Text.HTML.TagSoup
 import Text.Printf ( printf )
 
 import KS.DLInsp.Types
-import qualified KS.Inspection as I
+import qualified KS.Data.Inspection as I
 
 
 urlPrefix :: String
