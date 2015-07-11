@@ -3,32 +3,26 @@
 
 {-# LANGUAGE OverloadedStrings #-}
 
-{- This is a development tool for inserting CouchBase data into MongoDB
+{- This is for inserting inspections into MongoDB
 -}
 
-import Data.Aeson ( encode )
---import qualified Data.Bson as BSON
-import qualified Data.ByteString.Lazy.Char8 as BL
-import Data.Geospatial
+import Control.Monad ( (>=>) )
+import Data.Geospatial ( GeoPoint (..) )
 import Data.List ( isPrefixOf )
-import Data.Time ( defaultTimeLocale, formatTime )
 import Data.Time.Clock.POSIX ( utcTimeToPOSIXSeconds )
 import Database.MongoDB
 import System.Directory ( doesFileExist, getDirectoryContents )
 import qualified Data.Text as T
-import System.Directory ( createDirectoryIfMissing )
 import System.Environment ( getArgs )
 import System.FilePath
 import System.IO
    ( BufferMode ( NoBuffering )
    , hSetBuffering, stdout, stderr
    )
-import Text.Printf ( printf )
 
---import KS.Database.Mongo  -- FIXME This module is leaving
---import qualified KS.Inspection as I
-import qualified KS.Locate.Database.Inspection as D
---import KS.Locate.Database.Inspection ( Document (..), loadDoc )
+import qualified KS.Data.Document as D
+import qualified KS.Data.Inspection as I
+import qualified KS.Data.Place as P
 
 
 {- Some of this goes into config
@@ -43,7 +37,8 @@ m_host = host mongoServerIP
 m_db, m_collection, m_user, m_pass :: T.Text
 m_db           = "ks"
 --m_collection   = "insp_indiv"  -- with UUID
-m_collection   = "insp_objid"    -- without UUID
+--m_collection   = "insp_objid"  -- without UUID
+m_collection   = "insp_test"  -- development
 m_user         = "mongoks"
 m_pass         = "vaiDae8z"
 
@@ -66,6 +61,7 @@ main = do
          let (outDir : _) = rest'
          mapM_ (saveNewFormat outDir) files
       -}
+      "display" -> mapM_ (D.loadDoc >=> print) files
       "insert"  -> withDB (\p -> mapM_ (loadAndInsert p) files)
       _         -> undefined
 
@@ -103,68 +99,43 @@ getAll pipe = do
    mapM_ print is
 
 
--- FIXME Wait, use KS.Database.Mongo.saveDoc!
-saveNewFormat :: FilePath -> FilePath -> IO ()
-saveNewFormat destDir inFile = do
-   edoc <- D.loadDoc inFile
-   putStrLn =<< case edoc of
-      Left errMsg -> return errMsg
-      Right doc   -> do
-         let mdoc = toDocument doc
-         createDirectoryIfMissing True destDir
-         let outPath = destDir </> (mkFileName mdoc) <.> "json"
-         exists <- doesFileExist outPath
-         if exists
-            then return $ printf "FILE EXISTS: %s <- %s" outPath inFile
-            else do
-               BL.writeFile outPath $ encode mdoc
-               return $ printf "Wrote file: %s -> %s" inFile outPath
-
-
---mkFileName :: Document -> String
-mkFileName doc = printf "ks_%s_%s" datePart placeID
+-- This is our KS.Data.Document -> Data.BSON.Document
+inspToBSON :: D.Document -> Document
+inspToBSON doc = insertionDoc
    where
-      datePart = (formatTime defaultTimeLocale "%Y-%m-%d")
-         . date . inspection $ doc
-      placeID = T.unpack . place_id . place $ doc
-
-
---inspToBSON :: Document -> BSON.Document
-inspToBSON mdoc = insertionDoc
-   where
-      insp = inspection mdoc
-      pl = place mdoc
-      (GeoPoint coords) = location pl
+      insp = D.inspection doc
+      pl = D.place doc
+      (GeoPoint coords) = P.location pl
       insertionDoc =
-         [ "doctype" =: doctype mdoc
+         [ "doctype" =: D.doctype doc
          , "inspection" =:
-            [ "inspection_source" =: inspection_source insp
-            , "name" =: iname insp
-            , "addr" =: addr insp
-            , "date" =: ((round . utcTimeToPOSIXSeconds . date
+            [ "inspection_source" =: I.inspection_source insp
+            , "name" =: I.name insp
+            , "addr" =: I.addr insp
+            , "date" =: ((round . utcTimeToPOSIXSeconds . I.date
                $ insp) :: Integer)
-            , "score" =: score insp
-            , "violations" =: violations insp
-            , "crit_violations" =: crit_violations insp
-            , "reinspection" =: reinspection insp
-            , "detail" =: detail insp
+            , "score" =: I.score insp
+            , "violations" =: I.violations insp
+            , "crit_violations" =: I.crit_violations insp
+            , "reinspection" =: I.reinspection insp
+            , "detail" =: I.detail insp
             ]
          , "place" =:
-            [ "name" =: pname pl
-            , "vicinity" =: vicinity pl
+            [ "name" =: P.name pl
+            , "vicinity" =: P.vicinity pl
             , "location" =:
                [ "type" =: ("Point" :: T.Text)
                , "coordinates" =: coords
                ]
-            , "types" =: types pl
-            , "place_id" =: place_id pl
+            , "types" =: P.types pl
+            , "place_id" =: P.place_id pl
             ]
          ]
 
 
 loadAndInsert :: Pipe -> FilePath -> IO ()
 loadAndInsert pipe path = do
-   edoc <- loadDoc path
+   edoc <- D.loadDoc path
    putStrLn =<< case edoc of
       Left errMsg -> return errMsg
       Right mdoc   -> access pipe UnconfirmedWrites m_db $ do
@@ -181,12 +152,3 @@ buildFileList srcDirOrFile = do
          ( map (srcDirOrFile </>)                  -- ..relative paths
          . filter (not . isPrefixOf ".") )         -- ..minus dotfiles
          `fmap` getDirectoryContents srcDirOrFile  -- All files
-
-
-{-
-display :: Either String Document -> IO ()
-display (Left msg) = print msg
-display (Right doc) = putStrLn
-   $  (_id doc) ++ " | "
-   ++ (T.unpack . I.name . inspection $ doc)
--}

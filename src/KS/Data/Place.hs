@@ -4,28 +4,19 @@
 {-# LANGUAGE DeriveGeneric #-}
 
 module KS.Data.Place
-   ( PlLatLng (..), Place (..) )
+   ( Place (..) )
    where
 
 import Data.Aeson
+import Data.Geospatial ( GeoPoint (..) )
 import Data.Text
 import GHC.Generics ( Generic )
-
-
-data PlLatLng = PlLatLng
-   { lat :: Double
-   , lng :: Double
-   }
-   deriving (Generic, Show)
-
-instance FromJSON PlLatLng
-instance ToJSON PlLatLng
 
 
 data Place = Place
    { name :: Text
    , vicinity :: Text
-   , location :: PlLatLng
+   , location :: GeoPoint
    , types :: [String]
    , place_id :: Text
    }

@@ -31,7 +31,7 @@ data Document = Document
    , inspection :: I.Inspection
    , place :: P.Place
    }
-   deriving Generic
+   deriving (Generic, Show)
 
 instance ToJSON Document
 instance FromJSON Document

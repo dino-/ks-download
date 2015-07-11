@@ -57,6 +57,7 @@ executable           ks-locate
                      , containers
                      , directory
                      , filepath
+                     , geojson
                      , hslogger
                      , HTTP
                      , http-conduit
@@ -90,32 +91,32 @@ test-suite           test-Locate
                      , utf8-string
    ghc-options:      -Wall
 
---executable           ks-dbinsert
---   main-is:          ks-dbinsert.hs
---   hs-source-dirs:   src
---   build-depends:      aeson
---                     , aeson-pretty
---                     , attoparsec
---                     , base >= 3 && < 5
---                     , bson
---                     , bytestring
---                     , containers
---                     , directory
---                     , filepath
---                     , geojson
---                     , hslogger
---                     , HTTP
---                     , http-conduit
---                     , mongoDB
---                     , mtl
---                     , old-locale
---                     , regex-compat
---                     , tce-conf
---                     , text
---                     , text-format
---                     , time
---                     , utf8-string
---   ghc-options:      -Wall
+executable           ks-dbinsert
+   main-is:          ks-dbinsert.hs
+   hs-source-dirs:   src
+   build-depends:      aeson
+                     , aeson-pretty
+                     , attoparsec
+                     , base >= 3 && < 5
+                     , bson
+                     , bytestring
+                     , containers
+                     , directory
+                     , filepath
+                     , geojson
+                     , hslogger
+                     , HTTP
+                     , http-conduit
+                     , mongoDB
+                     , mtl
+                     , old-locale
+                     , regex-compat
+                     , tce-conf
+                     , text
+                     , text-format
+                     , time
+                     , utf8-string
+   ghc-options:      -Wall
 
 --executable           ks-dump
 --   main-is:          ks-dump.hs
