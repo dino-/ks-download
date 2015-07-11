@@ -31,4 +31,5 @@ data Place = Place
    }
    deriving (Generic, Show)
 
+instance FromJSON Place
 instance ToJSON Place

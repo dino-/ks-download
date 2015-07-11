@@ -25,7 +25,7 @@ import System.IO
    )
 import Text.Printf ( printf )
 
-import KS.Database.Mongo
+--import KS.Database.Mongo  -- FIXME This module is leaving
 --import qualified KS.Inspection as I
 import qualified KS.Locate.Database.Inspection as D
 --import KS.Locate.Database.Inspection ( Document (..), loadDoc )
@@ -60,9 +60,12 @@ main = do
 
    case command of
       --"getone"  -> withDB getOne
+      --"convertname" -> -- Just a name change using saveDoc
+      {-
       "convert" -> do
          let (outDir : _) = rest'
          mapM_ (saveNewFormat outDir) files
+      -}
       "insert"  -> withDB (\p -> mapM_ (loadAndInsert p) files)
       _         -> undefined
 

@@ -7,11 +7,11 @@
 {-| This module is used for parsing return data from the Google
     Places API results.
 
-    To achieve that goal, it contains a custom JSON instance for
-    the Place data type that's not used anywhere else. The reason
-    for this custom parsing is that the Places API returns a lot of
-    data we have no interest in. The custom instancing allows us
-    to discard this unused information.
+    To achieve that goal, it contains a custom datatype and JSON
+    instance, RawPlace, that's not used anywhere else. The reason
+    for this custom parsing is that the Places API returns a lot
+    of data we have no interest in. The custom instancing allows
+    us to discard this unused information.
 -}
 
 module KS.Locate.Places.Places
@@ -22,6 +22,7 @@ import Data.Aeson
 import qualified Data.ByteString.Lazy.Char8 as BL
 import qualified Data.List as L
 import Data.Text
+import GHC.Generics ( Generic )
 import Network.HTTP ( urlEncode )
 import Network.HTTP.Conduit ( simpleHttp )
 import Text.Printf ( printf )
@@ -34,10 +35,19 @@ import KS.Locate.Places.Place
 import KS.Log
 
 
-instance FromJSON Place where
+data RawPlace = RawPlace
+   { name :: Text
+   , vicinity :: Text
+   , location :: PlLatLng
+   , types :: [String]
+   , place_id :: Text
+   }
+   deriving Generic
+
+instance FromJSON RawPlace where
    parseJSON (Object o) = do
       l <- (o .: "geometry") >>= (.: "location")
-      Place
+      RawPlace
          <$> o .: "name"
          <*> o .: "vicinity"
          <*> (PlLatLng <$> (l .: "lat") <*> (l .: "lng"))
@@ -46,8 +56,7 @@ instance FromJSON Place where
    parseJSON o = fail . show $ o
 
 
-newtype Places = Places [Place]
-   deriving Show
+newtype Places = Places [RawPlace]
 
 instance FromJSON Places where
    parseJSON (Object v) = do
@@ -76,8 +85,13 @@ coordsToPlaces coords = do
       displayAndReturn parseResult
 
 
+convert :: RawPlace -> Place
+convert (RawPlace n v l t pid) = Place n v l t pid
+
+
 displayAndReturn :: Places -> KSDL [Place]
-displayAndReturn (Places ps) = do
+displayAndReturn (Places rps) = do
+   let ps = L.map convert rps
    liftIO $ do
       noticeM lname "Places returned:"
       mapM_ (noticeM lname . show) ps

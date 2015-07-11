@@ -26,8 +26,6 @@ import KS.Locate.Places.Match
 import qualified KS.Locate.Places.Place as P
 
 
-instance FromJSON P.Place
-
 data Document = Document
    { doctype :: String
    , inspection :: I.Inspection
@@ -44,6 +42,9 @@ mkDoc (inspection', place') =
    Document "inspection" inspection' place'
 
 
+-- FIXME Need this to watch for file existance
+-- Probably means putting it in ExceptT monad somehow
+-- Or perhaps simply like loadDoc below
 saveDoc :: Options -> FilePath -> Document -> IO ()
 saveDoc options srcPath doc = do
    case (optSuccessDir options) of

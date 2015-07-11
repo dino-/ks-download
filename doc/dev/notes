@@ -29,6 +29,27 @@
         and loading.
       - This project will have its own conf file separate from .ksdl or whatever it's called
 
+      src/
+         KS/
+            Data/
+               Document.hs    <- KS.Locate.Database.Inspection
+               Inspection.hs  <- KS.Inspection
+               Place.hs       <- KS.Locate.Places.Place
+
+Modules that model data
+
++ KS.Inspection                  Models the raw inspection before Places matching
+   Just about everything needs this data type
++ KS.Locate.Database.Inspection  Models the data for the nosql *SON document (with save/load)
+   Uses KS.Inspection, KS.Locate.Places.Match, KS.Locate.Places.Place
+   Anything that needs to read the ks_.json documents in needs this
+   This needs a name change. Maybe `DBDocument` or just `Document`
+   BTW, this has the special FromJSON instancing for Place! Disambiguates it from Places below
+- KS.Locate.Places.Geocoding     Models GeoLatLng and interfaces to Google Geocoding API
++ KS.Locate.Places.Place         Models Google Places data
+- KS.Locate.Places.Places        Interface and custom parsing of Google Places data
+   Uses KS.Locate.Places.Place
+
 
 ## Importing the data into Mongo
 
