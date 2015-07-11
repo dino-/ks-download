@@ -44,7 +44,6 @@ executable           ks-dlinsp
                      , time
                      , tz
                      , utf8-string
-                     , uuid
    ghc-options:      -Wall
 
 executable           ks-locate
@@ -69,7 +68,6 @@ executable           ks-locate
                      , text-format
                      , time
                      , utf8-string
-                     , uuid
    ghc-options:      -Wall
 
 test-suite           test-Locate
@@ -88,37 +86,36 @@ test-suite           test-Locate
                      , regex-compat
                      , tce-conf
                      , text
-                     , utf8-string
-                     , uuid
-   ghc-options:      -Wall
-
-executable           ks-dbinsert
-   main-is:          ks-dbinsert.hs
-   hs-source-dirs:   src
-   build-depends:      aeson
-                     , aeson-pretty
-                     , attoparsec
-                     , base >= 3 && < 5
-                     , bson
-                     , bytestring
-                     , containers
-                     , directory
-                     , filepath
-                     , geojson
-                     , hslogger
-                     , HTTP
-                     , http-conduit
-                     , mongoDB
-                     , mtl
-                     , old-locale
-                     , regex-compat
-                     , tce-conf
-                     , text
-                     , text-format
                      , time
                      , utf8-string
-                     , uuid
    ghc-options:      -Wall
+
+--executable           ks-dbinsert
+--   main-is:          ks-dbinsert.hs
+--   hs-source-dirs:   src
+--   build-depends:      aeson
+--                     , aeson-pretty
+--                     , attoparsec
+--                     , base >= 3 && < 5
+--                     , bson
+--                     , bytestring
+--                     , containers
+--                     , directory
+--                     , filepath
+--                     , geojson
+--                     , hslogger
+--                     , HTTP
+--                     , http-conduit
+--                     , mongoDB
+--                     , mtl
+--                     , old-locale
+--                     , regex-compat
+--                     , tce-conf
+--                     , text
+--                     , text-format
+--                     , time
+--                     , utf8-string
+--   ghc-options:      -Wall
 
 --executable           ks-dump
 --   main-is:          ks-dump.hs
@@ -141,7 +138,6 @@ executable           ks-dbinsert
 --                     , text-format
 --                     , time
 --                     , utf8-string
---                     , uuid
 --   ghc-options:      -Wall
 
 --executable           ks-docdump
@@ -166,5 +162,4 @@ executable           ks-dbinsert
 --                     , text-format
 --                     , time
 --                     , utf8-string
---                     , uuid
 --   ghc-options:      -Wall

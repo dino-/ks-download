@@ -67,7 +67,7 @@ lookupInspection config options srcPath = do
       liftIO $ noticeM lname line
 
       insp <- loadInspection' srcPath
-      local (\r -> r { getIdInspection = insp }) $ do
+      local (\r -> r { getInspection = insp }) $ do
          geo <- forwardLookup
          places <- coordsToPlaces geo
          match places
@@ -88,7 +88,7 @@ lookupInspection config options srcPath = do
          errorM lname msg
 
 
-loadInspection' :: FilePath -> KSDL IdInspection
+loadInspection' :: FilePath -> KSDL Inspection
 loadInspection' path = do
    parseResult <- liftIO $ loadInspection path
    either

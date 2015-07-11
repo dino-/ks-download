@@ -4,7 +4,6 @@
 import System.Exit
 import Test.HUnit hiding ( counts )
 
-import qualified InspectionUUID
 import qualified NameWords
 
 
@@ -25,6 +24,5 @@ testsPassed (Counts _ _ e f) = (e == 0) && (f == 0)
 
 tests :: Test
 tests = TestList
-   [ InspectionUUID.tests
-   , NameWords.tests
+   [ NameWords.tests
    ]

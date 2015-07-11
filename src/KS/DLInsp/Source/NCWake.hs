@@ -41,15 +41,14 @@ download options = runDL options $ do
 
 
 -- Get all (4) facilities from a page at the supplied URL
-getFacilities :: String -> IO [I.IdInspection]
+getFacilities :: String -> IO [I.Inspection]
 getFacilities url = do
    printf "Retrieving %s\n" url
 
    tags <- parseTags `fmap` (openURL . getRequest $ urlPrefix ++ url)
 
    let itags = isolateInspTags tags
-   let insps = map extractInsp itags
-   return $ map I.setId insps
+   return $ map extractInsp itags
 
 
 -- Extract the block of tags containing each separate facility

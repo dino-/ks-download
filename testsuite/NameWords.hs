@@ -24,8 +24,9 @@ tests = TestList $ map testNameWords testData
 
 testNameWords :: (Text, [Text]) -> Test
 testNameWords (input, output) = TestCase $ do
-   env <- Env <$> loadConfig defaultOptions <*> fakeInspection input
-   actual <- runKSDL env $ toList
+   conf <- loadConfig defaultOptions
+   let insp = fakeInspection input
+   actual <- runKSDL (Env conf insp) toList
    let label = printf "name words for \"%s\"" (unpack input)
    assertEqual label (Right output) actual
 
@@ -49,7 +50,5 @@ testData =
    ]
 
 
-fakeInspection :: Text -> IO IdInspection
-fakeInspection name' = do
-   let (IdInspection _ i) = nullInspection
-   return $ IdInspection "" $ i { name = name' }
+fakeInspection :: Text -> Inspection
+fakeInspection name' = nullInspection { name = name' }

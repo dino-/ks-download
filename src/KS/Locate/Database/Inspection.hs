@@ -13,9 +13,12 @@ import Data.Aeson
 import Data.Aeson.Encode.Pretty
 import qualified Data.ByteString as BS
 import qualified Data.ByteString.Lazy.Char8 as BL
+import qualified Data.Text as T
+import Data.Time ( defaultTimeLocale, formatTime )
 import GHC.Generics ( Generic )
 import System.Directory ( removeFile )
 import System.FilePath
+import Text.Printf
 
 import qualified KS.Inspection as I
 import KS.Locate.Opts
@@ -26,8 +29,7 @@ import qualified KS.Locate.Places.Place as P
 instance FromJSON P.Place
 
 data Document = Document
-   { _id :: String
-   , doctype :: String
+   { doctype :: String
    , inspection :: I.Inspection
    , place :: P.Place
    }
@@ -38,19 +40,25 @@ instance FromJSON Document
 
 
 mkDoc :: Match -> Document
-mkDoc ((I.IdInspection _id' inspection'), place') =
-   Document _id' "inspection" inspection' place'
+mkDoc (inspection', place') =
+   Document "inspection" inspection' place'
 
 
 saveDoc :: Options -> FilePath -> Document -> IO ()
 saveDoc options srcPath doc = do
    case (optSuccessDir options) of
       Just successDir -> BL.writeFile
-         (successDir </> "ks_" ++ (_id doc) <.> "json")
+         (successDir </> filename <.> "json")
          $ encode doc
       Nothing -> BL.putStrLn $ encodePretty doc
 
    when (optDelete options) $ removeFile srcPath
+
+   where
+      filename = printf "ks_%s_%s" datePart
+         (T.unpack . I.scrubName . P.name . place $ doc)
+      datePart = (formatTime defaultTimeLocale "%Y-%m-%d")
+         . I.date . inspection $ doc
 
 
 loadDoc :: FilePath -> IO (Either String Document)

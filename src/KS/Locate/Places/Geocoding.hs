@@ -67,7 +67,7 @@ displayAndReturn location = do
 
 mkGeocodeUrl :: KSDL String
 mkGeocodeUrl = do
-   addr' <- asks (addr . inspection . getIdInspection)
+   addr' <- asks (addr . getInspection)
    key <- asks (keyString . googleApiKey . getConfig)
 
    return $ printf "https://maps.googleapis.com/maps/api/geocode/json?address=%s&key=%s" (urlEncode $ unpack addr') key

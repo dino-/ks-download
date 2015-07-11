@@ -18,7 +18,7 @@ import KS.Locate.Config
 
 data Env = Env
    { getConfig :: Config
-   , getIdInspection :: IdInspection
+   , getInspection :: Inspection
    }
 
 type KSDL a = ReaderT Env (ExceptT String IO) a

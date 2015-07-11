@@ -4,35 +4,34 @@
 {-# LANGUAGE DeriveGeneric, OverloadedStrings #-}
 
 module KS.Inspection
-   ( IdInspection (..)
-   , Inspection (..)
+   ( Inspection (..)
    , nullInspection
    , parseDate
-   , setId
    , saveInspection
    , loadInspection
+   , scrubName
    )
    where
 
-import qualified Codec.Binary.UTF8.String as UTF8
 import Data.Aeson ( FromJSON, ToJSON, eitherDecodeStrict', encode )
 import qualified Data.ByteString as BS
 import qualified Data.ByteString.Lazy.Char8 as BL
+import Data.Char ( isAlphaNum )
 import Data.Maybe ( fromJust )
-import Data.Text hiding ( init, map, unlines )
-import Data.UUID ( UUID, fromString, toString )
-import Data.UUID.V5 ( generateNamed )
+import qualified Data.Text as T
+import Data.Time ( UTCTime (..), defaultTimeLocale, formatTime
+   , parseTimeM )
+import Data.Time.Clock.POSIX ( posixSecondsToUTCTime )
 import GHC.Generics ( Generic )
 import System.FilePath
 import Text.Printf ( printf )
-import Text.Regex ( matchRegex, mkRegex )
 
 
 data Inspection = Inspection
    { inspection_source :: String
-   , name :: Text
-   , addr :: Text
-   , date :: [Int]
+   , name :: T.Text
+   , addr :: T.Text
+   , date :: UTCTime
    , score :: Double
    , violations :: Int
    , crit_violations :: Int
@@ -41,74 +40,58 @@ data Inspection = Inspection
    }
    deriving Generic
 
+instance Show Inspection
+   where show = formatForDisplay
+
 instance FromJSON Inspection
 instance ToJSON Inspection
 
 
-data IdInspection = IdInspection
-   { _id :: String
-   , inspection :: Inspection
-   }
-   deriving Generic
-
-instance Show IdInspection
-   where show = formatForDisplay
-
-instance ToJSON IdInspection
-instance FromJSON IdInspection
+nullInspection :: Inspection
+nullInspection = Inspection "" "" "" (posixSecondsToUTCTime 0) 0.0 0 0 False ""
 
 
-nullInspection :: IdInspection
-nullInspection =
-   IdInspection "" (Inspection "" "" "" [] 0.0 0 0 False "")
+parseDate :: String -> UTCTime
+parseDate dateStr = fromJust $  -- FIXME Very dangerous
+   parseTimeM True defaultTimeLocale "%m/%d/%0Y" dateStr
 
 
-parseDate :: String -> [Int]
-parseDate dateStr =
-   let mbParsed = (map read) `fmap` matchRegex re dateStr
-       re = mkRegex "([0-9]{2})/([0-9]{2})/([0-9]{4})"
-   in maybe [] (\(m : d : y : []) -> [y, m, d]) mbParsed
+-- FIXME Should this be in a common module?
+scrubName :: T.Text -> T.Text
+scrubName = T.filter isAlphaNum
 
 
--- This was generated from "honuapps.com" with the nil namespace
-nsUUID :: UUID
-nsUUID = fromJust . fromString $
-   "e95d936e-3845-582e-a0c5-3f53b3949b97"
+mkFileName :: Inspection -> String
+mkFileName insp = printf "insp_%s_%s" (formatDay . date $ insp)
+   $ T.unpack . scrubName . name $ insp
 
 
-setId :: Inspection -> IdInspection
-setId i = IdInspection (toString newId) i
-   where
-      newId = generateNamed nsUUID $ UTF8.encode $ printf "%s|%s|%s|%f"
-         (unpack . name $ i) (unpack . addr $ i)
-         (show . date $ i) (score i)
+formatDay :: UTCTime -> String
+formatDay = formatTime defaultTimeLocale "%Y-%m-%d"
 
 
-saveInspection :: FilePath -> IdInspection -> IO ()
-saveInspection dir idInsp = BL.writeFile
-   (dir </> ("insp_" ++ _id idInsp) <.> "json") $ encode idInsp
+saveInspection :: FilePath -> Inspection -> IO ()
+saveInspection dir insp = BL.writeFile
+   (dir </> (mkFileName insp) <.> "json") $ encode insp
 
 
-loadInspection :: FilePath -> IO (Either String IdInspection)
+loadInspection :: FilePath -> IO (Either String Inspection)
 loadInspection path = eitherDecodeStrict' `fmap` BS.readFile path
 
 
-formatForDisplay :: IdInspection -> String
+formatForDisplay :: Inspection -> String
+formatForDisplay
+   (Inspection src n a ut sc viol crit r _) =
 
-formatForDisplay (IdInspection i
-   (Inspection src n a [y, m, d] sc viol crit r _)) =
-
-   printf mask i (unpack n) y m d sc viol crit (showRe r) src (unpack a)
+   printf mask (T.unpack n) (formatDay ut) sc viol crit (showRe r) src (T.unpack a)
 
    where
       mask = init . unlines $
-         [ "Inspection %s"
-         , "   %s | %4d-%02d-%02d %f %d/%d %s | %s"
+         [ "Inspection"
+         , "   %s | %s %f %d/%d %s | %s"
          , "   %s"
          ]
 
       showRe :: Bool -> String
       showRe True  = "Re"
       showRe False = "Ins"
-
-formatForDisplay _ = undefined
