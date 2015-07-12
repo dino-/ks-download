@@ -6,12 +6,13 @@
 {- This is for inserting inspections into MongoDB
 -}
 
-import Control.Monad ( (>=>) )
+import Data.Either ( isLeft )
 import Data.List ( isPrefixOf )
 import Database.MongoDB
 import System.Directory ( doesFileExist, getDirectoryContents )
 import qualified Data.Text as T
 import System.Environment ( getArgs )
+import System.Exit ( exitFailure, exitSuccess )
 import System.FilePath
 import System.IO
    ( BufferMode ( NoBuffering )
@@ -47,22 +48,17 @@ main = do
    -- No buffering, it messes with the order of output
    mapM_ (flip hSetBuffering NoBuffering) [ stdout, stderr ]
 
-   (command : srcDirOrFile : rest') <- getArgs
+   (srcDirOrFile : _) <- getArgs
 
    -- Paths to all files we'll be processing
    files <- buildFileList srcDirOrFile
 
-   case command of
-      --"getone"  -> withDB getOne
-      --"convertname" -> -- Just a name change using saveDoc
-      {-
-      "convert" -> do
-         let (outDir : _) = rest'
-         mapM_ (saveNewFormat outDir) files
-      -}
-      "display" -> mapM_ (D.loadDoc >=> print) files
-      "insert"  -> withDB (\p -> mapM_ (loadAndInsert p) files)
-      _         -> undefined
+   withDB (\p -> do
+      failures <- mapM (loadAndInsert p) files
+      if any (== True) failures
+         then exitFailure
+         else exitSuccess
+      )
 
 
 withDB :: (Pipe -> IO ()) -> IO ()
@@ -79,36 +75,19 @@ withDB action = do
       close pipe
 
 
-{- FIXME Broken by abandonment of UUID
-getOne :: Pipe -> IO ()
-getOne pipe = do
-   return ()
-   d <- access pipe UnconfirmedWrites m_db $ do
-      let muuid = UUID . toASCIIBytes . fromJust . fromString
-            $ "ec53d9d7-c8e8-553b-9328-c10d6908a43b"
-      rest =<< find (select ["_id" =: muuid] m_collection)
-   print d
--}
-
-
-getAll :: Pipe -> IO ()
-getAll pipe = do
-   is <- access pipe UnconfirmedWrites m_db $ do
-      rest =<< find (select [] m_collection)
-   mapM_ print is
-
-
-loadAndInsert :: Pipe -> FilePath -> IO ()
+loadAndInsert :: Pipe -> FilePath -> IO Bool
 loadAndInsert pipe path = do
    edoc <- D.loadDoc path
 
    result <- case edoc of
-      Left errMsg -> return errMsg
+      Left errMsg -> return . Left $ errMsg
       Right doc   -> access pipe UnconfirmedWrites m_db $ do
          save m_collection $ docToBSON doc
          parseLastError `fmap` runCommand [ "getLastError" =: (1::Int) ]
 
-   printf "%s %s\n" path result
+   printf "%s %s\n" path (either id id $ result)
+
+   return . isLeft $ result
 
 
 buildFileList :: FilePath -> IO [FilePath]

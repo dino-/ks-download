@@ -18,13 +18,13 @@ tests :: Test
 tests = TestList $ map testLastError testData
 
 
-testLastError :: (String, Document, String) -> Test
+testLastError :: (String, Document, Either String String) -> Test
 testLastError (label', doc, expected) = TestCase $ do
    let actual = parseLastError doc
    assertEqual label' expected actual
 
 
-testData :: [(String, Document, String)]
+testData :: [(String, Document, Either String String)]
 testData =
    [ ( "getLastError ok, db operation ok"
      , [ "connectionId" =: (652 :: Int)
@@ -34,7 +34,7 @@ testData =
        , "err" =: (Nothing :: Maybe Text)
        , "ok" =: (1.0 :: Double)
        ]
-     , "insertion successful"
+     , Right "insertion successful"
      )
    , ( "getLastError ok, db operation NOT ok"
      , [ "connectionId" =: (652 :: Int)
@@ -44,7 +44,7 @@ testData =
        , "err" =: ((Just "Some error occurred with insertion!") :: Maybe Text)
        , "ok" =: (1.0 :: Double)
        ]
-     , "insertion FAILED: Some error occurred with insertion!"
+     , Left "insertion FAILED: Some error occurred with insertion!"
      )
    , ( "getLastError NOT ok"
      , [ "connectionId" =: (652 :: Int)
@@ -54,6 +54,6 @@ testData =
        , "err" =: ((Just "Should never see this") :: Maybe Text)
        , "ok" =: (2.0 :: Double)
        ]
-     , "getLastError FAILED: ok: 2.0"
+     , Left "getLastError FAILED: ok: 2.0"
      )
    ]

@@ -12,8 +12,8 @@ import qualified Data.Text as T
 import Text.Printf ( printf )
 
 
-parseLastError :: Document -> String
-parseLastError errdoc = either id id $ lastErrStatus >> atE "err"
+parseLastError :: Document -> Either String String
+parseLastError errdoc = lastErrStatus >> atE "err"
    where
       lastErrStatus :: Either String String
       lastErrStatus = case at "ok" errdoc of
