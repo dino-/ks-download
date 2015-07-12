@@ -1,13 +1,12 @@
+- Do we need ks-docdump and ks-dump any longer? Probably one of them can go.
 - Do something with that scrubName business
 - Can we factor out the formatTime stuff we're doing at least twice in this code? Make it part of the ks-library
 - Need some real logging in ks-dbinsert
 - Change mongo password (actually everything), it's insecure now
 - [done] Figure out where the missing data is, import everything again to be clear on it
 - Organize the new Mongo stuff
-- Going to need another conversion layer between our new Haskell Document and BSON
-   - Maybe KS.Data.BSON with functions like:
-      - docToBSON :: D.Document -> BSON.Document
-      - bsonToDoc :: BSON.Document -> D.Document
+- Add function:
+   - KS.Data.BSON.bsonToDoc :: BSON.Document -> D.Document
 - Split the mongo task up:
    - First, convert all of the documents from couch format to mongo, on disk
    - Then load all of those and upsert into mongo
@@ -25,7 +24,7 @@
 - It may be time to put info in changelog.md
 - Look into migrating to MongoDB
 - Is there a different url encoding API than what's in Network.HTTP?
-- Ks.Inspection
+- KS.Data.Inspection
    - Should we really be using Data.ByteString.Lazy.Char8 for
      saveInspection? Try with just Data.ByteString.Lazy or even
      not lazy.
@@ -34,4 +33,4 @@
    - Should have much more/better logging
 - Ks.DlInsp.Source.*
    - Replace usage of Network.HTTP with Network.HTTP.Conduit
-     (http-conduit). See Ksdl.Geocoding/Places
+     (http-conduit). See KS.Locate.Places.Geocoding

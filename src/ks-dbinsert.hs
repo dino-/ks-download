@@ -7,9 +7,7 @@
 -}
 
 import Control.Monad ( (>=>) )
-import Data.Geospatial ( GeoPoint (..) )
 import Data.List ( isPrefixOf )
-import Data.Time.Clock.POSIX ( utcTimeToPOSIXSeconds )
 import Database.MongoDB
 import System.Directory ( doesFileExist, getDirectoryContents )
 import qualified Data.Text as T
@@ -20,9 +18,8 @@ import System.IO
    , hSetBuffering, stdout, stderr
    )
 
+import KS.Data.BSON ( docToBSON )
 import qualified KS.Data.Document as D
-import qualified KS.Data.Inspection as I
-import qualified KS.Data.Place as P
 
 
 {- Some of this goes into config
@@ -99,48 +96,13 @@ getAll pipe = do
    mapM_ print is
 
 
--- This is our KS.Data.Document -> Data.BSON.Document
-inspToBSON :: D.Document -> Document
-inspToBSON doc = insertionDoc
-   where
-      insp = D.inspection doc
-      pl = D.place doc
-      (GeoPoint coords) = P.location pl
-      insertionDoc =
-         [ "doctype" =: D.doctype doc
-         , "inspection" =:
-            [ "inspection_source" =: I.inspection_source insp
-            , "name" =: I.name insp
-            , "addr" =: I.addr insp
-            , "date" =: ((round . utcTimeToPOSIXSeconds . I.date
-               $ insp) :: Integer)
-            , "score" =: I.score insp
-            , "violations" =: I.violations insp
-            , "crit_violations" =: I.crit_violations insp
-            , "reinspection" =: I.reinspection insp
-            , "detail" =: I.detail insp
-            ]
-         , "place" =:
-            [ "name" =: P.name pl
-            , "vicinity" =: P.vicinity pl
-            , "location" =:
-               [ "type" =: ("Point" :: T.Text)
-               , "coordinates" =: coords
-               ]
-            , "types" =: P.types pl
-            , "place_id" =: P.place_id pl
-            ]
-         ]
-
-
 loadAndInsert :: Pipe -> FilePath -> IO ()
 loadAndInsert pipe path = do
    edoc <- D.loadDoc path
    putStrLn =<< case edoc of
       Left errMsg -> return errMsg
-      Right mdoc   -> access pipe UnconfirmedWrites m_db $ do
-         let insertionDoc = inspToBSON mdoc
-         save m_collection insertionDoc
+      Right doc   -> access pipe UnconfirmedWrites m_db $ do
+         save m_collection $ docToBSON doc
          show `fmap` runCommand [ "getLastError" =: (1::Int) ]
 
 
