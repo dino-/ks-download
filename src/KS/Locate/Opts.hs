@@ -44,7 +44,7 @@ options =
       "Delete source files as they're processed. BE CAREFUL, this will delete even if no above dest dirs are supplied."
    , Option ['c'] ["conf-dir"]
       (ReqArg (\s opts -> opts { optConfDir = s } ) "CONFDIR")
-      "Directory to load ksdl.conf and GoogleAPIKey files from. Defaults to ."
+      "Directory to load ks-locate.conf and GoogleAPIKey files from. Defaults to ."
    , Option ['h'] ["help"]
       (NoArg (\opts -> opts { optHelp = True } ))
       "This help text"
@@ -73,7 +73,7 @@ usageText = (usageInfo header options) ++ "\n" ++ footer
          [ "Looks up the file or dir full of files specified"
          , "Writes successful lookups to SUCCDIR or stdout if omitted"
          , "Writes failed lookup input files to FAILDIR"
-         , "Expects to find a ./ksdl.conf file, or at the CONFDIR specified."
+         , "Expects to find a ./ks-locate.conf file, or at the CONFDIR specified."
          , "Logging is written to stdout."
          , ""
          , "Version " ++ (showVersion version) ++ "  Dino Morelli <dino@ui3.info>"

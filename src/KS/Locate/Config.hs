@@ -34,7 +34,7 @@ data Config = Config
 
 loadConfig :: Options -> IO Config
 loadConfig options = do
-   let confPath = (optConfDir options) </> "ksdl.conf"
+   let confPath = (optConfDir options) </> "ks-locate.conf"
    conf <- (either error id . readConfig) `fmap` readFile confPath
 
    -- A Google API key in a file by itself will supercede the one

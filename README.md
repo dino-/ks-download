@@ -14,28 +14,31 @@ Data downloader and parser for the KitchenSnitch project (Haskell)
 
 ## Configuration and execution
 
-### ks-locate - Google Places lookup utility
-
-`ksdl.conf` and `GoogleAPIKey` files will be looked for by default
-in `.` relative to where you ran `ks-locate` from. But it can be
-nicer to run from within a directory tree where inspection files
-and output files will be written.
+`ks-locate.conf`, `ks-dbinsert.conf` and `GoogleAPIKey` files will be
+looked for by default in `.` relative to where you ran `ks-locate`
+or `ks-dbinsert` from. But it can be nicer to run from within
+a directory tree where inspection files and output files will
+be written.
 
 To set up for running like this:
 
-Make a directory for config files, and copy `ksdl.conf` into it,
-along with your Google API key in a file. This can be anywhere as
-long as they're together. How about in `$HOME`, like this:
+Make a directory for config files, and copy the two conf files into
+it, along with your Google API key in a file. This can be anywhere
+as long as they're together. How about in `$HOME`, like this:
 
     $HOME/
       .ksdl/
-         ksdl.conf
+         ks-dbinsert.conf
+         ks-locate.conf
          GoogleAPIKey
 
 The key should be the only thing in the `GoogleAPIKey` file, on a
 line by itself. 
 
-Now, to run, have a directory structure like this:
+
+### ks-locate - Google Places lookup utility
+
+To run, have a directory structure like this:
 
     inspectionsToProcess/
       fail/
@@ -45,7 +48,7 @@ Now, to run, have a directory structure like this:
 Then, to run:
 
     $ cd inspectionsToProcess
-    $ ks-locate -c $HOME/.ksdl/ -s succ/ -f fail/ --delete insp | tee ksdl.log
+    $ ks-locate -c $HOME/.ksdl/ -s succ/ -f fail/ --delete insp | tee ks-locate.log
 
 When it's finished:
 
