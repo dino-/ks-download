@@ -1,6 +1,8 @@
 -- License: BSD3 (see LICENSE)
 -- Author: Dino Morelli <dino@ui3.info>
 
+import Data.Aeson.Encode.Pretty hiding ( Config )
+import qualified Data.ByteString.Lazy.Char8 as BL
 import Data.List ( isPrefixOf )
 import System.Directory ( copyFile, doesFileExist
    , getDirectoryContents, removeFile )
@@ -12,13 +14,13 @@ import System.IO
    , hSetBuffering, stdout, stderr
    )
 
-import KS.Data.Document ( mkDoc, saveDoc )
+import KS.Data.Document ( Document (..), saveDoc )
 import KS.Data.Inspection
 import KS.Locate.Config
 import KS.Locate.Locate
 import KS.Locate.Opts
 import KS.Locate.Places.Geocoding ( forwardLookup )
-import KS.Locate.Places.Match ( match )
+import KS.Locate.Places.Match ( Match, match )
 import KS.Locate.Places.Places ( coordsToPlaces )
 import KS.Log
 
@@ -72,7 +74,7 @@ lookupInspection config options srcPath = do
          places <- coordsToPlaces geo
          match places
 
-   either (handleFailure) (saveDoc options srcPath . mkDoc) r
+   either (handleFailure) (outputDoc options srcPath . mkDoc) r
 
    where
       handleFailure msg = do
@@ -86,6 +88,23 @@ lookupInspection config options srcPath = do
 
          -- Log what happened
          errorM lname msg
+
+      mkDoc :: Match -> Document
+      mkDoc (inspection', place') =
+         Document "inspection" inspection' place'
+
+
+outputDoc :: Options -> FilePath -> Document -> IO ()
+outputDoc options srcPath doc = do
+   r <- case (optSuccessDir options) of
+      Just successDir -> saveDoc successDir doc
+      Nothing -> do
+         BL.putStrLn $ encodePretty doc
+         return $ Right ()
+   
+   case r of
+      Left msg -> putStrLn msg
+      Right () -> when (optDelete options) $ removeFile srcPath
 
 
 loadInspection' :: FilePath -> KSDL Inspection

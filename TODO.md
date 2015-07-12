@@ -1,11 +1,13 @@
 - Do something with that scrubName business
 - Can we factor out the formatTime stuff we're doing at least twice in this code? Make it part of the ks-library
-- Decouple KS.Data.Document from Locate.Options!
 - Need some real logging in ks-dbinsert
 - Change mongo password (actually everything), it's insecure now
 - [done] Figure out where the missing data is, import everything again to be clear on it
 - Organize the new Mongo stuff
 - Going to need another conversion layer between our new Haskell Document and BSON
+   - Maybe KS.Data.BSON with functions like:
+      - docToBSON :: D.Document -> BSON.Document
+      - bsonToDoc :: BSON.Document -> D.Document
 - Split the mongo task up:
    - First, convert all of the documents from couch format to mongo, on disk
    - Then load all of those and upsert into mongo
