@@ -1,5 +1,4 @@
 - Change mongo password (actually everything), it's insecure now
-- Parameterize the mongo credentials, use the ksdl.conf business
 - Fix extra-source-files
 - Update out-of-date things in the README.md
 - Do we need ks-docdump and ks-dump any longer? Probably one of them can go.

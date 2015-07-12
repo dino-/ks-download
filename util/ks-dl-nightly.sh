@@ -47,7 +47,7 @@ ks-locate \
 
 # Import into MongoDB
 
-#ks-dbinsert succ/ > ks-mongo-import.log
+#ks-dbinsert --conf-dir /home/dino/.ksdl succ/ > ks-mongo-import.log
 
 # Use these to simulate import success or failure
 # comment these lines out if using the above ks-dbinsert command
