@@ -118,6 +118,16 @@ executable           ks-dbinsert
                      , utf8-string
    ghc-options:      -Wall
 
+test-suite           test-Database
+   type:             exitcode-stdio-1.0
+   main-is:          test-Database.hs
+   hs-source-dirs:   src testsuite
+   build-depends:      base >= 3 && < 5
+                     , bson
+                     , HUnit
+                     , text
+   ghc-options:      -Wall
+
 --executable           ks-dump
 --   main-is:          ks-dump.hs
 --   hs-source-dirs:   src

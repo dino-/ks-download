@@ -17,9 +17,11 @@ import System.IO
    ( BufferMode ( NoBuffering )
    , hSetBuffering, stdout, stderr
    )
+import Text.Printf ( printf )
 
 import KS.Data.BSON ( docToBSON )
 import qualified KS.Data.Document as D
+import KS.Database.Mongo ( parseLastError )
 
 
 {- Some of this goes into config
@@ -99,11 +101,14 @@ getAll pipe = do
 loadAndInsert :: Pipe -> FilePath -> IO ()
 loadAndInsert pipe path = do
    edoc <- D.loadDoc path
-   putStrLn =<< case edoc of
+
+   result <- case edoc of
       Left errMsg -> return errMsg
       Right doc   -> access pipe UnconfirmedWrites m_db $ do
          save m_collection $ docToBSON doc
-         show `fmap` runCommand [ "getLastError" =: (1::Int) ]
+         parseLastError `fmap` runCommand [ "getLastError" =: (1::Int) ]
+
+   printf "%s %s\n" path result
 
 
 buildFileList :: FilePath -> IO [FilePath]

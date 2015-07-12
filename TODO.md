@@ -1,7 +1,6 @@
 - Do we need ks-docdump and ks-dump any longer? Probably one of them can go.
 - Do something with that scrubName business
 - Can we factor out the formatTime stuff we're doing at least twice in this code? Make it part of the ks-library
-- Need some real logging in ks-dbinsert
 - Change mongo password (actually everything), it's insecure now
 - [done] Figure out where the missing data is, import everything again to be clear on it
 - Organize the new Mongo stuff
