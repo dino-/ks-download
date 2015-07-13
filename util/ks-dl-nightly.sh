@@ -9,9 +9,6 @@ binDir=/opt/ks-download/bin
 workDirParent=/var/local/kitchensnitch/nc-wake_daily
 #workDirParent=/home/dino/dev/kitchensnitch/data/nc-wake_daily
 
-# Couchbase password
-couchPassword=COUCH_PASSWORD
-
 
 # When running outside of this zone (or on a system using UTC),
 # need this set explicitly for both the `date` binary and ks-dlinsp
