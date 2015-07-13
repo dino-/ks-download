@@ -15,14 +15,15 @@ category:            Unknown
 tested-with:         GHC >= 7.10.1
 extra-source-files:  changelog.md
                      doc/dev/notes
+                     ks-dbinsert.conf
+                     ks-locate.conf
                      README.md
-                     TODO
+                     src/KS/Log.hs
+                     TODO.md
                      util/gentags.sh
-                     util/resources/facilities-01
-                     util/resources/searchResultsPage.html
-                     testsuite/InspectionUUID.hs
-                     testsuite/NameWords.hs
-                     testsuite/test-ks-loc.hs
+                     util/inspconv.coffee
+                     util/resources/geocode.json
+                     util/resources/nc-wake/searchResultPage.html
 
 source-repository    head
    type:             darcs
@@ -31,6 +32,10 @@ source-repository    head
 executable           ks-dlinsp
    main-is:          ks-dlinsp.hs
    hs-source-dirs:   src
+   other-modules:    KS.DLInsp.Opts
+                     KS.DLInsp.Source.Downloaders
+                     KS.DLInsp.Source.NCWake
+                     KS.DLInsp.Types
    build-depends:      aeson
                      , base >= 3 && < 5
                      , bytestring
@@ -50,6 +55,13 @@ executable           ks-dlinsp
 executable           ks-locate
    main-is:          ks-locate.hs
    hs-source-dirs:   src
+   other-modules:    KS.Locate.Config
+                     KS.Locate.Locate
+                     KS.Locate.Opts
+                     KS.Locate.Places.Geocoding
+                     KS.Locate.Places.Match
+                     KS.Locate.Places.NameWords
+                     KS.Locate.Places.Places
    build-depends:      aeson
                      , aeson-pretty
                      , attoparsec
@@ -77,6 +89,7 @@ test-suite           test-Locate
    type:             exitcode-stdio-1.0
    main-is:          test-Locate.hs
    hs-source-dirs:   src testsuite
+   other-modules:    NameWords
    build-depends:      aeson
                      , base >= 3 && < 5
                      , bytestring
@@ -97,6 +110,9 @@ test-suite           test-Locate
 executable           ks-dbinsert
    main-is:          ks-dbinsert.hs
    hs-source-dirs:   src
+   other-modules:    KS.Database.Config
+                     KS.Database.Mongo
+                     KS.Database.Opts
    build-depends:      aeson
                      , aeson-pretty
                      , attoparsec
@@ -126,6 +142,7 @@ test-suite           test-Database
    type:             exitcode-stdio-1.0
    main-is:          test-Database.hs
    hs-source-dirs:   src testsuite
+   other-modules:    Mongo
    build-depends:      base >= 3 && < 5
                      , bson
                      , HUnit

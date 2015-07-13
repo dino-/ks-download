@@ -1,5 +1,4 @@
 - Change mongo password (actually everything), it's insecure now
-- Fix extra-source-files
 - Update out-of-date things in the README.md
 - Do we need ks-docdump and ks-dump any longer? Probably one of them can go.
 - [done] Figure out where the missing data is, import everything again to be clear on it
