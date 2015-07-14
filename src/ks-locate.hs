@@ -13,6 +13,8 @@ import System.IO
    ( BufferMode ( NoBuffering )
    , hSetBuffering, stdout, stderr
    )
+import System.IO.Error
+import Text.Printf ( printf )
 
 import KS.Data.Document ( Document (..), saveDoc )
 import KS.Data.Inspection
@@ -96,15 +98,17 @@ lookupInspection config options srcPath = do
 
 outputDoc :: Options -> FilePath -> Document -> IO ()
 outputDoc options srcPath doc = do
-   r <- case (optSuccessDir options) of
+   r <- tryIOError $ case (optSuccessDir options) of
       Just successDir -> saveDoc successDir doc
       Nothing -> do
          BL.putStrLn $ encodePretty doc
-         return $ Right ()
+         return ""
    
    case r of
-      Left msg -> putStrLn msg
-      Right () -> when (optDelete options) $ removeFile srcPath
+      Left ex -> print ex
+      Right destPath -> do
+         when (optDelete options) $ removeFile srcPath
+         printf "%s -> %s\n" srcPath destPath
 
 
 loadInspection' :: FilePath -> KSDL Inspection
