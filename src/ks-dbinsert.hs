@@ -18,6 +18,7 @@ import System.IO
    ( BufferMode ( NoBuffering )
    , hSetBuffering, stdout, stderr
    )
+import System.IO.Error ( tryIOError )
 import Text.Printf ( printf )
 
 import KS.Data.BSON ( docToBSON )
@@ -63,11 +64,11 @@ main = do
 
 loadAndInsert :: C.Config -> Pipe -> FilePath -> IO Bool
 loadAndInsert config pipe path = do
-   edoc <- D.loadDoc path
+   edoc <- tryIOError $ D.loadDoc path
 
    result <- case edoc of
-      Left errMsg -> return . Left $ errMsg
-      Right doc   ->
+      Left ex   -> return . Left $ show ex
+      Right doc ->
          access pipe UnconfirmedWrites (C.mongoDatabase config) $ do
             save (C.mongoCollection config) $ docToBSON doc
             parseLastError `fmap` runCommand [ "getLastError" =: (1::Int) ]
