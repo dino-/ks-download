@@ -1,3 +1,6 @@
+- Need to make another conversion tool and convert everything again
+   - This is because of the inspection date localization issue
+- Make all tools that need to write files into directories capable of making those directories.
 - Change mongo password (actually everything), it's insecure now
 - Update out-of-date things in the README.md
 - Do we need ks-docdump and ks-dump any longer? Probably one of them can go.

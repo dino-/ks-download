@@ -42,7 +42,7 @@ executable           ks-dlinsp
                      , containers
                      , filepath
                      , HTTP
-                     , ks-library
+                     , ks-library >= 1.1
                      , mtl
                      , regex-compat
                      , tagsoup
@@ -74,7 +74,7 @@ executable           ks-locate
                      , hslogger
                      , HTTP
                      , http-conduit
-                     , ks-library
+                     , ks-library >= 1.1
                      , mtl
                      , old-locale
                      , regex-compat
@@ -98,7 +98,7 @@ test-suite           test-Locate
                      , filepath
                      , hslogger
                      , HUnit
-                     , ks-library
+                     , ks-library >= 1.1
                      , mtl
                      , regex-compat
                      , tce-conf
@@ -126,7 +126,7 @@ executable           ks-dbinsert
                      , hslogger
                      , HTTP
                      , http-conduit
-                     , ks-library
+                     , ks-library >= 1.1
                      , mongoDB
                      , mtl
                      , old-locale

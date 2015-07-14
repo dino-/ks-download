@@ -7,6 +7,7 @@ module KS.DLInsp.Source.NCWake
 import Data.List ( intercalate, isInfixOf, isPrefixOf )
 import Data.Maybe ( fromMaybe )
 import qualified Data.Text as T
+import Data.Time ( TimeZone, getCurrentTimeZone )
 import Data.Time.Calendar ( toGregorian )
 --import Debug.Trace ( trace )
 import Network.HTTP
@@ -35,20 +36,21 @@ download options = runDL options $ do
 
    let pageUrls = maybe allPageUrls (\n -> take n allPageUrls) pageLimit
 
-   let getters = map getFacilities pageUrls  -- [IO [Inspection]]
+   tz <- liftIO getCurrentTimeZone
+   let getters = map (getFacilities tz) pageUrls  -- [IO [Inspection]]
    dir <- asks optDestDir
    liftIO $ mapM_ (\ml -> ml >>= mapM_ (I.saveInspection dir)) getters
 
 
 -- Get all (4) facilities from a page at the supplied URL
-getFacilities :: String -> IO [I.Inspection]
-getFacilities url = do
+getFacilities :: TimeZone -> String -> IO [I.Inspection]
+getFacilities tz url = do
    printf "Retrieving %s\n" url
 
    tags <- parseTags `fmap` (openURL . getRequest $ urlPrefix ++ url)
 
    let itags = isolateInspTags tags
-   return $ map extractInsp itags
+   return $ map (extractInsp tz) itags
 
 
 -- Extract the block of tags containing each separate facility
@@ -61,12 +63,12 @@ isolateInspTags= partitions isFacAnchor
 
 
 -- Extract the Inspection data from a facility's tags
-extractInsp :: [Tag String] -> I.Inspection
-extractInsp tags = I.Inspection
+extractInsp :: TimeZone -> [Tag String] -> I.Inspection
+extractInsp tz tags = I.Inspection
    inspectionSrc
    (T.pack name)
    (T.pack . trim $ addr)
-   (I.parseDate date)
+   (I.parseDate tz date)
    (read . trim $ score)
    violCount
    critCount
