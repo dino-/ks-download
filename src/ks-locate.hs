@@ -16,7 +16,7 @@ import System.IO
 import System.IO.Error
 import Text.Printf ( printf )
 
-import KS.Data.Document ( Document (..), saveDoc )
+import KS.Data.Document ( Document (..), saveDocument )
 import KS.Data.Inspection
 import KS.Locate.Config
 import KS.Locate.Locate
@@ -99,7 +99,7 @@ lookupInspection config options srcPath = do
 outputDoc :: Options -> FilePath -> Document -> IO ()
 outputDoc options srcPath doc = do
    r <- tryIOError $ case (optSuccessDir options) of
-      Just successDir -> saveDoc successDir doc
+      Just successDir -> saveDocument successDir doc
       Nothing -> do
          BL.putStrLn $ encodePretty doc
          return ""

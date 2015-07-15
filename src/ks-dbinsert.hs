@@ -64,7 +64,7 @@ main = do
 
 loadAndInsert :: C.Config -> Pipe -> FilePath -> IO Bool
 loadAndInsert config pipe path = do
-   edoc <- tryIOError $ D.loadDoc path
+   edoc <- tryIOError $ D.loadDocument path
 
    result <- case edoc of
       Left ex   -> return . Left $ show ex
