@@ -113,8 +113,10 @@ outputDoc options srcPath doc = do
 
 loadInspection' :: FilePath -> KSDL Inspection
 loadInspection' path = do
-   parseResult <- liftIO $ loadInspection path
-   either
-      (\msg -> throwError $ "ERROR Inspection: " ++ path ++ "\n" ++ msg)
-      (\insp -> (liftIO $ noticeM lname $ show insp) >> return insp)
-      parseResult
+   r <- liftIO $ tryIOError $ loadInspection path
+
+   case r of
+      Left ex -> throwError $ printf "Error loading %s:\n%s" path (show ex)
+      Right insp -> do
+         liftIO . noticeM lname . show $ insp
+         return insp
