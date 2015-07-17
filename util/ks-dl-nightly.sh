@@ -44,12 +44,12 @@ ks-locate \
 
 # Import into MongoDB
 
-#ks-dbinsert --conf-dir /home/dino/.ksdl succ/ > ks-mongo-import.log
+#ks-dbinsert --conf-dir /home/dino/.ksdl succ/ > ks-dbinsert.log
 
 # Use these to simulate import success or failure
 # comment these lines out if using the above ks-dbinsert command
-echo "Fake ks-dbinsert success" > ks-mongo-import.log; true
-#echo "Fake ks-dbinsert failure" > ks-mongo-import.log; false
+echo "Fake ks-dbinsert success" > ks-dbinsert.log; true
+#echo "Fake ks-dbinsert failure" > ks-dbinsert.log; false
 
 dbinsertExit=$?
 
@@ -57,5 +57,5 @@ if [ $dbinsertExit != 0 ]
 then
    echo "There was a problem importing KS records from ${workDir}/succ/"
    echo "ks-dbinsert exit code: $dbinsertExit"
-   echo "see ${workDir}/ks-mongo-import.log"
+   echo "see ${workDir}/ks-dbinsert.log"
 fi

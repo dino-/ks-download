@@ -1,5 +1,4 @@
 - Fix "CITY BARBEQUE" match from 2015-07-16
-- Fix ks-dl-nightly.sh ks-dbinsert log file name
 - Change `doc/dev/notes` to a Markdown document
 - What's with the Match type? Why not have KS.Locate.Places.Match just return a KS.Data.Document?
 - Make all tools that need to write files into directories capable of making those directories.
