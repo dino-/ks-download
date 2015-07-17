@@ -1,14 +1,13 @@
 - Fix "CITY BARBEQUE" match from 2015-07-16
 - What's with the Match type? Why not have KS.Locate.Places.Match just return a KS.Data.Document?
 - Make all tools that need to write files into directories capable of making those directories.
-- Change mongo password (actually everything), it's insecure now
-- Update out-of-date things in the README.md
+- Update and expand README.md
 - Do we need ks-docdump and ks-dump any longer? Probably one of them can go.
-- [done] Figure out where the missing data is, import everything again to be clear on it
-- Organize the new Mongo stuff
-- Split the mongo task up:
-   - First, convert all of the documents from couch format to mongo, on disk
-   - Then load all of those and upsert into mongo
+- It may be time to put info in changelog.md
+- Is there a different url encoding API than what's in Network.HTTP?
+- ks-dlinsp
+   - Failure to access the URL kills the whole process. Should we handle this with retrying somehow? Not sure
+   - Should have much more/better logging
 
 - Triangle potential population of Android users
 - Add use case and caching info to the new wiki
@@ -18,14 +17,3 @@
    - caching on the client:
       - ??
 - Add msmtp installation notes to wiki
-
-- Fill out more of README.md
-- It may be time to put info in changelog.md
-- Look into migrating to MongoDB
-- Is there a different url encoding API than what's in Network.HTTP?
-- ks-dlinsp
-   - Failure to access the URL kills the whole process. Should we handle this with retrying somehow? Not sure
-   - Should have much more/better logging
-- Ks.DlInsp.Source.*
-   - Replace usage of Network.HTTP with Network.HTTP.Conduit
-     (http-conduit). See KS.Locate.Places.Geocoding

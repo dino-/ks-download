@@ -1,12 +1,7 @@
 ## New redesign of the codebase
 
-- ks-library
-   - New version of KS.Inspection with changes detailed below
-      - No longer need the IdInspection type at all
-   - New version of KS.Locate.Places.Place with changes from KS.Database.Mongo
 - ks-download
    - raw inspection download (ks-dlinsp)
-      - Figure out how to eliminate UUIDs from this as well
       - What happens:
          - main figures out which Downloader to use (based on args)
          - Downloader scrapes the web pages
