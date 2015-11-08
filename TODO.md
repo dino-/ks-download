@@ -1,3 +1,4 @@
+- Remove mongoCollection from Config
 - Fix "CITY BARBEQUE" match from 2015-07-16
 - What's with the Match type? Why not have KS.Locate.Places.Match just return a KS.Data.Document?
 - Make all tools that need to write files into directories capable of making those directories.
