@@ -23,6 +23,7 @@ import Text.Printf ( printf )
 
 import KS.Data.BSON ( docToBSON )
 import qualified KS.Data.Document as D
+import qualified KS.Data.Place as P
 import qualified KS.Database.Config as C
 import KS.Database.Opts
 import KS.Database.Mongo ( parseLastError )
@@ -70,8 +71,17 @@ loadAndInsert config pipe path = do
       Left ex   -> return . Left $ show ex
       Right doc ->
          access pipe UnconfirmedWrites (C.mongoDatabase config) $ do
-            save (C.mongoCollection config) $ docToBSON doc
-            parseLastError `fmap` runCommand [ "getLastError" =: (1::Int) ]
+            -- Insert the inspection into the all_inspections collection
+            save "inspections" $ docToBSON doc
+            sr <- parseLastError `fmap` runCommand [ "getLastError" =: (1::Int) ]
+
+            -- Insert or modify the one document in recent_inspections
+            upsert (select ["place.place_id" =: (P.place_id . D.place $ doc)]
+               "recent_inspections") $ docToBSON doc
+            ur <- parseLastError `fmap` runCommand [ "getLastError" =: (1::Int) ]
+
+            -- Combine the results
+            return $ sr >> ur
 
    printf "%s %s\n" path (either id id $ result)
 
