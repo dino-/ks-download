@@ -16,7 +16,8 @@ import Network.HTTP.Conduit ( simpleHttp )
 import Text.Printf ( printf )
 
 import KS.Data.Inspection
-import KS.Locate.Locate
+import KS.Locate.Locate ( Env (..), KSDL, asks, liftIO,
+   throwError, tryIO, when )
 import KS.Locate.Config
 import KS.Log
 
@@ -49,7 +50,7 @@ forwardLookup = do
 
    asks (geocodingApiDelay . getConfig) >>= (liftIO . threadDelay)
 
-   gcJSON <- liftIO $ simpleHttp url
+   gcJSON <- tryIO $ simpleHttp url
    liftIO $ debugM lname $ "Geocoding result JSON: "
       ++ (BL.unpack gcJSON)
 

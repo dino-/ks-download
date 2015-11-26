@@ -8,6 +8,7 @@
 - Is there a different url encoding API than what's in Network.HTTP?
 - ks-dlinsp
    - Failure to access the URL kills the whole process. Should we handle this with retrying somehow? Not sure
+   - Need to assess IO actions all over the place and try to catch them with catchIOError or catchAll, this is a disaster waiting to happen!
    - Should have much more/better logging
 
 - Triangle potential population of Android users

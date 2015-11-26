@@ -69,6 +69,7 @@ executable           ks-locate
                      , bytestring
                      , containers
                      , directory
+                     , exceptions
                      , filepath
                      , geojson
                      , hslogger
@@ -95,6 +96,7 @@ test-suite           test-Locate
                      , bytestring
                      , containers
                      , directory
+                     , exceptions
                      , filepath
                      , hslogger
                      , HUnit
