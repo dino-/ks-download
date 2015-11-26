@@ -4,6 +4,7 @@
 module KS.DLInsp.Source.NCWake
    where
 
+import Data.Either ( partitionEithers )
 import Data.List ( intercalate, isInfixOf, isPrefixOf )
 import Data.Maybe ( fromMaybe )
 import qualified Data.Text as T
@@ -50,7 +51,9 @@ getFacilities tz url = do
    tags <- parseTags `fmap` (openURL . getRequest $ urlPrefix ++ url)
 
    let itags = isolateInspTags tags
-   return $ map (extractInsp tz) itags
+   let (failures, successes) = partitionEithers $ map (extractInsp tz) itags
+   mapM_ putStrLn failures
+   return successes
 
 
 -- Extract the block of tags containing each separate facility
@@ -63,19 +66,20 @@ isolateInspTags= partitions isFacAnchor
 
 
 -- Extract the Inspection data from a facility's tags
-extractInsp :: TimeZone -> [Tag String] -> I.Inspection
-extractInsp tz tags = I.Inspection
-   inspectionSrc
-   (T.pack name)
-   (T.pack . trim $ addr)
-   (I.parseDate tz date)
-   (read . trim $ score)
-   violCount
-   critCount
-   (reinspToBool reinspection)
-   (urlPrefix ++ detail)
-
+extractInsp :: TimeZone -> [Tag String] -> Either String I.Inspection
+extractInsp tz tags = makeInspection <$> I.parseDate tz date
    where
+      makeInspection dateParsed = I.Inspection
+         inspectionSrc
+         (T.pack name)
+         (T.pack . trim $ addr)
+         dateParsed
+         (read . trim $ score)
+         violCount
+         critCount
+         (reinspToBool reinspection)
+         (urlPrefix ++ detail)
+
       name = innerText . (takeWhile (not . isTagClose)) $ tags
       TagText addr = (dropWhile (~/= "Location:") tags) !! 2
       TagText date = (dropWhile (~/= "Inspection Date:") tags) !! 2
