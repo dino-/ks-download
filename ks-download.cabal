@@ -129,7 +129,7 @@ executable           ks-dbinsert
                      , HTTP
                      , http-conduit
                      , ks-library >= 1.2
-                     , mongoDB
+                     , mongoDB <= 2.0.8
                      , mtl
                      , old-locale
                      , regex-compat
