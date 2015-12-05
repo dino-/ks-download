@@ -8,6 +8,7 @@ module KS.Locate.Places.Geocoding
    where
 
 import Control.Concurrent ( threadDelay )
+import Control.Monad.Catch ( catchAll )
 import Data.Aeson
 import qualified Data.ByteString.Lazy.Char8 as BL
 import Data.Text
@@ -50,7 +51,11 @@ forwardLookup = do
 
    asks (geocodingApiDelay . getConfig) >>= (liftIO . threadDelay)
 
-   gcJSON <- tryIO $ simpleHttp url
+   gcJSON <- catchAll (liftIO $ simpleHttp url) $ \e -> do
+      let emsg = show e
+      liftIO $ criticalM lname emsg
+      throwError emsg
+
    liftIO $ debugM lname $ "Geocoding result JSON: "
       ++ (BL.unpack gcJSON)
 

@@ -14,7 +14,7 @@ module KS.Log
 
 import Data.Time ( defaultTimeLocale, formatTime, getCurrentTime
    , utcToLocalZonedTime )
-import System.IO ( stdout )
+import System.IO ( stderr, stdout )
 import System.Log.Handler.Simple ( streamHandler )
 import System.Log.Logger
 
@@ -32,8 +32,9 @@ initLogging logPriority = do
    updateGlobalLogger rootLoggerName removeHandler
 
    -- Set up our logger
-   h <- streamHandler stdout DEBUG
-   updateGlobalLogger lname $ setHandlers [h]
+   outH <- streamHandler stdout DEBUG
+   errH <- streamHandler stderr CRITICAL
+   updateGlobalLogger lname $ setHandlers [outH, errH]
    updateGlobalLogger lname $ setLevel logPriority
 
 
