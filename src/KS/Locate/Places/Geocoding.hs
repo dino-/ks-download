@@ -18,7 +18,7 @@ import Text.Printf ( printf )
 
 import KS.Data.Inspection
 import KS.Locate.Locate ( Env (..), KSDL, asks, liftIO,
-   throwError, tryIO, when )
+   throwError, when )
 import KS.Locate.Config
 import KS.Log
 
