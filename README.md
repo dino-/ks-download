@@ -130,6 +130,8 @@ that you can put somewhere like `/opt/` for instance.
     $ tar czvf ks-download-VER.tgz ks-download-VER
     $ popd
 
+When you want to insert records into the database, make sure you do not forget to edit the `bin/ks-dl-nightly.sh` script. By default ks-dbinsert execution is commented out and fake one runs!
+
 
 ## Contact
 
