@@ -2,7 +2,7 @@
 -- Author: Dino Morelli <dino@ui3.info>
 
 module KS.Locate.Locate
-   ( Env (..), KSDL, runKSDL
+   ( Env (..), ErrMsg (..), KSDL, runKSDL
    , tryIO
 
    -- Re-exporting
@@ -16,6 +16,7 @@ import Control.Monad.Except
 
 import KS.Data.Inspection
 import KS.Locate.Config
+import KS.Log ( Priority (..) )
 
 
 data Env = Env
@@ -23,9 +24,12 @@ data Env = Env
    , getInspection :: Inspection
    }
 
-type KSDL a = ReaderT Env (ExceptT String IO) a
+data ErrMsg = ErrMsg Priority String
+   deriving (Eq, Show)
 
-runKSDL :: Env -> KSDL a -> IO (Either String a)
+type KSDL a = ReaderT Env (ExceptT ErrMsg IO) a
+
+runKSDL :: Env -> KSDL a -> IO (Either ErrMsg a)
 runKSDL env ev = runExceptT (runReaderT ev env)
 
 
@@ -34,4 +38,5 @@ runKSDL env ev = runExceptT (runReaderT ev env)
    catchAll comes from the `exceptions` package
 -}
 tryIO :: IO a -> KSDL a
-tryIO act = catchAll (liftIO act) $ throwError . show
+tryIO act = catchAll (liftIO act) $
+   \e -> throwError $ ErrMsg CRITICAL $ show e

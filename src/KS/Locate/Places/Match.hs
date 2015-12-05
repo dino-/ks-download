@@ -34,7 +34,7 @@ match ps = do
    let count = (sum . map bToI $ mis) :: Int
 
    when (count == 0) $ do
-      throwError "ERROR Match: No Places result matches"
+      throwError $ ErrMsg ERROR "ERROR Match: No Places result matches"
 
    liftIO $ do
       noticeM lname "Matches:"

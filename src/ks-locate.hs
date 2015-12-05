@@ -79,7 +79,7 @@ lookupInspection config options srcPath = do
    either (handleFailure) (outputDoc options srcPath . mkDoc) r
 
    where
-      handleFailure msg = do
+      handleFailure (ErrMsg prio msg) = do
          -- Copy to FAILDIR if we have one
          maybe (return ()) (\failDir ->
             copyFile srcPath $ failDir </> takeFileName srcPath)
@@ -89,7 +89,7 @@ lookupInspection config options srcPath = do
          when (optDelete options) $ removeFile srcPath
 
          -- Log what happened
-         errorM lname msg
+         logM lname prio msg
 
       mkDoc :: Match -> Document
       mkDoc (inspection', place') =
@@ -116,7 +116,7 @@ loadInspection' path = do
    r <- liftIO $ tryIOError $ loadInspection path
 
    case r of
-      Left ex -> throwError $ printf "Error loading %s:\n%s" path (show ex)
+      Left ex -> throwError $ ErrMsg CRITICAL $ printf "Error loading %s:\n%s" path (show ex)
       Right insp -> do
          liftIO . noticeM lname . show $ insp
          return insp

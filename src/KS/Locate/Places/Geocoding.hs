@@ -8,7 +8,6 @@ module KS.Locate.Places.Geocoding
    where
 
 import Control.Concurrent ( threadDelay )
-import Control.Monad.Catch ( catchAll )
 import Data.Aeson
 import qualified Data.ByteString.Lazy.Char8 as BL
 import Data.Text
@@ -17,8 +16,8 @@ import Network.HTTP.Conduit ( simpleHttp )
 import Text.Printf ( printf )
 
 import KS.Data.Inspection
-import KS.Locate.Locate ( Env (..), KSDL, asks, liftIO,
-   throwError, when )
+import KS.Locate.Locate ( Env (..), ErrMsg (..), KSDL, asks, liftIO,
+   throwError, tryIO, when )
 import KS.Locate.Config
 import KS.Log
 
@@ -51,17 +50,14 @@ forwardLookup = do
 
    asks (geocodingApiDelay . getConfig) >>= (liftIO . threadDelay)
 
-   gcJSON <- catchAll (liftIO $ simpleHttp url) $ \e -> do
-      let emsg = show e
-      liftIO $ criticalM lname emsg
-      throwError emsg
+   gcJSON <- tryIO $ simpleHttp url
 
    liftIO $ debugM lname $ "Geocoding result JSON: "
       ++ (BL.unpack gcJSON)
 
    let parseResult = eitherDecode gcJSON
    either
-      (\status -> throwError $ "ERROR Geocoding: " ++ status)
+      (\status -> throwError $ ErrMsg ERROR $ "ERROR Geocoding: " ++ status)
       displayAndReturn parseResult
 
 

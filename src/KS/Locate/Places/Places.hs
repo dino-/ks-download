@@ -18,7 +18,6 @@ module KS.Locate.Places.Places
    ( coordsToPlaces )
    where
 
-import Control.Monad.Catch ( catchAll )
 import Data.Aeson
 import qualified Data.ByteString.Lazy.Char8 as BL
 import Data.Geospatial ( GeoPoint (..) )
@@ -79,17 +78,14 @@ coordsToPlaces coords = do
    url <- mkPlacesUrl coords
    liftIO $ noticeM lname $ "Places URL: " ++ url
 
-   plJSON <- catchAll (liftIO $ simpleHttp url) $ \e -> do
-      let emsg = show e
-      liftIO $ criticalM lname emsg
-      throwError emsg
+   plJSON <- tryIO $ simpleHttp url
 
    liftIO $ debugM lname $ "Places result JSON: "
       ++ (BL.unpack plJSON)
 
    let parseResult = eitherDecode plJSON
    either
-      (\status -> throwError $ "ERROR Places API: " ++ status)
+      (\status -> throwError $ ErrMsg ERROR $ "ERROR Places API: " ++ status)
       displayAndReturn parseResult
 
 

@@ -8,7 +8,7 @@ module KS.Log
 
    -- Re-exported from System.Log
    , Priority (..), debugM, infoM, noticeM, warningM, errorM
-   , criticalM, alertM, emergencyM
+   , criticalM, alertM, emergencyM, logM
    )
    where
 
