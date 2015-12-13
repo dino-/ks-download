@@ -151,6 +151,29 @@ test-suite           test-Database
                      , text
    ghc-options:      -Wall
 
+executable           ks-regionupd
+   main-is:          ks-regionupd.hs
+   hs-source-dirs:   src
+   other-modules:    KS.Database.Mongo.Config
+                     KS.Database.Mongo.Util
+                     KS.RegionUpd.Opts
+   build-depends:      base >= 3 && < 5
+                     , bson
+                     , bytestring
+                     , containers
+                     , filepath
+                     , hslogger
+                     , ks-library >= 1.2
+                     , mongoDB <= 2.0.8
+                     , mtl
+                     , old-locale
+                     , tce-conf
+                     , text
+                     , text-format
+                     , time
+                     , utf8-string
+   ghc-options:      -Wall
+
 --executable           ks-dump
 --   main-is:          ks-dump.hs
 --   hs-source-dirs:   src

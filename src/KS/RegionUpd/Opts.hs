@@ -1,7 +1,7 @@
 -- License: BSD3 (see LICENSE)
 -- Author: Dino Morelli <dino@ui3.info>
 
-module KS.DBInsert.Opts
+module KS.RegionUpd.Opts
    ( Options (..)
    , defaultOptions
    , parseOpts, usageText
@@ -49,14 +49,13 @@ usageText :: String
 usageText = (usageInfo header options) ++ "\n" ++ footer
    where
       header = init $ unlines
-         [ "Usage: ks-dbinsert [OPTIONS] FILE|DIR"
-         , "Insert inspections + Places info into MongoDB"
+         [ "Usage: ks-regionupd [OPTIONS]"
+         , "Update the region_data and region_data_history collections with the latest statistics"
          , ""
          , "Options:"
          ]
       footer = init $ unlines
-         [ "Looks up the file or dir full of files specified"
-         , "Logging is written to stdout."
+         [ "Logging is written to stdout."
          , ""
          , "Version " ++ (showVersion version) ++ "  Dino Morelli <dino@ui3.info>"
          ]
