@@ -121,3 +121,6 @@ cabal\.sandbox\.config
 (^|/)\.lock-wscript$
 # mac os finder
 (^|/)\.DS_Store$
+
+# vim swap files
+\.sw?$
