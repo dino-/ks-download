@@ -26,11 +26,12 @@ Make a directory for config files, and copy the two conf files into
 it, along with your Google API key in a file. This can be anywhere
 as long as they're together. How about in `$HOME`, like this:
 
-    $HOME/
-      .ksdl/
-         ks-dbinsert.conf
-         ks-locate.conf
-         GoogleAPIKey
+      $HOME/
+         .config/
+            kitchensnitch/
+               GoogleAPIKey
+               ks-locate.conf
+               mongodb.conf
 
 The key should be the only thing in the `GoogleAPIKey` file, on a
 line by itself. 
@@ -48,7 +49,7 @@ To run, have a directory structure like this:
 Then, to run:
 
     $ cd inspectionsToProcess
-    $ ks-locate -c $HOME/.ksdl/ -s succ/ -f fail/ --delete insp | tee ks-locate.log
+    $ ks-locate -c $HOME/.config/kitchensnitch -s succ/ -f fail/ --delete insp | tee ks-locate.log
 
 When it's finished:
 
