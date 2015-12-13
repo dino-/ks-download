@@ -34,7 +34,7 @@ main = do
    -- No buffering, it messes with the order of output
    mapM_ (flip hSetBuffering NoBuffering) [ stdout, stderr ]
 
-   (options, srcDirsOrFiles) <- getArgs >>= parseOpts
+   (options, _) <- getArgs >>= parseOpts
    when (optHelp options) $ putStrLn usageText >> exitSuccess
 
    mongoConf <- MC.loadMongoConfig $ optConfDir options
