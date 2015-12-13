@@ -11,7 +11,7 @@ import Data.Bson
 import Data.Text hiding ( map )
 import Test.HUnit
 
-import KS.Database.Mongo
+import KS.Database.Mongo.Util
 
 
 tests :: Test

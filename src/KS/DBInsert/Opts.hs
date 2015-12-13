@@ -1,7 +1,7 @@
 -- License: BSD3 (see LICENSE)
 -- Author: Dino Morelli <dino@ui3.info>
 
-module KS.Database.Opts
+module KS.DBInsert.Opts
    ( Options (..)
    , defaultOptions
    , parseOpts, usageText

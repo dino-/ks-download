@@ -24,9 +24,9 @@ import Text.Printf ( printf )
 import KS.Data.BSON ( docToBSON )
 import qualified KS.Data.Document as D
 import qualified KS.Data.Place as P
-import qualified KS.Database.Config as C
-import KS.Database.Opts
-import KS.Database.Mongo ( parseLastError )
+import qualified KS.Database.Mongo.Config as C
+import KS.Database.Mongo.Util ( parseLastError )
+import KS.DBInsert.Opts
 
 
 main :: IO ()
@@ -39,7 +39,7 @@ main = do
       putStrLn usageText
       exitSuccess
 
-   config <- C.loadConfig options
+   config <- C.loadConfig $ optConfDir options
 
    -- Paths to all files we'll be processing
    files <- concat <$> (sequence $ map buildFileList srcDirsOrFiles)

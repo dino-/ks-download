@@ -112,9 +112,9 @@ test-suite           test-Locate
 executable           ks-dbinsert
    main-is:          ks-dbinsert.hs
    hs-source-dirs:   src
-   other-modules:    KS.Database.Config
-                     KS.Database.Mongo
-                     KS.Database.Opts
+   other-modules:    KS.Database.Mongo.Config
+                     KS.Database.Mongo.Util
+                     KS.DBInsert.Opts
    build-depends:      aeson
                      , aeson-pretty
                      , attoparsec

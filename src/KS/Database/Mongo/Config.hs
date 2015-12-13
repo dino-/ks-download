@@ -3,7 +3,7 @@
 
 {-# LANGUAGE OverloadedStrings #-}
 
-module KS.Database.Config
+module KS.Database.Mongo.Config
    ( Config (..)
    , loadConfig )
    where
@@ -12,20 +12,17 @@ import qualified Data.Text as T
 import System.FilePath
 import TCE.Data.ReadConf ( readConfig )
 
-import KS.Database.Opts
-
 
 data Config = Config
    { mongoServerIP :: String
    , mongoUsername :: T.Text
    , mongoPassword :: T.Text
    , mongoDatabase :: T.Text
-   , mongoCollection :: T.Text
    }
    deriving (Read, Show)
 
 
-loadConfig :: Options -> IO Config
-loadConfig options = do
-   let confPath = (optConfDir options) </> "ks-dbinsert.conf"
+loadConfig :: FilePath -> IO Config
+loadConfig confDir = do
+   let confPath = confDir </> "mongodb.conf"
    (either error id . readConfig) `fmap` readFile confPath

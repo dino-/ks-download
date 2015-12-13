@@ -3,7 +3,7 @@
 
 {-# LANGUAGE OverloadedStrings #-}
 
-module KS.Database.Mongo
+module KS.Database.Mongo.Util
    ( parseLastError )
    where
 
