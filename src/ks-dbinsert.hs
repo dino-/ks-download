@@ -24,7 +24,7 @@ import Text.Printf ( printf )
 import KS.Data.BSON ( docToBSON )
 import qualified KS.Data.Document as D
 import qualified KS.Data.Place as P
-import qualified KS.Database.Mongo.Config as C
+import qualified KS.Database.Mongo.Config as MC
 import KS.Database.Mongo.Util ( parseLastError )
 import KS.DBInsert.Opts
 
@@ -39,21 +39,21 @@ main = do
       putStrLn usageText
       exitSuccess
 
-   config <- C.loadConfig $ optConfDir options
+   mongoConf <- MC.loadMongoConfig $ optConfDir options
 
    -- Paths to all files we'll be processing
    files <- concat <$> (sequence $ map buildFileList srcDirsOrFiles)
 
    -- Get a connection to Mongo, they call it a 'pipe'
-   pipe <- connect . host . C.mongoServerIP $ config
+   pipe <- connect . host . MC.ip $ mongoConf
 
    -- Authenticate with mongo, show the auth state on stdout
-   (access pipe UnconfirmedWrites (C.mongoDatabase config)
-      $ auth (C.mongoUsername config) (C.mongoPassword config)) >>=
+   (access pipe UnconfirmedWrites (MC.database mongoConf)
+      $ auth (MC.username mongoConf) (MC.password mongoConf)) >>=
       \tf -> putStrLn $ "Authenticated with Mongo: " ++ (show tf)
 
    exitCode <- do
-      failures <- mapM (loadAndInsert config pipe) files
+      failures <- mapM (loadAndInsert mongoConf pipe) files
       if any (== True) failures
          then return $ ExitFailure 1
          else return ExitSuccess
@@ -63,14 +63,14 @@ main = do
    exitWith exitCode
 
 
-loadAndInsert :: C.Config -> Pipe -> FilePath -> IO Bool
-loadAndInsert config pipe path = do
+loadAndInsert :: MC.MongoConfig -> Pipe -> FilePath -> IO Bool
+loadAndInsert mongoConf pipe path = do
    edoc <- tryIOError $ D.loadDocument path
 
    result <- case edoc of
       Left ex   -> return . Left $ show ex
       Right doc ->
-         access pipe UnconfirmedWrites (C.mongoDatabase config) $ do
+         access pipe UnconfirmedWrites (MC.database mongoConf) $ do
             -- Insert the inspection into the all_inspections collection
             save "inspections" $ docToBSON doc
             sr <- parseLastError `fmap` runCommand [ "getLastError" =: (1::Int) ]

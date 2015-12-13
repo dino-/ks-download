@@ -24,7 +24,7 @@ import System.IO.Error ( tryIOError )
 import KS.Data.BSON ( docToBSON )
 --import qualified KS.Data.Document as D
 --import qualified KS.Data.Place as P
-import qualified KS.Database.Mongo.Config as C
+import qualified KS.Database.Mongo.Config as MC
 import KS.Database.Mongo.Util ( parseLastError )
 import KS.RegionUpd.Opts
 
@@ -37,32 +37,50 @@ main = do
    (options, srcDirsOrFiles) <- getArgs >>= parseOpts
    when (optHelp options) $ putStrLn usageText >> exitSuccess
 
-   config <- C.loadConfig $ optConfDir options
+   mongoConf <- MC.loadMongoConfig $ optConfDir options
 
-   print config
+   --print config
 
-   {-
    -- Paths to all files we'll be processing
-   files <- concat <$> (sequence $ map buildFileList srcDirsOrFiles)
+   --files <- concat <$> (sequence $ map buildFileList srcDirsOrFiles)
 
    -- Get a connection to Mongo, they call it a 'pipe'
-   pipe <- connect . host . C.mongoServerIP $ config
+   pipe <- connect . host . MC.ip $ mongoConf
 
    -- Authenticate with mongo, show the auth state on stdout
-   (access pipe UnconfirmedWrites (C.mongoDatabase config)
-      $ auth (C.mongoUsername config) (C.mongoPassword config)) >>=
+   (access pipe UnconfirmedWrites (MC.database mongoConf)
+      $ auth (MC.username mongoConf) (MC.password mongoConf)) >>=
       \tf -> putStrLn $ "Authenticated with Mongo: " ++ (show tf)
 
+   regions <- loadRegions mongoConf pipe
+   --print regions
+   mapM_ print regions
+
+   {-
    exitCode <- do
       failures <- mapM (loadAndInsert config pipe) files
       if any (== True) failures
          then return $ ExitFailure 1
          else return ExitSuccess
+   -}
 
    close pipe
 
-   exitWith exitCode
-   -}
+   --exitWith exitCode
+
+
+loadRegions :: MC.MongoConfig -> Pipe -> IO [Document]
+loadRegions mc pipe = do
+   access pipe slaveOk (MC.database mc) $ rest =<<
+      find (select [] "regions")
+{-
+loadRegions :: C.Config -> Pipe -> IO Int
+loadRegions mc pipe = do
+   rs <- access pipe slaveOk (C.mongoDatabase mc) $ rest =<<
+      find (select [] "regions")
+
+   return $ length rs
+-}
 
 
 {-
