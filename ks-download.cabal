@@ -157,7 +157,9 @@ executable           ks-regionupd
    other-modules:    KS.Database.Mongo.Config
                      KS.Database.Mongo.Util
                      KS.RegionUpd.Opts
-   build-depends:      base >= 3 && < 5
+   build-depends:      aeson
+                     , aeson-bson
+                     , base >= 3 && < 5
                      , bson
                      , bytestring
                      , containers

@@ -7,8 +7,14 @@
 -}
 
 import Control.Monad ( when )
+import Data.Aeson ( Object, decodeStrict )
+import Data.Aeson.Bson ( toBson )
+import qualified Data.ByteString.Char8 as B
 --import Data.Either ( isLeft )
 --import Data.List ( isPrefixOf )
+import Data.Time ( UTCTime, getCurrentTime )
+import Data.Maybe ( fromJust )
+import qualified Data.Text as T
 import Database.MongoDB hiding ( options )
 --import System.Directory ( doesFileExist, getDirectoryContents )
 import System.Environment ( getArgs )
@@ -26,6 +32,7 @@ import KS.Data.BSON ( docToBSON )
 --import qualified KS.Data.Place as P
 import qualified KS.Database.Mongo.Config as MC
 import KS.Database.Mongo.Util ( parseLastError )
+import KS.Log
 import KS.RegionUpd.Opts
 
 
@@ -37,12 +44,11 @@ main = do
    (options, _) <- getArgs >>= parseOpts
    when (optHelp options) $ putStrLn usageText >> exitSuccess
 
+   initLogging $ optLogPriority options
+   noticeM lname line
+   logStartMsg lname
+
    mongoConf <- MC.loadMongoConfig $ optConfDir options
-
-   --print config
-
-   -- Paths to all files we'll be processing
-   --files <- concat <$> (sequence $ map buildFileList srcDirsOrFiles)
 
    -- Get a connection to Mongo, they call it a 'pipe'
    pipe <- connect . host . MC.ip $ mongoConf
@@ -52,9 +58,10 @@ main = do
       $ auth (MC.username mongoConf) (MC.password mongoConf)) >>=
       \tf -> putStrLn $ "Authenticated with Mongo: " ++ (show tf)
 
-   regions <- loadRegions mongoConf pipe
+   _ <- updateRegions mongoConf pipe
    --print regions
-   mapM_ print regions
+   --mapM_ print regions
+   --mapM_ (debugM lname . show) regions
 
    {-
    exitCode <- do
@@ -66,21 +73,125 @@ main = do
 
    close pipe
 
+   logStopMsg lname
+
    --exitWith exitCode
 
 
-loadRegions :: MC.MongoConfig -> Pipe -> IO [Document]
-loadRegions mc pipe = do
-   access pipe slaveOk (MC.database mc) $ rest =<<
-      find (select [] "regions")
-{-
-loadRegions :: C.Config -> Pipe -> IO Int
-loadRegions mc pipe = do
-   rs <- access pipe slaveOk (C.mongoDatabase mc) $ rest =<<
+updateRegions :: MC.MongoConfig -> Pipe -> IO Bool
+updateRegions mc pipe = do
+   -- Retrieve all region info (the state and county info)
+   regionDocs <- access pipe slaveOk (MC.database mc) $ rest =<<
       find (select [] "regions")
 
-   return $ length rs
--}
+   -- Get the stats for all regions in recent_inspections
+   computedStats <- access pipe slaveOk (MC.database mc) $ aggregate
+      "recent_inspections" [mkStatsQuery]
+   debugM lname $ show computedStats
+
+   -- Get the date right now
+   now <- getCurrentTime
+
+   -- Construct the regional_stats documents
+   let newDocs = map (mkRegionalStats now regionDocs) computedStats
+   mapM_ (debugM lname . show) newDocs
+
+   -- Upsert them into the regional_data collection
+
+   -- If this is the first of the month,
+   -- insert the documents into regional_data_history as well
+
+   return False
+
+
+mkRegionalStats :: UTCTime -> [Document] -> Document -> Document
+mkRegionalStats now regionDocs stats =
+   [ "source" =: region
+   , "doctype" =: ("regional_stats" :: T.Text)
+   , "date" =: now
+   , "state" =: (state :: T.Text)
+   , "county" =: (county :: T.Text)
+   , "count_total" =: (("count_total" `at` stats) :: Int)
+   , "count_a1" =: (("count_a1" `at` stats) :: Int)
+   , "count_a2" =: (("count_a2" `at` stats) :: Int)
+   , "count_a3" =: (("count_a3" `at` stats) :: Int)
+   , "count_a4" =: (("count_a4" `at` stats) :: Int)
+   , "count_b" =: (("count_b" `at` stats) :: Int)
+   , "count_c" =: (("count_c" `at` stats) :: Int)
+   , "min_score" =: (("min_score" `at` stats) :: Float)
+   , "max_score" =: (("max_score" `at` stats) :: Float)
+   , "avg_score" =: (("avg_score" `at` stats) :: Float)
+   ]
+
+   where
+      region :: T.Text
+      region = "_id" `at` stats
+
+      (state, county) = ("state" `at` regionInfo, "county" `at` regionInfo)
+
+      regionInfo = lookupRegion regionDocs region
+
+
+lookupRegion :: [Document] -> T.Text -> Document
+lookupRegion (d : ds) region
+   | region == "_id" `at` d = d
+   | otherwise = lookupRegion ds region
+lookupRegion [] region = error $ "No region found for: " ++ (T.unpack region)
+
+
+mkStatsQuery :: Document
+mkStatsQuery = toBson . fromJust . decodeStrict . B.pack . unlines $
+   [ "   {  \"$group\":"
+   , "         {  \"_id\": \"$inspection.inspection_source\""
+   , "         , \"min_score\": { \"$min\": \"$inspection.score\" }"
+   , "         , \"max_score\": { \"$max\": \"$inspection.score\" }"
+   , "         , \"avg_score\": { \"$avg\": \"$inspection.score\" }"
+   , "         , \"count_total\": { \"$sum\": 1 }"
+   , "         , \"count_a4\": { \"$sum\": { \"$cond\":"
+   , "            [ { \"$gte\": [\"$inspection.score\", 97.5] }"
+   , "            , 1"
+   , "            , 0"
+   , "            ] } }"
+   , "         , \"count_a3\": { \"$sum\": { \"$cond\":"
+   , "            [ { \"$and\":"
+   , "               [ { \"$gte\": [\"$inspection.score\", 95.0] }"
+   , "               , { \"$lt\": [\"$inspection.score\", 97.5] }"
+   , "               ] }"
+   , "            , 1"
+   , "            , 0"
+   , "            ] } }"
+   , "         , \"count_a2\": { \"$sum\": { \"$cond\":"
+   , "            [ { \"$and\":"
+   , "               [ { \"$gte\": [\"$inspection.score\", 92.5] }"
+   , "               , { \"$lt\": [\"$inspection.score\", 95.0] }"
+   , "               ] }"
+   , "            , 1"
+   , "            , 0"
+   , "            ] } }"
+   , "         , \"count_a1\": { \"$sum\": { \"$cond\":"
+   , "            [ { \"$and\":"
+   , "               [ { \"$gte\": [\"$inspection.score\", 90.0] }"
+   , "               , { \"$lt\": [\"$inspection.score\", 92.5] }"
+   , "               ] }"
+   , "            , 1"
+   , "            , 0"
+   , "            ] } }"
+   , "         , \"count_b\": { \"$sum\": { \"$cond\":"
+   , "            [ { \"$and\":"
+   , "               [ { \"$gte\": [\"$inspection.score\", 80.0] }"
+   , "               , { \"$lt\": [\"$inspection.score\", 90.0] }"
+   , "               ] }"
+   , "            , 1"
+   , "            , 0"
+   , "            ] } }"
+   , "         , \"count_c\": { \"$sum\": { \"$cond\":"
+   , "            [ { \"$lt\": [\"$inspection.score\", 80.0] }"
+   , "            , 1"
+   , "            , 0"
+   , "            ] } }"
+   , "         }"
+   , "   }"
+   ]
 
 
 {-
@@ -107,14 +218,4 @@ loadAndInsert config pipe path = do
    printf "%s %s\n" path (either id id $ result)
 
    return . isLeft $ result
-
-
-buildFileList :: FilePath -> IO [FilePath]
-buildFileList srcDirOrFile = do
-   isFile <- doesFileExist srcDirOrFile
-   if isFile then return [srcDirOrFile]
-      else
-         ( map (srcDirOrFile </>)                  -- ..relative paths
-         . filter (not . isPrefixOf ".") )         -- ..minus dotfiles
-         `fmap` getDirectoryContents srcDirOrFile  -- All files
 -}
