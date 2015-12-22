@@ -11,12 +11,12 @@ import qualified Data.Text as T
 import Data.Time ( TimeZone, getCurrentTimeZone )
 import Data.Time.Calendar ( toGregorian )
 --import Debug.Trace ( trace )
+import qualified KS.Data.Inspection as I
 import Network.HTTP
 import Text.HTML.TagSoup
 import Text.Printf ( printf )
 
 import KS.DLInsp.Types
-import qualified KS.Data.Inspection as I
 
 
 urlPrefix :: String

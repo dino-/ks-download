@@ -157,6 +157,7 @@ executable           ks-regionupd
    other-modules:    KS.Database.Mongo.Config
                      KS.Database.Mongo.Util
                      KS.RegionUpd.Opts
+                     KS.RegionUpd.Region
    build-depends:      aeson
                      , aeson-bson
                      , base >= 3 && < 5
