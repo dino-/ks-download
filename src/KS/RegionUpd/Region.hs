@@ -1,22 +1,25 @@
 -- License: BSD3 (see LICENSE)
 -- Author: Dino Morelli <dino@ui3.info>
 
-{-# LANGUAGE DeriveGeneric #-}
+{-# LANGUAGE OverloadedStrings #-}
 
 module KS.RegionUpd.Region
+   ( Regions, Region
+   , regions
+   -- Re-exported
+   , M.lookup
+   )
    where
 
-import Data.Aeson ( FromJSON )
+import qualified Data.Map as M
 import qualified Data.Text as T
-import GHC.Generics ( Generic )
 
 
-data Region = Region
-   { _id :: T.Text
-   , doctype :: T.Text
-   , state :: T.Text
-   , county :: T.Text
-   }
-   deriving (Generic)
+type Regions = M.Map T.Text Region
 
-instance FromJSON Region
+type Region = (T.Text, T.Text)
+
+
+-- FIXME This needs to go into a conf file!
+regions :: Regions
+regions = M.fromList [("nc_wake", ("NC", "Wake"))]
