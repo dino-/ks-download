@@ -70,6 +70,13 @@ job shoulld look something like this:
     7 1 * * wed,thu,fri,sat,sun  /opt/ks-download/bin/ks-dl-nightly.sh
 
 
+### ks-regionupd - Update of regional statistics, to be run daily
+
+Put this in a cron job:
+
+    45 1 * * *  /opt/ks-download/bin/ks-regionupd --conf-dir=$HOME/.config/kitchensnitch --log-priority=NOTICE > /some/dir/ks-regionupd.log
+
+
 ## Building from source
 
 Make sure you have `ghc 7.8.x`, `cabal-install` and `darcs` installed.
@@ -88,6 +95,45 @@ On Ubuntu:
 On Arch Linux:
 
     # pacman -S libzip
+
+** WARNING These notes below need to be in a more common place, like the wiki **
+
+Make a directory for all of the KS components and their dependencies. This helps us to share a sandbox and minimizing build complexity.
+
+    $ mkdir -p kitchensnitch/.cabal-sandbox
+    $ cd kitchensnitch
+
+First, let's install the geojson library into a sandbox
+
+    $ mkdir geojson
+    $ cd geojson
+    $ cabal sandbox init --sandbox=../.cabal-sandbox
+    $ cabal install geojson
+    $ cd ..
+
+A version of the aeson-bson library from GitHub will need to be installed
+
+    $ git clone https://github.com/dino-/aesonbson.git
+    $ cd aesonbson
+    $ cabal sandbox init --sandbox=../.cabal-sandbox
+    $ cabal install
+    $ cd ..
+
+A version of the bson-generic library from GitHub will also need to be installed
+
+    $ git clone https://github.com/dino-/bson-generic.git
+    $ cd bson-generic
+    $ cabal sandbox init --sandbox=../.cabal-sandbox
+    $ cabal install
+    $ cd ..
+
+The ks-library needs to be installed next
+
+    $ darcs clone http://hub.darcs.net/dino/ks-library
+    $ cd ks-library
+    $ cabal sandbox init --sandbox=../.cabal-sandbox
+    $ cabal install
+    $ cd ..
 
 Get the `ks-download` source code
 
