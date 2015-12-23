@@ -30,13 +30,12 @@ import KS.Database.Mongo.Util ( parseLastError )
 import KS.Log
 import KS.RegionUpd.Opts
 import qualified KS.RegionUpd.Region as R
---import qualified KS.RegionUpd.RegionalStats as RS
 
 
 coll_regional_data :: Collection
 
---coll_regional_data = "regional_data"
-coll_regional_data = "test_regional_data"  -- For development
+coll_regional_data = "regional_data"
+--coll_regional_data = "test_regional_data"  -- For development
 
 
 main :: IO ()
@@ -69,46 +68,6 @@ main = do
    exitWith . toExitCode $ result
 
 
-{-
-updateRegions :: MC.MongoConfig -> Pipe -> IO Bool
-updateRegions mc pipe = do
-   -- Retrieve all region info (the state and county info)
-   -- regionDocs :: [Data.Bson.Document]
-   regionDocs <- access pipe slaveOk (MC.database mc) $ rest =<<
-      find (select [] "regions")
-
-   -- (failures, regions) :: ([String], [Region])
-   let (failures, regions) = partitionEithers . map (resultToEither . fromBSON) $ regionDocs
-
-   -- Report any failures to the log. This should NEVER happen!
-   when (not $ null failures) $
-      errorM lname "There were failures when retrieving the regions..."
-   mapM_ (\e -> errorM lname e) failures
-
-   -- Get the stats for all regions in recent_inspections
-   computedStats <- access pipe slaveOk (MC.database mc) $ aggregate
-      "recent_inspections" [mkStatsQuery]
-
-   -- Get the date right now
-   now <- utcTimeToEpoch <$> getCurrentTime
-
-   -- Construct the regional_stats documents
-   let newDocs = map (mkRegionalStats now regions) computedStats
-
-   -- Report what we're about to do
-   infoM lname $ printf "Inserting these stats into the %s collection:"
-      (T.unpack coll_regional_data)
-   mapM_ (infoM lname . show) newDocs
-
-   -- Upsert them into the regional_data collection
-   statsResults <- liftIO $ mapM (updateStatsDocument mc pipe) newDocs
-
-   -- If this is the first of the month,
-   -- insert the documents into regional_data_history as well
-   -- historyResults <- ...
-
-   return $ all (== True) statsResults
--}
 updateRegions :: MC.MongoConfig -> Pipe -> IO Bool
 updateRegions mc pipe = do
    -- Get the stats for all regions in recent_inspections
@@ -147,22 +106,8 @@ updateStatsDocument mc pipe doc = do
       (\e -> errorM lname e >> return False)
       (\m -> noticeM lname m >> return True)
       result
-{-
-updateStatsDocument :: MC.MongoConfig -> Pipe -> RS.RegionalStats -> IO Bool
-updateStatsDocument mc pipe doc = do
-   result <- access pipe slaveOk (MC.database mc) $ do
-      upsert (select [ "source" =: (RS.source doc) ]
-         coll_regional_data) (toBSON doc)
-      parseLastError <$> runCommand [ "getLastError" =: (1::Int) ]
-
-   either
-      (\e -> errorM lname e >> return False)
-      (\m -> noticeM lname m >> return True)
-      result
--}
 
 
---mkRegionalStats :: Int -> [R.Region] -> Document -> Document
 mkRegionalStats :: Int -> R.Regions -> Document -> Document
 mkRegionalStats now regions stats =
    [ "source" =: region
@@ -187,42 +132,6 @@ mkRegionalStats now regions stats =
       region = "_id" `at` stats
 
       (state, county) = fromJust . R.lookup region $ regions
-      --regionInfo = lookupRegion regions region
-{-
-mkRegionalStats :: Int -> [R.Region] -> Document -> RS.RegionalStats
-mkRegionalStats now regions stats = RS.RegionalStats
-   { RS.source = region
-   , RS.doctype = "regional_stats"
-   , RS.date = now
-   , RS.state = (R.state regionInfo)
-   , RS.county = (R.county regionInfo)
-   , RS.count_total = ("count_total" `at` stats)
-   , RS.count_a1 = ("count_a1" `at` stats)
-   , RS.count_a2 = ("count_a2" `at` stats)
-   , RS.count_a3 = ("count_a3" `at` stats)
-   , RS.count_a4 = ("count_a4" `at` stats)
-   , RS.count_b = ("count_b" `at` stats)
-   , RS.count_c = ("count_c" `at` stats)
-   , RS.min_score = ("min_score" `at` stats)
-   , RS.max_score = ("max_score" `at` stats)
-   , RS.avg_score = ("avg_score" `at` stats)
-   }
-
-   where
-      region :: T.Text
-      region = "_id" `at` stats
-
-      regionInfo = lookupRegion regions region
--}
-
-
-{-
-lookupRegion :: [R.Region] -> T.Text -> R.Region
-lookupRegion (r : rs) region
-   | region == R._id r = r
-   | otherwise = lookupRegion rs region
-lookupRegion [] region = error $ "No region found for: " ++ (T.unpack region)
--}
 
 
 mkStatsQuery :: Document
