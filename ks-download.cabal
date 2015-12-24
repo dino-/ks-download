@@ -15,14 +15,15 @@ category:            Unknown
 tested-with:         GHC >= 7.10.1
 extra-source-files:  changelog.md
                      doc/dev/notes
-                     ks-dbinsert.conf
-                     ks-locate.conf
                      README.md
-                     src/KS/Log.hs
+                     resources/ks-locate.conf
+                     resources/mongodb.conf
                      util/gentags.sh
                      util/inspconv.coffee
+                     util/ks-dl-nightly.sh
                      util/resources/geocode.json
                      util/resources/nc-wake/searchResultPage.html
+                     util/resources/places.json
 
 source-repository    head
    type:             darcs
@@ -61,6 +62,7 @@ executable           ks-locate
                      KS.Locate.Places.Match
                      KS.Locate.Places.NameWords
                      KS.Locate.Places.Places
+                     KS.Log
    build-depends:      aeson
                      , aeson-pretty
                      , attoparsec
@@ -155,6 +157,7 @@ executable           ks-regionupd
    hs-source-dirs:   src
    other-modules:    KS.Database.Mongo.Config
                      KS.Database.Mongo.Util
+                     KS.Log
                      KS.RegionUpd.Opts
                      KS.RegionUpd.Region
    build-depends:      aeson

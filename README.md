@@ -170,9 +170,7 @@ And you should be good for development from here.
 This will build everything into a deployable directory structure
 that you can put somewhere like `/opt/` for instance.
 
-    $ cabal configure --prefix=/tmp/ks-download-VER
-    $ cabal build
-    $ cabal copy
+    $ cabal install --prefix=/tmp/ks-download-VER --datasubdir=.
     $ pushd /tmp
     $ tar czvf ks-download-VER.tgz ks-download-VER
     $ popd
