@@ -39,4 +39,4 @@ runKSDL env ev = runExceptT (runReaderT ev env)
 -}
 tryIO :: IO a -> KSDL a
 tryIO act = catchAll (liftIO act) $
-   \e -> throwError $ ErrMsg CRITICAL $ show e
+   \e -> throwError $ ErrMsg CRITICAL $ "CRITICAL IO exception: " ++ (show e)
