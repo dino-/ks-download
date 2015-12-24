@@ -19,7 +19,6 @@ extra-source-files:  changelog.md
                      ks-locate.conf
                      README.md
                      src/KS/Log.hs
-                     TODO.md
                      util/gentags.sh
                      util/inspconv.coffee
                      util/resources/geocode.json
