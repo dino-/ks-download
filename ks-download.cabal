@@ -16,14 +16,15 @@ tested-with:         GHC >= 7.10.1
 extra-source-files:  changelog.md
                      doc/dev/notes
                      README.md
-                     resources/ks-locate.conf
-                     resources/mongodb.conf
                      util/gentags.sh
                      util/inspconv.coffee
                      util/ks-dl-nightly.sh
                      util/resources/geocode.json
                      util/resources/nc-wake/searchResultPage.html
                      util/resources/places.json
+
+data-files:          resources/ks-locate.conf
+                     resources/mongodb.conf
 
 source-repository    head
    type:             darcs
