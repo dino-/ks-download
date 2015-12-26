@@ -24,7 +24,7 @@ tests = TestList $ map testNameWords testData
 
 testNameWords :: (Text, [Text]) -> Test
 testNameWords (input, output) = TestCase $ do
-   conf <- loadConfig defaultOptions
+   conf <- loadConfig =<< defaultOptions
    let insp = fakeInspection input
    actual <- runKSDL (Env conf insp) toList
    let label = printf "name words for \"%s\"" (unpack input)

@@ -11,6 +11,8 @@ module KS.Locate.Opts
 import Data.Version ( showVersion )
 import Paths_ks_download ( version )
 import System.Console.GetOpt
+import System.Environment ( getEnv )
+import System.FilePath ( (</>) )
 
 
 data Options = Options
@@ -21,14 +23,16 @@ data Options = Options
    , optHelp :: Bool
    }
 
-defaultOptions :: Options
-defaultOptions = Options
-   { optSuccessDir = Nothing
-   , optFailDir = Nothing
-   , optDelete = False
-   , optConfDir = "."
-   , optHelp = False
-   }
+defaultOptions :: IO Options
+defaultOptions = do
+   homeDir <- getEnv "HOME"
+   return $ Options
+      { optSuccessDir = Nothing
+      , optFailDir = Nothing
+      , optDelete = False
+      , optConfDir = homeDir </> ".config" </> "kitchensnitch"
+      , optHelp = False
+      }
 
 
 options :: [OptDescr (Options -> Options)]
@@ -44,7 +48,7 @@ options =
       "Delete source files as they're processed. BE CAREFUL, this will delete even if no above dest dirs are supplied."
    , Option ['c'] ["conf-dir"]
       (ReqArg (\s opts -> opts { optConfDir = s } ) "CONFDIR")
-      "Directory to load ks-locate.conf and GoogleAPIKey files from. Defaults to ."
+      "Directory to load ks-locate.conf and GoogleAPIKey files from. Defaults to $HOME/.config/kitchensnitch"
    , Option ['h'] ["help"]
       (NoArg (\opts -> opts { optHelp = True } ))
       "This help text"
@@ -54,9 +58,10 @@ options =
 {- Perform the actual parse of a [String]
 -}
 parseOpts :: [String] -> IO (Options, [String])
-parseOpts args =
+parseOpts args = do
+   defOpts <- defaultOptions
    case getOpt Permute options args of
-      (o,n,[]  ) -> return (foldl (flip id) defaultOptions o, n)
+      (o,n,[]  ) -> return (foldl (flip id) defOpts o, n)
       (_,_,errs) -> ioError $ userError (concat errs ++ usageText)
 
 
