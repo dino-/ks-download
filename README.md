@@ -14,17 +14,9 @@ Data downloader and parser for the KitchenSnitch project (Haskell)
 
 ## Configuration and execution
 
-`ks-locate.conf`, `ks-dbinsert.conf` and `GoogleAPIKey` files will be
-looked for by default in `.` relative to where you ran `ks-locate`
-or `ks-dbinsert` from. But it can be nicer to run from within
-a directory tree where inspection files and output files will
-be written.
-
-To set up for running like this:
-
-Make a directory for config files, and copy the two conf files into
-it, along with your Google API key in a file. This can be anywhere
-as long as they're together. How about in `$HOME`, like this:
+Make a directory for config files, and copy or link the conf files into
+it, along with your Google API key in a file. The defaults are
+expecting `$HOME/.config/kitchensnitch`
 
       $HOME/
          .config/
@@ -79,88 +71,16 @@ Put this in a cron job:
 
 ## Building from source
 
-Make sure you have `ghc 7.8.x`, `cabal-install` and `darcs` installed.
-
-Update your cabal list
-
-    $ cabal update
-
-And install some native deps that `cabal` can't do for you
-
-On Ubuntu:
-
-    # apt-get install --reinstall g++ 
-    # apt-get install libzip-dev
-
-On Arch Linux:
-
-    # pacman -S libzip
-
-** WARNING These notes below need to be in a more common place, like the wiki **
-
-Make a directory for all of the KS components and their dependencies. This helps us to share a sandbox and minimizing build complexity.
-
-    $ mkdir -p kitchensnitch/.cabal-sandbox
-    $ cd kitchensnitch
-
-First, let's install the geojson library into a sandbox
-
-    $ mkdir geojson
-    $ cd geojson
-    $ cabal sandbox init --sandbox=../.cabal-sandbox
-    $ cabal install geojson
-    $ cd ..
-
-A version of the aeson-bson library from GitHub will need to be installed
-
-    $ git clone https://github.com/dino-/aesonbson.git
-    $ cd aesonbson
-    $ cabal sandbox init --sandbox=../.cabal-sandbox
-    $ cabal install
-    $ cd ..
-
-A version of the bson-generic library from GitHub will also need to be installed
-
-    $ git clone https://github.com/dino-/bson-generic.git
-    $ cd bson-generic
-    $ cabal sandbox init --sandbox=../.cabal-sandbox
-    $ cabal install
-    $ cd ..
-
-The ks-library needs to be installed next
-
-    $ darcs clone http://hub.darcs.net/dino/ks-library
-    $ cd ks-library
-    $ cabal sandbox init --sandbox=../.cabal-sandbox
-    $ cabal install
-    $ cd ..
-
-Get the `ks-download` source code
-
-    $ darcs get http://hub.darcs.net/dino/ks-download
-
-Update your cabal library and tools, we need a modern version
-
-    $ cabal install Cabal cabal-install
-
-Set up a sandbox for building (if you wish to use a sandbox)
-
-    $ mkdir ~/.cabal/sandbox
-    $ cabal sandbox init --sandbox=$HOME/.cabal/sandbox/kitchensnitch
-
-Then install the dependencies
-
-    $ cabal install --enable-tests --only-dep
-
-This will build for quite some time, when it's done, you can build
-ks-download:
+Follow the instructions on the wiki for setting up a sandbox for all KS development, in the section "Building the KitchenSnitch Haskell server-side components for deployment"
 
 
 ### Building for development
 
-    $ cabal configure --enable-tests
-    $ cabal build
-    $ cabal test
+      $ cabal sandbox init --sandbox=/home/USER/.cabal/sandbox/kitchensnitch
+      $ cabal install --only-dep --enable-tests
+      $ cabal configure --enable-tests
+      $ cabal build
+      $ cabal test
 
 And you should be good for development from here.
 
@@ -174,6 +94,8 @@ that you can put somewhere like `/opt/` for instance.
     $ pushd /tmp
     $ tar czvf ks-download-VER.tgz ks-download-VER
     $ popd
+
+Some of these notes exist in a more detailed form on the developer wiki.
 
 When you want to insert records into the database, make sure you do not forget to edit the `bin/ks-dl-nightly.sh` script. By default ks-dbinsert execution is commented out and fake one runs!
 
