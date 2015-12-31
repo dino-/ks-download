@@ -20,7 +20,6 @@ module KS.Locate.Places.Places
 
 import Data.Aeson
 import qualified Data.ByteString.Lazy.Char8 as BL
-import Data.Geospatial ( GeoPoint (..) )
 import qualified Data.List as L
 import Data.Text
 import GHC.Generics ( Generic )
@@ -48,12 +47,12 @@ data RawPlace = RawPlace
 instance FromJSON RawPlace where
    parseJSON (Object o) = do
       l <- (o .: "geometry") >>= (.: "location")
-      lng <- l .: "lng"
-      lat <- l .: "lat"
+      lng' <- l .: "lng"
+      lat' <- l .: "lat"
       RawPlace
          <$> o .: "name"
          <*> o .: "vicinity"
-         <*> (return . GeoPoint $ [lng, lat])
+         <*> (return $ GeoPoint lat' lng')
          <*> o .: "types"
          <*> o .: "place_id"
    parseJSON o = fail . show $ o
