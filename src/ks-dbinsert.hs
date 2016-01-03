@@ -7,6 +7,7 @@
 -}
 
 import Control.Monad ( when )
+import Data.Bson.Generic
 import Data.Either ( isLeft )
 import Data.List ( isPrefixOf )
 import Database.MongoDB hiding ( options )
@@ -21,7 +22,6 @@ import System.IO
 import System.IO.Error ( tryIOError )
 import Text.Printf ( printf )
 
-import KS.Data.BSON ( docToBSON )
 import qualified KS.Data.Document as D
 import qualified KS.Data.Place as P
 import qualified KS.Database.Mongo.Config as MC
@@ -71,13 +71,16 @@ loadAndInsert mongoConf pipe path = do
       Left ex   -> return . Left $ show ex
       Right doc ->
          access pipe UnconfirmedWrites (MC.database mongoConf) $ do
+            -- Convert our inspection data structure to BSON
+            let bson = toBSON doc
+
             -- Insert the inspection into the all_inspections collection
-            save "inspections" $ docToBSON doc
+            save "inspections" bson
             sr <- parseLastError `fmap` runCommand [ "getLastError" =: (1::Int) ]
 
             -- Insert or modify the one document in recent_inspections
             upsert (select ["place.place_id" =: (P.place_id . D.place $ doc)]
-               "recent_inspections") $ docToBSON doc
+               "recent_inspections") bson
             ur <- parseLastError `fmap` runCommand [ "getLastError" =: (1::Int) ]
 
             -- Combine the results
