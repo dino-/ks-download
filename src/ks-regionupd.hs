@@ -18,7 +18,7 @@ import Data.Time ( getCurrentTime )
 import Database.MongoDB hiding ( options )
 import KS.Data.Common ( utcTimeToEpoch )
 import System.Environment ( getArgs )
-import System.Exit ( ExitCode (..), exitSuccess, exitWith )
+import System.Exit ( ExitCode (..), exitFailure, exitSuccess, exitWith )
 import System.IO
    ( BufferMode ( NoBuffering )
    , hSetBuffering, stdout, stderr
@@ -43,14 +43,16 @@ main = do
    -- No buffering, it messes with the order of output
    mapM_ (flip hSetBuffering NoBuffering) [ stdout, stderr ]
 
-   (options, _) <- getArgs >>= parseOpts
+   (options, args) <- getArgs >>= parseOpts
    when (optHelp options) $ putStrLn usageText >> exitSuccess
+   when (null args) $ putStrLn usageText >> exitFailure
+   let (confDir : _) = args
 
    initLogging $ optLogPriority options
    noticeM lname line
    logStartMsg lname
 
-   mongoConf <- MC.loadMongoConfig $ optConfDir options
+   mongoConf <- MC.loadMongoConfig confDir
 
    -- Get a connection to Mongo, they call it a 'pipe'
    pipe <- connect . host . MC.ip $ mongoConf

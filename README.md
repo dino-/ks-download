@@ -66,7 +66,7 @@ job shoulld look something like this:
 
 Put this in a cron job:
 
-    45 1 * * *  /opt/ks-download/bin/ks-regionupd --conf-dir=$HOME/.config/kitchensnitch --log-priority=NOTICE > /some/dir/ks-regionupd.log
+    45 1 * * *  /opt/ks-download/bin/ks-regionupd --log-priority=NOTICE $HOME/.config/kitchensnitch > /some/dir/ks-regionupd.log
 
 
 ## Building from source

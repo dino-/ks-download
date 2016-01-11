@@ -3,7 +3,6 @@
 
 module KS.RegionUpd.Opts
    ( Options (..)
-   , defaultOptions
    , parseOpts, usageText
    )
    where
@@ -11,34 +10,25 @@ module KS.RegionUpd.Opts
 import Data.Version ( showVersion )
 import Paths_ks_download ( version )
 import System.Console.GetOpt
-import System.Environment ( getEnv )
-import System.FilePath ( (</>) )
 
 import KS.Log
 
 
 data Options = Options
-   { optConfDir :: FilePath
-   , optHelp :: Bool
+   { optHelp :: Bool
    , optLogPriority :: Priority
    }
 
-defaultOptions :: IO Options
-defaultOptions = do
-   homeDir <- getEnv "HOME"
-   return $ Options
-      { optConfDir = homeDir </> ".config" </> "kitchensnitch"
-      , optHelp = False
-      , optLogPriority = NOTICE
-      }
+defaultOptions :: Options
+defaultOptions = Options
+   { optHelp = False
+   , optLogPriority = NOTICE
+   }
 
 
 options :: [OptDescr (Options -> Options)]
 options =
-   [ Option ['c'] ["conf-dir"]
-      (ReqArg (\s opts -> opts { optConfDir = s } ) "DIR")
-      "Directory containing the mongodb.conf file. Defaults to $HOME/.config/kitchensnitch"
-   , Option ['h'] ["help"]
+   [ Option ['h'] ["help"]
       (NoArg (\opts -> opts { optHelp = True } ))
       "This help text"
    , Option ['p'] ["log-priority"]
@@ -50,10 +40,9 @@ options =
 {- Perform the actual parse of a [String]
 -}
 parseOpts :: [String] -> IO (Options, [String])
-parseOpts args = do
-   defOpts <- defaultOptions
+parseOpts args =
    case getOpt Permute options args of
-      (o,n,[]  ) -> return (foldl (flip id) defOpts o, n)
+      (o,n,[]  ) -> return (foldl (flip id) defaultOptions o, n)
       (_,_,errs) -> ioError $ userError (concat errs ++ usageText)
 
 
@@ -61,13 +50,14 @@ usageText :: String
 usageText = (usageInfo header options) ++ "\n" ++ footer
    where
       header = init $ unlines
-         [ "Usage: ks-regionupd [OPTIONS]"
+         [ "Usage: ks-regionupd [OPTIONS] CONFDIR"
          , "Update the region_data and region_data_history collections with the latest statistics"
          , ""
          , "Options:"
          ]
       footer = init $ unlines
-         [ "Logging is written to stdout."
+         [ "Expects to find a mongodb.conf file at the CONFDIR specified."
+         , "Logging is written to stdout."
          , ""
          , "Log priorities:"
          , "  DEBUG     debugging info"
