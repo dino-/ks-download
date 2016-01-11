@@ -3,7 +3,6 @@
 
 module KS.Locate.Opts
    ( Options (..)
-   , defaultOptions
    , parseOpts, usageText
    )
    where
@@ -11,28 +10,22 @@ module KS.Locate.Opts
 import Data.Version ( showVersion )
 import Paths_ks_download ( version )
 import System.Console.GetOpt
-import System.Environment ( getEnv )
-import System.FilePath ( (</>) )
 
 
 data Options = Options
    { optSuccessDir :: Maybe FilePath
    , optFailDir :: Maybe FilePath
    , optDelete :: Bool
-   , optConfDir :: FilePath
    , optHelp :: Bool
    }
 
-defaultOptions :: IO Options
-defaultOptions = do
-   homeDir <- getEnv "HOME"
-   return $ Options
-      { optSuccessDir = Nothing
-      , optFailDir = Nothing
-      , optDelete = False
-      , optConfDir = homeDir </> ".config" </> "kitchensnitch"
-      , optHelp = False
-      }
+defaultOptions :: Options
+defaultOptions = Options
+   { optSuccessDir = Nothing
+   , optFailDir = Nothing
+   , optDelete = False
+   , optHelp = False
+   }
 
 
 options :: [OptDescr (Options -> Options)]
@@ -46,9 +39,6 @@ options =
    , Option []    ["delete"]
       (NoArg (\opts -> opts { optDelete = True } ))
       "Delete source files as they're processed. BE CAREFUL, this will delete even if no above dest dirs are supplied."
-   , Option ['c'] ["conf-dir"]
-      (ReqArg (\s opts -> opts { optConfDir = s } ) "CONFDIR")
-      "Directory to load ks-locate.conf and GoogleAPIKey files from. Defaults to $HOME/.config/kitchensnitch"
    , Option ['h'] ["help"]
       (NoArg (\opts -> opts { optHelp = True } ))
       "This help text"
@@ -58,10 +48,9 @@ options =
 {- Perform the actual parse of a [String]
 -}
 parseOpts :: [String] -> IO (Options, [String])
-parseOpts args = do
-   defOpts <- defaultOptions
+parseOpts args =
    case getOpt Permute options args of
-      (o,n,[]  ) -> return (foldl (flip id) defOpts o, n)
+      (o,n,[]  ) -> return (foldl (flip id) defaultOptions o, n)
       (_,_,errs) -> ioError $ userError (concat errs ++ usageText)
 
 
@@ -69,16 +58,16 @@ usageText :: String
 usageText = (usageInfo header options) ++ "\n" ++ footer
    where
       header = init $ unlines
-         [ "Usage: ks-locate [OPTIONS] FILE|DIR"
+         [ "Usage: ks-locate [OPTIONS] CONFDIR FILE|DIR"
          , "Look up inspections with Google Geocoding and Places"
          , ""
          , "Options:"
          ]
       footer = init $ unlines
-         [ "Looks up the file or dir full of files specified"
+         [ "Looks up the FILE or DIR full of files specified"
          , "Writes successful lookups to SUCCDIR or stdout if omitted"
          , "Writes failed lookup input files to FAILDIR"
-         , "Expects to find a ./ks-locate.conf file, or at the CONFDIR specified."
+         , "Expects to find ks-locate.conf and GoogleAPIKey files at the CONFDIR specified."
          , "Logging is written to stdout."
          , ""
          , "Version " ++ (showVersion version) ++ "  Dino Morelli <dino@ui3.info>"

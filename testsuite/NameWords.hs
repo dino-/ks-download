@@ -14,7 +14,6 @@ import Text.Printf ( printf )
 import KS.Data.Inspection
 import KS.Locate.Config
 import KS.Locate.Locate
-import KS.Locate.Opts
 import KS.Locate.Places.NameWords ( toList )
 
 
@@ -24,7 +23,8 @@ tests = TestList $ map testNameWords testData
 
 testNameWords :: (Text, [Text]) -> Test
 testNameWords (input, output) = TestCase $ do
-   conf <- loadConfig =<< defaultOptions
+   -- Loading the default config template file
+   conf <- loadConfig "resources"
    let insp = fakeInspection input
    actual <- runKSDL (Env conf insp) toList
    let label = printf "name words for \"%s\"" (unpack input)

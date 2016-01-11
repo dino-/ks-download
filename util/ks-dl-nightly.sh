@@ -34,10 +34,10 @@ ks-dlinsp \
 # Places match the inspections
 
 ks-locate \
-   --conf-dir /home/dino/.config/kitchensnitch \
    --success-dir succ \
    --fail-dir fail \
    --delete \
+   /home/dino/.config/kitchensnitch \
    insp \
    > ks-locate.log
 

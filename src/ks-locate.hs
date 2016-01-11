@@ -7,7 +7,7 @@ import Data.List ( isPrefixOf )
 import System.Directory ( copyFile, doesFileExist
    , getDirectoryContents, removeFile )
 import System.Environment ( getArgs )
-import System.Exit ( exitSuccess )
+import System.Exit ( exitFailure, exitSuccess )
 import System.FilePath
 import System.IO
    ( BufferMode ( NoBuffering )
@@ -32,13 +32,13 @@ main = do
    -- No buffering, it messes with the order of output
    mapM_ (flip hSetBuffering NoBuffering) [ stdout, stderr ]
 
-   (options, srcDirsOrFiles) <- getArgs >>= parseOpts
-   when ((optHelp options) || (null srcDirsOrFiles)) $ do
-      putStrLn usageText
-      exitSuccess
+   (options, args) <- getArgs >>= parseOpts
+   when (optHelp options) $ putStrLn usageText >> exitSuccess
+   when (length args < 2) $ putStrLn usageText >> exitFailure
+   let (confDir : srcDirsOrFiles) = args
 
    -- Load the config file
-   config <- loadConfig options
+   config <- loadConfig confDir
 
    initLogging $ logPriority config
    logStartMsg lname

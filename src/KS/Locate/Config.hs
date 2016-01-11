@@ -14,8 +14,6 @@ import System.FilePath
 import System.Log
 import TCE.Data.ReadConf ( readConfig )
 
-import KS.Locate.Opts
-
 
 newtype GoogleKey = GoogleKey String
    deriving (Read, Show)
@@ -32,21 +30,21 @@ data Config = Config
    deriving (Read, Show)
 
 
-loadConfig :: Options -> IO Config
-loadConfig options = do
-   let confPath = (optConfDir options) </> "ks-locate.conf"
+loadConfig :: FilePath -> IO Config
+loadConfig confDir = do
+   let confPath = confDir </> "ks-locate.conf"
    conf <- (either error id . readConfig) `fmap` readFile confPath
 
    -- A Google API key in a file by itself will supercede the one
    -- in the conf file
    maybe (return conf) (\k -> return $ conf { googleApiKey = k })
-      =<< loadGoogleKey options
+      =<< loadGoogleKey confDir
 
 
 -- Google Places API key
-loadGoogleKey :: Options -> IO (Maybe GoogleKey)
-loadGoogleKey options = do
-   let keyPath = (optConfDir options) </> "GoogleAPIKey"
+loadGoogleKey :: FilePath -> IO (Maybe GoogleKey)
+loadGoogleKey confDir = do
+   let keyPath = confDir </> "GoogleAPIKey"
    exists <- doesFileExist keyPath
    if exists
       then do
