@@ -13,7 +13,7 @@ import Data.List ( isPrefixOf )
 import Database.MongoDB hiding ( options )
 import System.Directory ( doesFileExist, getDirectoryContents )
 import System.Environment ( getArgs )
-import System.Exit ( ExitCode (..), exitSuccess, exitWith )
+import System.Exit ( ExitCode (..), exitFailure, exitSuccess, exitWith )
 import System.FilePath
 import System.IO
    ( BufferMode ( NoBuffering )
@@ -34,12 +34,12 @@ main = do
    -- No buffering, it messes with the order of output
    mapM_ (flip hSetBuffering NoBuffering) [ stdout, stderr ]
 
-   (options, srcDirsOrFiles) <- getArgs >>= parseOpts
-   when ((optHelp options) || (null srcDirsOrFiles)) $ do
-      putStrLn usageText
-      exitSuccess
+   (options, args) <- getArgs >>= parseOpts
+   when (optHelp options) $ do putStrLn usageText >> exitSuccess
+   when (length args < 2) $ do putStrLn usageText >> exitFailure
+   let (confDir : srcDirsOrFiles) = args
 
-   mongoConf <- MC.loadMongoConfig $ optConfDir options
+   mongoConf <- MC.loadMongoConfig confDir
 
    -- Paths to all files we'll be processing
    files <- concat <$> (sequence $ map buildFileList srcDirsOrFiles)

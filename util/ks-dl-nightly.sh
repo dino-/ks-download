@@ -44,7 +44,7 @@ ks-locate \
 
 # Import into MongoDB
 
-#ks-dbinsert --conf-dir /home/dino/.config/kitchensnitch succ/ > ks-dbinsert.log
+#ks-dbinsert /home/dino/.config/kitchensnitch succ/ > ks-dbinsert.log
 
 # Use these to simulate import success or failure
 # comment these lines out if using the above ks-dbinsert command

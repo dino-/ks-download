@@ -3,7 +3,6 @@
 
 module KS.DBInsert.Opts
    ( Options (..)
-   , defaultOptions
    , parseOpts, usageText
    )
    where
@@ -11,30 +10,21 @@ module KS.DBInsert.Opts
 import Data.Version ( showVersion )
 import Paths_ks_download ( version )
 import System.Console.GetOpt
-import System.Environment ( getEnv )
-import System.FilePath ( (</>) )
 
 
 data Options = Options
-   { optConfDir :: FilePath
-   , optHelp :: Bool
+   { optHelp :: Bool
    }
 
-defaultOptions :: IO Options
-defaultOptions = do
-   homeDir <- getEnv "HOME"
-   return $ Options
-      { optConfDir = homeDir </> ".config" </> "kitchensnitch"
-      , optHelp = False
-      }
+defaultOptions :: Options
+defaultOptions = Options
+   { optHelp = False
+   }
 
 
 options :: [OptDescr (Options -> Options)]
 options =
-   [ Option ['c'] ["conf-dir"]
-      (ReqArg (\s opts -> opts { optConfDir = s } ) "DIR")
-      "Directory containing the mongodb.conf file. Defaults to $HOME/.config/kitchensnitch"
-   , Option ['h'] ["help"]
+   [ Option ['h'] ["help"]
       (NoArg (\opts -> opts { optHelp = True } ))
       "This help text"
    ]
@@ -43,10 +33,9 @@ options =
 {- Perform the actual parse of a [String]
 -}
 parseOpts :: [String] -> IO (Options, [String])
-parseOpts args = do
-   defOpts <- defaultOptions
+parseOpts args =
    case getOpt Permute options args of
-      (o,n,[]  ) -> return (foldl (flip id) defOpts o, n)
+      (o,n,[]  ) -> return (foldl (flip id) defaultOptions o, n)
       (_,_,errs) -> ioError $ userError (concat errs ++ usageText)
 
 
@@ -54,13 +43,14 @@ usageText :: String
 usageText = (usageInfo header options) ++ "\n" ++ footer
    where
       header = init $ unlines
-         [ "Usage: ks-dbinsert [OPTIONS] FILE|DIR"
+         [ "Usage: ks-dbinsert [OPTIONS] CONFDIR FILE|DIR"
          , "Insert inspections + Places info into MongoDB"
          , ""
          , "Options:"
          ]
       footer = init $ unlines
-         [ "Looks up the file or dir full of files specified"
+         [ "Looks up the FILE or DIR full of files specified"
+         , "Expects to find a mongodb.conf file at the CONFDIR specified."
          , "Logging is written to stdout."
          , ""
          , "Version " ++ (showVersion version) ++ "  Dino Morelli <dino@ui3.info>"
