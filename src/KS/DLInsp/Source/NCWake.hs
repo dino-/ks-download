@@ -8,7 +8,6 @@ import Data.Either ( partitionEithers )
 import Data.List ( intercalate, isInfixOf, isPrefixOf )
 import Data.Maybe ( fromMaybe )
 import qualified Data.Text as T
-import Data.Time ( TimeZone, getCurrentTimeZone )
 import Data.Time.Calendar ( toGregorian )
 --import Debug.Trace ( trace )
 import qualified KS.Data.Inspection as I
@@ -37,21 +36,20 @@ download options = runDL options $ do
 
    let pageUrls = maybe allPageUrls (\n -> take n allPageUrls) pageLimit
 
-   tz <- liftIO getCurrentTimeZone
-   let getters = map (getFacilities tz) pageUrls  -- [IO [Inspection]]
+   let getters = map getFacilities pageUrls  -- [IO [Inspection]]
    dir <- asks optDestDir
    liftIO $ mapM_ (\ml -> ml >>= mapM_ (I.saveInspection dir)) getters
 
 
 -- Get all (4) facilities from a page at the supplied URL
-getFacilities :: TimeZone -> String -> IO [I.Inspection]
-getFacilities tz url = do
+getFacilities :: String -> IO [I.Inspection]
+getFacilities url = do
    printf "Retrieving %s\n" url
 
    tags <- parseTags `fmap` (openURL . getRequest $ urlPrefix ++ url)
 
    let itags = isolateInspTags tags
-   let (failures, successes) = partitionEithers $ map (extractInsp tz) itags
+   (failures, successes) <- partitionEithers <$> mapM extractInsp itags
    mapM_ putStrLn failures
    return successes
 
@@ -66,8 +64,11 @@ isolateInspTags= partitions isFacAnchor
 
 
 -- Extract the Inspection data from a facility's tags
-extractInsp :: TimeZone -> [Tag String] -> Either String I.Inspection
-extractInsp tz tags = makeInspection <$> I.parseDate tz date
+extractInsp :: [Tag String] -> IO (Either String I.Inspection)
+extractInsp tags = do
+   parsed <- I.parseDate date
+   return $ makeInspection <$> parsed
+
    where
       makeInspection dateParsed = I.Inspection
          inspectionSrc
