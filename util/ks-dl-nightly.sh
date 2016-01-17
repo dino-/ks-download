@@ -5,6 +5,8 @@
 binDir=/opt/ks-download/bin
 #binDir=/home/dino/bin
 
+configDir=/home/dino/.config/kitchensnitch
+
 # Make this a directory that's backed-up
 workDirParent=/var/local/kitchensnitch/nc-wake_daily
 #workDirParent=/home/dino/dev/kitchensnitch/data/nc-wake_daily
@@ -37,14 +39,14 @@ ks-locate \
    --success-dir succ \
    --fail-dir fail \
    --delete \
-   /home/dino/.config/kitchensnitch \
+   $configDir \
    insp \
    > ks-locate.log
 
 
 # Import into MongoDB
 
-#ks-dbinsert /home/dino/.config/kitchensnitch succ/ > ks-dbinsert.log
+#ks-dbinsert $configDir succ/ > ks-dbinsert.log
 
 # Use these to simulate import success or failure
 # comment these lines out if using the above ks-dbinsert command
