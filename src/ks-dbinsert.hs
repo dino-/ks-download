@@ -10,7 +10,9 @@ import Control.Monad ( when )
 import Data.Bson.Generic
 import Data.Either ( isLeft )
 import Data.List ( isPrefixOf )
+import Data.Version ( showVersion )
 import Database.MongoDB hiding ( options )
+import Paths_ks_download ( version )
 import System.Directory ( doesFileExist, getDirectoryContents )
 import System.Environment ( getArgs )
 import System.Exit ( ExitCode (..), exitFailure, exitSuccess, exitWith )
@@ -38,6 +40,8 @@ main = do
    when (optHelp options) $ do putStrLn usageText >> exitSuccess
    when (length args < 2) $ do putStrLn usageText >> exitFailure
    let (confDir : srcDirsOrFiles) = args
+
+   putStrLn $ "ks-dbinsert version " ++ (showVersion version) ++ " started"
 
    mongoConf <- MC.loadMongoConfig confDir
 

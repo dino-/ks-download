@@ -15,8 +15,10 @@ import qualified Data.ByteString.Char8 as B
 import Data.Maybe ( fromJust )
 import qualified Data.Text as T
 import Data.Time ( getCurrentTime )
+import Data.Version ( showVersion )
 import Database.MongoDB hiding ( options )
 import KS.Data.Common ( utcTimeToEpoch )
+import Paths_ks_download ( version )
 import System.Environment ( getArgs )
 import System.Exit ( ExitCode (..), exitFailure, exitSuccess, exitWith )
 import System.IO
@@ -50,6 +52,8 @@ main = do
 
    initLogging $ optLogPriority options
    noticeM lname line
+   noticeM lname $
+      printf "ks-regionupd version %s started" (showVersion version)
    logStartMsg lname
 
    mongoConf <- MC.loadMongoConfig confDir

@@ -3,6 +3,8 @@
 
 import Control.Monad ( when )
 import qualified Data.Map as M
+import Data.Version ( showVersion )
+import Paths_ks_download ( version )
 import System.Environment ( getArgs )
 import System.Exit ( exitFailure, exitSuccess )
 import System.IO
@@ -28,6 +30,8 @@ main = do
    when (optDestDir options == "") $ do
       putStrLn usageText
       exitFailure
+
+   putStrLn $ "ks-dlinsp version " ++ (showVersion version) ++ " started"
 
    let mbDownloader = M.lookup (optSource options) downloaders
    maybe (putStrLn usageText >> exitFailure)

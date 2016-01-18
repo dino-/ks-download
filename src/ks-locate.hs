@@ -4,6 +4,8 @@
 import Data.Aeson.Encode.Pretty hiding ( Config )
 import qualified Data.ByteString.Lazy.Char8 as BL
 import Data.List ( isPrefixOf )
+import Data.Version ( showVersion )
+import Paths_ks_download ( version )
 import System.Directory ( copyFile, doesFileExist
    , getDirectoryContents, removeFile )
 import System.Environment ( getArgs )
@@ -41,6 +43,8 @@ main = do
    config <- loadConfig confDir
 
    initLogging $ logPriority config
+   noticeM lname $
+      printf "ks-locate version %s started" (showVersion version)
    logStartMsg lname
 
    -- Paths to all files we'll be processing
