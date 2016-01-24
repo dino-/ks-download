@@ -1,7 +1,7 @@
 #! /bin/bash
 
 # Add the location of the ks-download binaries and scripts to the PATH
-PATH="/opt/ks-download/bin:${PATH}"
+PATH="/opt/ksnitch/ks-download/bin:${PATH}"
 
 configDir=/home/ksadmin/.config/ksnitch
 
