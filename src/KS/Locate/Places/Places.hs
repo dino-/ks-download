@@ -18,22 +18,25 @@ module KS.Locate.Places.Places
    ( coordsToPlaces )
    where
 
-import Data.Aeson
+import           Data.Aeson ( FromJSON, Value (Object), (.:), eitherDecode,
+                  parseJSON )
 import qualified Data.ByteString.Lazy.Char8 as BL
 import qualified Data.List as L
-import Data.Text
-import GHC.Generics ( Generic )
-import Network.HTTP ( urlEncode )
-import Network.HTTP.Conduit ( simpleHttp )
-import Text.Printf ( printf )
+import           Data.Text ( Text, intercalate, unpack )
+import           GHC.Generics ( Generic )
+import           Network.HTTP ( urlEncode )
+import           Network.HTTP.Conduit ( simpleHttp )
+import           Text.Printf ( printf )
 
-import KS.Data.Place
-import KS.Locate.Config
-import KS.Locate.Locate  -- FIXME imports!
-import KS.Locate.Places.Geocoding ( GeoLatLng (..) )
-import KS.Locate.Places.NameWords ( toList )
-import KS.Log
-import KS.Util ( withRetry )
+import           KS.Data.Place ( GeoPoint (..), Place (..) )
+import           KS.Locate.Config ( Config (googleApiKey, placesTypes),
+                  keyString )
+import           KS.Locate.Locate ( Env (getConfig), ErrMsg (..), KSDL, asks,
+                  eitherThrowCritical, liftIO, throwError, when )
+import           KS.Locate.Places.Geocoding ( GeoLatLng (..) )
+import           KS.Locate.Places.NameWords ( toList )
+import           KS.Log ( Priority (ERROR), debugM, errorM, lname, noticeM )
+import           KS.Util ( withRetry )
 
 
 data RawPlace = RawPlace

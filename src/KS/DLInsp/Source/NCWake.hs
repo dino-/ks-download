@@ -4,19 +4,25 @@
 module KS.DLInsp.Source.NCWake
    where
 
-import Data.Either ( partitionEithers )
-import Data.List ( intercalate, isInfixOf, isPrefixOf )
-import Data.Maybe ( fromMaybe )
+import           Data.Either ( partitionEithers )
+import           Data.List ( intercalate, isInfixOf, isPrefixOf )
+import           Data.Maybe ( fromMaybe )
 import qualified Data.Text as T
-import Data.Time.Calendar ( toGregorian )
---import Debug.Trace ( trace )
+import           Data.Time.Calendar ( toGregorian )
+--import           Debug.Trace ( trace )
 import qualified KS.Data.Inspection as I
-import Network.HTTP
-import Text.HTML.TagSoup
-import Text.Printf ( printf )
+import           Network.HTTP ( HStream, Request, Request_String,
+                  getResponseBody, getRequest, postRequestWithBody,
+                  simpleHTTP )
+import           Text.HTML.TagSoup ( Tag (TagText), (~==), (~/=), fromAttrib,
+                  fromTagText, innerText, isTagClose, parseTags, partitions,
+                  sections )
+import           Text.Printf ( printf )
 
-import KS.DLInsp.Types
-import KS.Util ( withRetry )
+import           KS.DLInsp.Types ( DL, Downloader, Options ( optDestDir,
+                  optEndDate, optPageLimit, optStartDate ), asks, liftIO,
+                  runDL )
+import           KS.Util ( withRetry )
 
 
 urlPrefix :: String

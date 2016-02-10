@@ -7,20 +7,22 @@ module KS.Locate.Places.Geocoding
    ( GeoLatLng (..), forwardLookup )
    where
 
-import Control.Concurrent ( threadDelay )
-import Data.Aeson
+import           Control.Concurrent ( threadDelay )
+import           Data.Aeson ( FromJSON, Value (Object), (.:), eitherDecode,
+                  parseJSON )
 import qualified Data.ByteString.Lazy.Char8 as BL
-import Data.Text
-import Network.HTTP ( urlEncode )
-import Network.HTTP.Conduit ( simpleHttp )
-import Text.Printf ( printf )
+import           Data.Text ( unpack )
+import           Network.HTTP ( urlEncode )
+import           Network.HTTP.Conduit ( simpleHttp )
+import           Text.Printf ( printf )
 
-import KS.Data.Inspection
-import KS.Locate.Locate ( Env (..), ErrMsg (..), KSDL, asks,
-   eitherThrowCritical, liftIO, throwError, when )
-import KS.Locate.Config
-import KS.Log
-import KS.Util ( withRetry )
+import           KS.Data.Inspection ( addr )
+import           KS.Locate.Locate ( Env (..), ErrMsg (..), KSDL, asks,
+                  eitherThrowCritical, liftIO, throwError, when )
+import           KS.Locate.Config ( Config (geocodingApiDelay, googleApiKey),
+                  keyString )
+import           KS.Log ( Priority (ERROR), debugM, errorM, lname, noticeM )
+import           KS.Util ( withRetry )
 
 
 data GeoLatLng = GeoLatLng Double Double
