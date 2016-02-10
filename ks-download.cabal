@@ -40,6 +40,7 @@ executable ks-dlinsp
         base >=3 && <5,
         bytestring >=0.10.6.0 && <0.11,
         containers >=0.5.6.2 && <0.6,
+        exceptions,
         filepath >=1.4.0.0 && <1.5,
         HTTP >=4000.2.23 && <4000.3,
         ks-library >=1.5,
@@ -56,6 +57,7 @@ executable ks-dlinsp
         KS.DLInsp.Source.Downloaders
         KS.DLInsp.Source.NCWake
         KS.DLInsp.Types
+        KS.Util
     ghc-options: -Wall
 
 executable ks-locate
@@ -93,6 +95,7 @@ executable ks-locate
         KS.Locate.Places.NameWords
         KS.Locate.Places.Places
         KS.Log
+        KS.Util
     ghc-options: -Wall
 
 executable ks-dbinsert

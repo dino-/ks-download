@@ -16,10 +16,11 @@ import Network.HTTP.Conduit ( simpleHttp )
 import Text.Printf ( printf )
 
 import KS.Data.Inspection
-import KS.Locate.Locate ( Env (..), ErrMsg (..), KSDL, asks, liftIO,
-   throwError, tryIO, when )
+import KS.Locate.Locate ( Env (..), ErrMsg (..), KSDL, asks,
+   eitherThrowCritical, liftIO, throwError, when )
 import KS.Locate.Config
 import KS.Log
+import KS.Util ( withRetry )
 
 
 data GeoLatLng = GeoLatLng Double Double
@@ -50,7 +51,7 @@ forwardLookup = do
 
    asks (geocodingApiDelay . getConfig) >>= (liftIO . threadDelay)
 
-   gcJSON <- tryIO $ simpleHttp url
+   gcJSON <- eitherThrowCritical $ withRetry 3 2 (simpleHttp url) (errorM lname)
 
    liftIO $ debugM lname $ "Geocoding result JSON: "
       ++ (BL.unpack gcJSON)

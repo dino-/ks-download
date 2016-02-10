@@ -29,10 +29,11 @@ import Text.Printf ( printf )
 
 import KS.Data.Place
 import KS.Locate.Config
-import KS.Locate.Locate
+import KS.Locate.Locate  -- FIXME imports!
 import KS.Locate.Places.Geocoding ( GeoLatLng (..) )
 import KS.Locate.Places.NameWords ( toList )
 import KS.Log
+import KS.Util ( withRetry )
 
 
 data RawPlace = RawPlace
@@ -77,7 +78,7 @@ coordsToPlaces coords = do
    url <- mkPlacesUrl coords
    liftIO $ noticeM lname $ "Places URL: " ++ url
 
-   plJSON <- tryIO $ simpleHttp url
+   plJSON <- eitherThrowCritical $ withRetry 3 2 (simpleHttp url) (errorM lname)
 
    liftIO $ debugM lname $ "Places result JSON: "
       ++ (BL.unpack plJSON)

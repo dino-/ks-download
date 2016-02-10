@@ -4,6 +4,7 @@
 module KS.Locate.Locate
    ( Env (..), ErrMsg (..), KSDL, runKSDL
    , tryIO
+   , eitherThrowCritical
 
    -- Re-exporting
    , asks, liftIO, local, throwError, when
@@ -40,3 +41,12 @@ runKSDL env ev = runExceptT (runReaderT ev env)
 tryIO :: IO a -> KSDL a
 tryIO act = catchAll (liftIO act) $
    \e -> throwError $ ErrMsg CRITICAL $ "CRITICAL IO exception: " ++ (show e)
+
+
+{- Transform an action of type IO (Either String a) into an action
+   in the KSDL monad
+-}
+eitherThrowCritical :: IO (Either String a) -> KSDL a
+eitherThrowCritical action = either
+      (\e -> throwError $ ErrMsg CRITICAL $ "CRITICAL IO exception: " ++ e)
+      return =<< (liftIO $ action)

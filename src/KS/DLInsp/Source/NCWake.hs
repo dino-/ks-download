@@ -16,6 +16,7 @@ import Text.HTML.TagSoup
 import Text.Printf ( printf )
 
 import KS.DLInsp.Types
+import KS.Util ( withRetry )
 
 
 urlPrefix :: String
@@ -46,7 +47,8 @@ getFacilities :: String -> IO [I.Inspection]
 getFacilities url = do
    printf "Retrieving %s\n" url
 
-   tags <- parseTags `fmap` (openURL . getRequest $ urlPrefix ++ url)
+   tags <- either error return =<< withRetry 3 1
+      (parseTags `fmap` (openURL . getRequest $ urlPrefix ++ url)) putStrLn
 
    let itags = isolateInspTags tags
    (failures, successes) <- partitionEithers <$> mapM extractInsp itags
@@ -135,8 +137,10 @@ extractViolation tags = (crit, text)
 -- Get the URLs of all search result pages
 getPageUrls :: DL [String]
 getPageUrls = do
+   liftIO $ putStrLn "Retrieving all page URLs"
    post <- mkPost
-   tags <- liftIO $ parseTags `fmap` openURL post
+   dlResult <- liftIO $ withRetry 3 1 (parseTags `fmap` openURL post) putStrLn
+   tags <- either error return dlResult
    return $ map (fromAttrib "href" . head) .
       sections (~== "<a class=teaser>") $ tags
 
