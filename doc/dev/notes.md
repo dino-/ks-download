@@ -1,45 +1,8 @@
-## New redesign of the codebase
-
-- ks-download
-   - raw inspection download (ks-dlinsp)
-      - What happens:
-         - main figures out which Downloader to use (based on args)
-         - Downloader scrapes the web pages
-         - Constructs a list of KS.Inspection data and calls saveInspection for each
-   - Google Places location (ks-locate)
-   - inspection insertion into Mongo (ks-mongo-insert)
-   - one-off tool for converting KS.Inspection-based json files into modern ones
-      - No UUID inside
-      - Filenames change (no UUID)
-      - date :: UTCTime
-- ks-server
-   - insert on-disk documents (Google Places matched above) into MongoDB
-      - What happens:
-         - Iterate over a set of ks...json documents
-         - Read them into ?? data structures
-         - Fashion BSON from this
-         - `save` those into a MongoDB collection
-      - KS.Database.Mongo contains code from ks-mongo-insert for
-        de/serializating our new Document with BSON. Also saving
-        and loading.
-      - This project will have its own conf file separate from .ksdl or whatever it's called
-
-
 ## Importing the data into Mongo
 
 - The example Mongo introduction stuff is suggesting that we may want to store one document for an entire place, and have all of the inspections in that document.
    - This has various implications but the biggest one is that the generated _id will not work any longer.
    - The existing _id generation was partly chosen to be workable _before_ the Google Places match
-
-
-Refresher course for the developers, how does the CouchDB solution work?
-
-- ks-dlinsp calls KS.DLInsp.Source.NCWake.download
-   - This saves a list of KS.Inspection.IdInspection out
-      - These are Wake inspections plus the UUID we generate (NOT Places ID)
-      - Filenames contain the generated UUID
-- ks-locate
-- /opt/couchbase/bin/cbdocloader
 
 
 Trying to find all of the legacy data (what did you do?)
@@ -71,20 +34,6 @@ For purposes of populating a new db, everything we were interested in up to 2015
 This means no longer mucking around with
 
     data/nc-wake_2014, data/nc-wake_2014_q1..., data/nc-wake_2015-02-20, etc.
-
-
-## 2015-02-13
-
-We are up-to-date with imports to 2015-02-12
-
-
-## 2015-02-11
-
-Nightly download workDirParent:
-
-    /var/local/kitchensnitch/insp_nc_wake
-
-Make sure this is in the backups!
 
 
 ## 2015-02-03 from #haskell
