@@ -19,9 +19,9 @@ import           Text.HTML.TagSoup ( Tag (TagText), (~==), (~/=), fromAttrib,
                   sections )
 import           Text.Printf ( printf )
 
-import           KS.DLInsp.Types ( DL, Downloader, Options ( optDestDir,
-                  optEndDate, optPageLimit, optStartDate ), asks, liftIO,
-                  runDL )
+import           KS.DLInsp.Types ( DL, Downloader,
+                  Options ( optEndDate, optPageLimit, optStartDate ),
+                  asks, liftIO, runDL )
 import           KS.Util ( withRetry )
 
 
@@ -34,7 +34,7 @@ inspectionSrc = "nc_wake"
 
 
 download :: Downloader
-download options = runDL options $ do
+download options destDir = runDL options $ do
    allPageUrls <- getPageUrls
    let pageCount = length allPageUrls
    pageLimit <- asks optPageLimit
@@ -44,8 +44,7 @@ download options = runDL options $ do
    let pageUrls = maybe allPageUrls (\n -> take n allPageUrls) pageLimit
 
    let getters = map getFacilities pageUrls  -- [IO [Inspection]]
-   dir <- asks optDestDir
-   liftIO $ mapM_ (\ml -> ml >>= mapM_ (I.saveInspection dir)) getters
+   liftIO $ mapM_ (\ml -> ml >>= mapM_ (I.saveInspection destDir)) getters
 
 
 -- Get all (4) facilities from a page at the supplied URL

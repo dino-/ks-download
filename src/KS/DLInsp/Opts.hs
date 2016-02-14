@@ -19,7 +19,7 @@ import System.Console.GetOpt
 import Text.Regex
 
 import KS.DLInsp.Source.Downloaders
-import KS.DLInsp.Types
+import KS.DLInsp.Types ( Options (..) )
 
 
 defaultOptions :: IO Options
@@ -32,9 +32,7 @@ defaultOptions = do
          utcToLocalTimeTZ tz ut        -- The local zoned time
 
    return $ Options
-      { optSource = ""
-      , optDestDir = ""
-      , optStartDate = twoDaysAgo
+      { optStartDate = twoDaysAgo
       , optEndDate = twoDaysAgo
       , optPageLimit = Nothing
       , optHelp = False
@@ -43,13 +41,7 @@ defaultOptions = do
 
 options :: [OptDescr (Options -> Options)]
 options =
-   [ Option ['i'] ["insp-source"]
-      (ReqArg (\s opts -> opts { optSource = s } ) "SOURCE")
-      "Inspection source. Required. See SOURCE below."
-   , Option ['d'] ["dest-dir"]
-      (ReqArg (\s opts -> opts { optDestDir = s } ) "DESTDIR")
-      "Directory for downloaded inspection JSON files. Required"
-   , Option ['s']    ["start-date"]
+   [ Option ['s']    ["start-date"]
       (ReqArg (\s opts -> opts { optStartDate = parseInputDate s } )
          "YYYYMMDD")
       "Starting date for inspection searches. Default: two days ago"
@@ -88,20 +80,24 @@ usageText :: String
 usageText = (usageInfo header options) ++ "\n" ++ footer
    where
       header = init $ unlines
-         [ "Usage: ks-dlinsp OPTIONS"
-         , "Acquire inspection data from a source"
+         [ "Usage: ks-dlinsp [OPTIONS] CONFDIR SOURCE DESTDIR"
+         , "Acquire inspection data for a source (like a county or similar region)"
          , ""
          , "Options:"
          ]
       footer = init $ unlines
          [ "Note: If run with no dates, you will get all of the inspections from two days ago. The idea is to give the inspection workers time to get their data into the system and is a good default for daily runs."
-         , "Logging is written to stdout."
+         , "Expects to find ks-download-SOURCE.conf in the CONFDIR specified."
          , ""
          , "SOURCE is one of: " ++ (intercalate ", " $ M.keys downloaders)
+         , ""
+         , "DESTDIR is the directory for downloaded inspection JSON files."
          , ""
          , "For computing values for 'two days ago', this software will fish out the time zone for your system using the TZ environment variable if possible and /etc/localtime if necessary. On a UTC system (like production on AWS), you need to specify a TZ value from /usr/share/zoneinfo/ like this:"
          , ""
          , "   export TZ=\"America/New_York\""
+         , ""
+         , "Logging is written to stdout."
          , ""
          , "Version " ++ (showVersion version) ++ "  Dino Morelli <dino@ui3.info>"
          ]

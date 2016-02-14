@@ -17,16 +17,14 @@ import System.FilePath ()
 
 
 data Options = Options
-   { optSource :: String
-   , optDestDir :: FilePath
-   , optStartDate :: Day
+   { optStartDate :: Day
    , optEndDate :: Day
    , optPageLimit :: Maybe Int
    , optHelp :: Bool
    }
 
 
-type Downloader = Options -> IO ()
+type Downloader = Options -> FilePath -> IO ()
 
 
 type DL a = (ReaderT Options IO) a

@@ -21,18 +21,14 @@ main = do
    -- No buffering, it messes with the order of output
    mapM_ (flip hSetBuffering NoBuffering) [ stdout, stderr ]
 
-   (options, _) <- getArgs >>= parseOpts
+   (options, args) <- getArgs >>= parseOpts
+   when (optHelp options) $ putStrLn usageText >> exitSuccess
+   when (length args < 3) $ putStrLn usageText >> exitFailure
 
-   when (optHelp options) $ do
-      putStrLn usageText
-      exitSuccess
-
-   when (optDestDir options == "") $ do
-      putStrLn usageText
-      exitFailure
+   let (confDir : source : destDir : _) = args
 
    putStrLn $ "ks-dlinsp version " ++ (showVersion version) ++ " started"
 
-   let mbDownloader = M.lookup (optSource options) downloaders
+   let mbDownloader = M.lookup source downloaders
    maybe (putStrLn usageText >> exitFailure)
-      (\dl -> dl options) mbDownloader
+      (\dl -> dl options destDir) mbDownloader
