@@ -94,6 +94,7 @@ executable ks-locate
         KS.Locate.Places.Match
         KS.Locate.Places.NameWords
         KS.Locate.Places.Places
+        KS.Locate.SourceConfig
         KS.Log
         KS.Util
     ghc-options: -Wall

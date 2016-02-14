@@ -15,6 +15,7 @@ import KS.Data.Inspection
 import KS.Locate.Config
 import KS.Locate.Locate
 import KS.Locate.Places.NameWords ( toList )
+import qualified KS.Locate.SourceConfig as SC
 
 
 tests :: Test
@@ -23,10 +24,15 @@ tests = TestList $ map testNameWords testData
 
 testNameWords :: (Text, [Text]) -> Test
 testNameWords (input, output) = TestCase $ do
-   -- Loading the default config template file
-   conf <- loadConfig "resources"
+   let confDir = "resources"
+
+   -- Loading the default config template file, inspection and
+   -- config for this inspection source
+   conf <- loadConfig confDir
    let insp = fakeInspection input
-   actual <- runKSDL (Env conf insp) toList
+   sourceConf <- SC.loadConfig confDir $ inspection_source insp
+
+   actual <- runKSDL (Env conf sourceConf insp) toList
    let label = printf "name words for \"%s\"" (unpack input)
    assertEqual label (Right output) actual
 
@@ -51,4 +57,7 @@ testData =
 
 
 fakeInspection :: Text -> Inspection
-fakeInspection name' = nullInspection { name = name' }
+fakeInspection name' = nullInspection
+   { inspection_source = "nc_wake"
+   , name = name'
+   }

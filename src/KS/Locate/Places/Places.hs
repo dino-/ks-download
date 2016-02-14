@@ -29,12 +29,16 @@ import           Network.HTTP.Conduit ( simpleHttp )
 import           Text.Printf ( printf )
 
 import           KS.Data.Place ( GeoPoint (..), Place (..) )
-import           KS.Locate.Config ( Config (googleApiKey, placesTypes),
-                  keyString )
-import           KS.Locate.Locate ( Env (getConfig), ErrMsg (..), KSDL, asks,
-                  eitherThrowCritical, liftIO, throwError, when )
+import           KS.Locate.Config ( Config (googleApiKey), keyString )
+import           KS.Locate.Locate
+                  ( Env (getConfig, getSourceConfig)
+                  , ErrMsg (..), KSDL
+                  , asks, eitherThrowCritical, liftIO,
+                  throwError, when
+                  )
 import           KS.Locate.Places.Geocoding ( GeoLatLng (..) )
 import           KS.Locate.Places.NameWords ( toList )
+import           KS.Locate.SourceConfig ( SourceConfig (placesTypes) )
 import           KS.Log ( Priority (ERROR), debugM, errorM, lname, noticeM )
 import           KS.Util ( withRetry )
 
@@ -116,6 +120,6 @@ mkPlacesUrl (GeoLatLng lat' lng') = do
    let nameList = urlEncode $ unpack $ intercalate " " $ nameWords
 
    searchTypes <-
-      L.intercalate "|" `fmap` asks (placesTypes . getConfig)
+      L.intercalate "|" `fmap` asks (placesTypes . getSourceConfig)
 
    return $ printf "https://maps.googleapis.com/maps/api/place/nearbysearch/json?key=%s&location=%f,%f&rankby=distance&name=%s&types=%s" key lat' lng' nameList searchTypes

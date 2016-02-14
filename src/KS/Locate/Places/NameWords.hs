@@ -10,17 +10,18 @@ module KS.Locate.Places.NameWords
 
 import qualified Data.List as L
 import qualified Data.Map as Map
-import Data.Text
-import Prelude hiding ( filter, map )
+import           Data.Text
+import           Prelude hiding ( filter, map )
 
-import KS.Data.Inspection
-import KS.Locate.Config
-import KS.Locate.Locate
+import           KS.Data.Inspection
+import           KS.Locate.Locate
+import           KS.Locate.SourceConfig ( SourceConfig
+                  (namewordsSpecialCases, namewordsStopwords) )
 
 
 toList :: KSDL [Text]
 toList = do
-   specialCases <- asks (namewordsSpecialCases . getConfig)
+   specialCases <- asks (namewordsSpecialCases . getSourceConfig)
    list <- mkList
 
    iname <- asks (name . getInspection)
@@ -32,7 +33,7 @@ toList = do
 
 mkList :: KSDL [Text]
 mkList = do
-   stopwords <- asks (namewordsStopwords . getConfig)
+   stopwords <- asks (namewordsStopwords . getSourceConfig)
    (headList
       . L.filter (not . isPrefixOf "#")
       . L.filter (\w -> not $ L.elem w stopwords)

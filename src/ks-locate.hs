@@ -26,6 +26,7 @@ import KS.Locate.Opts
 import KS.Locate.Places.Geocoding ( forwardLookup )
 import KS.Locate.Places.Match ( Match, match )
 import KS.Locate.Places.Places ( coordsToPlaces )
+import qualified KS.Locate.SourceConfig as SC
 import KS.Log
 
 
@@ -52,7 +53,7 @@ main = do
       (sequence $ map buildFileList srcDirsOrFiles)
 
    -- Look up each inspection with Geocoding and Places
-   mapM_ (lookupInspection config options) files
+   mapM_ (lookupInspection config options confDir) files
 
    noticeM lname line
 
@@ -69,13 +70,14 @@ buildFileList srcDirOrFile = do
          `fmap` getDirectoryContents srcDirOrFile  -- All files
 
 
-lookupInspection :: Config -> Options -> FilePath -> IO ()
-lookupInspection config options srcPath = do
-   r <- runKSDL (Env config nullInspection) $ do
+lookupInspection :: Config -> Options -> FilePath -> FilePath -> IO ()
+lookupInspection config options confDir srcPath = do
+   r <- runKSDL (Env config SC.nullSourceConfig nullInspection) $ do
       liftIO $ noticeM lname line
 
       insp <- loadInspection' srcPath
-      local (\r -> r { getInspection = insp }) $ do
+      sc <- liftIO $ SC.loadConfig confDir $ inspection_source insp
+      local (\r -> r { getSourceConfig = sc, getInspection = insp }) $ do
          geo <- forwardLookup
          places <- coordsToPlaces geo
          match places
