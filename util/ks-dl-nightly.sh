@@ -8,12 +8,8 @@ configDir=/home/ksadmin/.config/ksnitch
 # This is where inspections are downloaded and places-matched
 # This is a good candidate for backup
 workDirParent=/data/ksnitch/download/nc_wake
-#workDirParent=/home/dino/dev/ksnitch/data/nc_wake_daily
+#workDirParent=/home/dino/dev/ksnitch/download
 
-
-# When running outside of this zone (or on a system using UTC),
-# need this set explicitly for both the `date` binary and ks-dlinsp
-export TZ="America/New_York"
 
 workDir=${workDirParent}/nc_wake_$(date +"%Y-%m-%d" --date='2 days ago')
 
@@ -24,10 +20,7 @@ cd $workDir
 
 # Scrape new inspections from two days ago
 
-ks-dlinsp \
-   --insp-source nc_wake \
-   --dest-dir insp \
-   > ks-dlinsp.log
+ks-dlinsp $configDir nc_wake insp > ks-dlinsp.log
 
 
 # Places match the inspections
