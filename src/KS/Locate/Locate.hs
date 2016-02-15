@@ -17,8 +17,8 @@ import Control.Monad.Except
 
 import KS.Data.Inspection
 import KS.Locate.Config
-import KS.Locate.SourceConfig
 import KS.Log ( Priority (..) )
+import KS.SourceConfig ( SourceConfig )
 
 
 data Env = Env

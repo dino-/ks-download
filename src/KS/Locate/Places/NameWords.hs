@@ -15,7 +15,7 @@ import           Prelude hiding ( filter, map )
 
 import           KS.Data.Inspection
 import           KS.Locate.Locate
-import           KS.Locate.SourceConfig ( SourceConfig
+import           KS.SourceConfig ( SourceConfig
                   (namewordsSpecialCases, namewordsStopwords) )
 
 

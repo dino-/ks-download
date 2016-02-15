@@ -1,7 +1,10 @@
 -- License: BSD3 (see LICENSE)
 -- Author: Dino Morelli <dino@ui3.info>
 
-module KS.Locate.SourceConfig
+{-# LANGUAGE StandaloneDeriving #-}
+{-# OPTIONS_GHC -fno-warn-orphans #-}
+
+module KS.SourceConfig
    ( SourceConfig (..)
    , loadConfig
    , nullSourceConfig
@@ -10,12 +13,17 @@ module KS.Locate.SourceConfig
 
 import qualified Data.Map as Map
 import qualified Data.Text as T
+import Data.Time.LocalTime ( TimeZone (..) )
 import System.FilePath
 import TCE.Data.ReadConf ( readConfig )
 
 
+deriving instance Read TimeZone
+
+
 data SourceConfig = SourceConfig
-   { namewordsStopwords :: [T.Text]
+   { timeZone :: TimeZone
+   , namewordsStopwords :: [T.Text]
    , namewordsSpecialCases :: Map.Map T.Text [T.Text]
    , placesTypes :: [String]
    }
@@ -23,7 +31,8 @@ data SourceConfig = SourceConfig
 
 
 nullSourceConfig :: SourceConfig
-nullSourceConfig = SourceConfig [] (Map.fromList []) []
+nullSourceConfig =
+   SourceConfig (TimeZone (-300) False "EST") [] (Map.fromList []) []
 
 
 loadConfig :: FilePath -> String -> IO SourceConfig

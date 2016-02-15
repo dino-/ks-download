@@ -10,9 +10,7 @@ module KS.DLInsp.Opts
 import Control.Exception
 import Data.List ( intercalate )
 import qualified Data.Map as M
-import Data.Time ( Day (..), addDays, fromGregorian, getCurrentTime,
-   localDay )
-import Data.Time.Zones ( loadLocalTZ, utcToLocalTimeTZ )
+import Data.Time ( Day, fromGregorian )
 import Data.Version ( showVersion )
 import Paths_ks_download ( version )
 import System.Console.GetOpt
@@ -22,31 +20,23 @@ import KS.DLInsp.Source.Downloaders
 import KS.DLInsp.Types ( Options (..) )
 
 
-defaultOptions :: IO Options
-defaultOptions = do
-   tz <- loadLocalTZ     -- We expect the TZ env to be set in prod
-   ut <- getCurrentTime  -- This is UTC time
-   let twoDaysAgo =
-         addDays (-2) .                -- ..two days ago
-         localDay $                    -- ..extract the Day
-         utcToLocalTimeTZ tz ut        -- The local zoned time
-
-   return $ Options
-      { optStartDate = twoDaysAgo
-      , optEndDate = twoDaysAgo
-      , optPageLimit = Nothing
-      , optHelp = False
-      }
+defaultOptions :: Options
+defaultOptions = Options
+   { optStartDate = Nothing
+   , optEndDate = Nothing
+   , optPageLimit = Nothing
+   , optHelp = False
+   }
 
 
 options :: [OptDescr (Options -> Options)]
 options =
    [ Option ['s']    ["start-date"]
-      (ReqArg (\s opts -> opts { optStartDate = parseInputDate s } )
+      (ReqArg (\s opts -> opts { optStartDate = Just $ parseInputDate s } )
          "YYYYMMDD")
       "Starting date for inspection searches. Default: two days ago"
    , Option ['e']    ["end-date"]
-      (ReqArg (\s opts -> opts { optEndDate = parseInputDate s } )
+      (ReqArg (\s opts -> opts { optEndDate = Just $ parseInputDate s } )
          "YYYYMMDD")
       "Ending date for inspection searches. Default: two days ago"
    , Option ['l'] ["page-limit"]
@@ -68,12 +58,10 @@ parseInputDate str =
 
 -- Perform the args parsing
 parseOpts :: [String] -> IO (Options, [String])
-parseOpts args = do
-   handle ioError $ do
-      defOpts <- defaultOptions
-      case getOpt Permute options args of
-         (o,n,[]  ) -> return (foldl (flip id) defOpts o, n)
-         (_,_,errs) -> throwIO $ userError $ concat errs ++ usageText
+parseOpts args = handle ioError $
+   case getOpt Permute options args of
+      (o,n,[]  ) -> return (foldl (flip id) defaultOptions o, n)
+      (_,_,errs) -> throwIO $ userError $ concat errs ++ usageText
 
 
 usageText :: String
@@ -93,9 +81,7 @@ usageText = (usageInfo header options) ++ "\n" ++ footer
          , ""
          , "DESTDIR is the directory for downloaded inspection JSON files."
          , ""
-         , "For computing values for 'two days ago', this software will fish out the time zone for your system using the TZ environment variable if possible and /etc/localtime if necessary. On a UTC system (like production on AWS), you need to specify a TZ value from /usr/share/zoneinfo/ like this:"
-         , ""
-         , "   export TZ=\"America/New_York\""
+         , "For computing values for 'two days ago', this software will use the time zone set in the ks-download-SOURCE.conf file."
          , ""
          , "Logging is written to stdout."
          , ""

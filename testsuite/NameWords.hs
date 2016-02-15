@@ -15,7 +15,7 @@ import KS.Data.Inspection
 import KS.Locate.Config
 import KS.Locate.Locate
 import KS.Locate.Places.NameWords ( toList )
-import qualified KS.Locate.SourceConfig as SC
+import qualified KS.SourceConfig as SC
 
 
 tests :: Test

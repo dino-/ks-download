@@ -26,7 +26,7 @@ import KS.Locate.Opts
 import KS.Locate.Places.Geocoding ( forwardLookup )
 import KS.Locate.Places.Match ( Match, match )
 import KS.Locate.Places.Places ( coordsToPlaces )
-import qualified KS.Locate.SourceConfig as SC
+import qualified KS.SourceConfig as SC
 import KS.Log
 
 

@@ -6,7 +6,7 @@ module KS.DLInsp.Source.NCWake
 
 import           Data.Either ( partitionEithers )
 import           Data.List ( intercalate, isInfixOf, isPrefixOf )
-import           Data.Maybe ( fromMaybe )
+import           Data.Maybe ( fromJust, fromMaybe )
 import qualified Data.Text as T
 import           Data.Time.Calendar ( toGregorian )
 --import           Debug.Trace ( trace )
@@ -179,8 +179,8 @@ mkPost = do
 
 searchParams :: DL [String]
 searchParams = do
-   (sy, sm, sd) <- toGregorian `fmap` asks optStartDate
-   (ey, em, ed) <- toGregorian `fmap` asks optEndDate
+   (sy, sm, sd) <- toGregorian . fromJust <$> asks optStartDate
+   (ey, em, ed) <- toGregorian . fromJust <$> asks optEndDate
 
    return $
       [ "f=search"

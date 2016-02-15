@@ -40,16 +40,16 @@ executable ks-dlinsp
         base >=3 && <5,
         bytestring >=0.10.6.0 && <0.11,
         containers >=0.5.6.2 && <0.6,
-        exceptions,
+        exceptions >=0.8.0.2 && <0.9,
         filepath >=1.4.0.0 && <1.5,
         HTTP >=4000.2.23 && <4000.3,
         ks-library >=1.5,
         mtl >=2.2.1 && <2.3,
         regex-compat >=0.95.1 && <0.96,
         tagsoup >=0.13.7 && <0.14,
+        tce-conf ==1.1.*,
         text >=1.2.1.3 && <1.3,
         time >=1.5.0.1 && <1.6,
-        tz >=0.1.0.1 && <0.2,
         utf8-string >=1.0.1.1 && <1.1
     hs-source-dirs: src
     other-modules:
@@ -57,6 +57,7 @@ executable ks-dlinsp
         KS.DLInsp.Source.Downloaders
         KS.DLInsp.Source.NCWake
         KS.DLInsp.Types
+        KS.SourceConfig
         KS.Util
     ghc-options: -Wall
 
@@ -94,8 +95,8 @@ executable ks-locate
         KS.Locate.Places.Match
         KS.Locate.Places.NameWords
         KS.Locate.Places.Places
-        KS.Locate.SourceConfig
         KS.Log
+        KS.SourceConfig
         KS.Util
     ghc-options: -Wall
 

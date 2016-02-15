@@ -38,8 +38,8 @@ import           KS.Locate.Locate
                   )
 import           KS.Locate.Places.Geocoding ( GeoLatLng (..) )
 import           KS.Locate.Places.NameWords ( toList )
-import           KS.Locate.SourceConfig ( SourceConfig (placesTypes) )
 import           KS.Log ( Priority (ERROR), debugM, errorM, lname, noticeM )
+import           KS.SourceConfig ( SourceConfig (placesTypes) )
 import           KS.Util ( withRetry )
 
 
