@@ -15,7 +15,8 @@ category: Unknown
 author: Dino Morelli
 tested-with: GHC >=7.10.1
 data-files:
-    resources/ks-locate.conf
+    resources/ks-download.conf
+    resources/ks-download-nc_wake.conf
     resources/mongodb.conf
 extra-source-files:
     changelog.md
