@@ -6,11 +6,13 @@ module KS.DLInsp.Source.Downloaders
 
 import qualified Data.Map as M
 
+import qualified KS.DLInsp.Source.NCDurham as NCDurham
 import qualified KS.DLInsp.Source.NCWake as NCWake
 import KS.DLInsp.Types
 
 
 downloaders :: M.Map String Downloader
 downloaders = M.fromList
-   [ ("nc_wake", NCWake.download)
+   [ ("nc_durham",   NCDurham.download)
+   , ("nc_wake",     NCWake.download)
    ]
