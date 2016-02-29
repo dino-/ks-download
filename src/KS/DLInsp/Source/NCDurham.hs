@@ -78,8 +78,16 @@ fvAny = "--ANY--"
 fvEmpty = ""
 
 
-userAgentMoz :: Network.Wreq.Options -> Network.Wreq.Options
-userAgentMoz = header "User-Agent" .~ ["Mozilla/5.0 (X11; Linux x86_64; rv:44.0) Gecko/20100101 Firefox/44.0"]
+-- This is for debugging
+charlesProxy :: Network.Wreq.Options -> Network.Wreq.Options
+charlesProxy = proxy ?~ httpProxy "127.0.0.1" 8888
+
+
+-- Set some headers
+opts :: Network.Wreq.Options
+opts = defaults
+   & header "User-Agent" .~ ["Mozilla/5.0 (X11; Linux x86_64; rv:44.0) Gecko/20100101 Firefox/44.0"]
+
 
 
 {-
@@ -99,63 +107,50 @@ download options destDir = runDL options $ do
    eday <- asks optEndDate
 
    liftIO $ S.withSession $ \sess -> do
-      putStrLn "Start page GET"
-      let firstOpts = defaults
-            -- & proxy ?~ httpProxy "127.0.0.1" 8888
-            & userAgentMoz
-      startPage <- S.getWith firstOpts sess url
+      putStrLn "GET start page"
+      rStart <- S.getWith opts sess url
 
-      --print $ startPage ^. responseBody
+      let (viewStateGenerator, vsStart) = viewStateFromResponse rStart
 
-      -- We get this first to set the cookie business and get the
-      -- __VIEWSTATE .Net values. Oh, look there's that view state now:
-      {- let (viewStateGenerator, viewState) =
-            extractViewState $ startPage ^. responseBody -}
-            --extractViewState . BL.unpack $ startPage ^. responseBody
-      -- We'll use these along with the dates above to build the search params
-
-      -- FWIW, log this stuff
-      --printf "viewStateGenerator: %s\n" viewStateGenerator
-      --printf "viewState: %s...\n" (take 60 viewState)
-
-      -- Set some headers
-      let opts = defaults
-            -- & proxy ?~ httpProxy "127.0.0.1" 8888
-            & userAgentMoz
-            & header "Origin" .~ ["https://public.cdpehs.com"]
-            & header "Referer" .~ ["https://public.cdpehs.com/NCENVPBL/ESTABLISHMENT/ShowESTABLISHMENTTablePage.aspx?ESTTST_CTY=32"]
-            & header "X-Requested-With" .~ ["XMLHttpRequest"]
-            & header "X-MicrosoftAjax" .~ ["Delta=true"]
-
-      let vs = extractViewState startPage
-
+      {-
       putStrLn "Changing establishment type POST"
       r1 <- S.postWith opts sess url
-         $ establishmentParams vs
+         $ establishmentParams viewStateGenerator vsStart
+      -}
 
-      putStrLn "Changing date range POST"
-      r2 <- S.postWith opts sess url
-         -- $ dateRangeParams sday eday vs
-         -- $ dateRangeParams sday eday $ extractViewState r1
-         $ dateRangeParams sday eday $ (fst vs, viewStateFromBars r1)
-      --print $ r2 ^. responseBody
-      --print $ extractViewState r1
+      putStrLn "POST submitting establishment type and date range"
+      rSearch <- S.postWith opts sess url
+         $ dateRangeParams sday eday viewStateGenerator vsStart
 
-      putStrLn "Extracting view state from the bars now"
-      let r2VS = viewStateFromBars r2
-      --writeFile "viewstate" r2VS
-      putStrLn "Finished extracting view state"
-      print $ take 20 $ r2VS
+      putStrLn "POST to retrieve one establishment"
+      rEst <- S.postWith opts sess url
+         $ estRowParams sday eday viewStateGenerator (viewStateFromBars rSearch)
+      print $ rEst ^. responseBody
 
-      putStrLn "Establishment view button POST"
-      r3 <- S.postWith opts sess url
-         $ estRowParams sday eday (fst vs, r2VS)
-         -- $ estRowParams vs
-      print $ r3 ^. responseBody
+      {-
+      putStrLn "POST to retrieve one inspection"
+      rInsp <- S.postWith opts sess url
+         $ estInspParams sday eday viewStateGenerator (viewStateFromBars rEst)
+      print $ rInsp ^. responseBody
+      -}
 
       return ()
 
    return ()
+
+
+viewStateFromResponse :: Response BL.ByteString -> (String, String)
+viewStateFromResponse response = (viewStateGenerator tags, viewState tags)
+   where
+      content = response ^. responseBody
+
+      viewState = getValueForID "<input id=__VIEWSTATE"
+      viewStateGenerator = getValueForID "<input id=__VIEWSTATEGENERATOR"
+
+      tags = parseTags . BL.unpack $ content
+
+      getValueForID :: String -> [Tag String] -> String
+      getValueForID pat = fromAttrib "value" . head . dropWhile (~/= pat)
 
 
 viewStateFromBars :: Response BL.ByteString -> String
@@ -170,13 +165,42 @@ viewStateFromBars resp =
    $ resp ^. responseBody
 
 
-estRowParams :: Maybe Day -> Maybe Day -> (String, String) -> [FormParam]
-estRowParams startDay endDay (viewStateGenerator, viewState) =
-   [ "ctl00$scriptManager1" := ("ctl00$PageContent$UpdatePanel1|ctl00$PageContent$ESTABLISHMENTTableControlRepeater$ctl01$Button$_Button" :: T.Text)
-   --[ "ctl00$scriptManager1" := ("ctl00$PageContent$UpdatePanel1|ctl00$PageContent$INSPECTIONFilterButton$_Button" :: T.Text)
-   , "__EVENTTARGET" := ("ctl00$PageContent$ESTABLISHMENTTableControlRepeater$ctl01$Button$_Button" :: T.Text)
+{-
+establishmentParams :: String -> String -> [FormParam]
+establishmentParams viewStateGenerator viewState =
+   [ "ctl00$scriptManager1" := ("ctl00$PageContent$UpdatePanel1|ctl00$PageContent$INSPECTIONFilterButton$_Button" :: T.Text)
+   , "__EVENTTARGET" := ("ctl00$PageContent$EST_TYPE_IDFilter" :: T.Text)
    , "__EVENTARGUMENT" := fvEmpty
-   , "__LASTFOCUS" := ("ctl00_PageContent_ESTABLISHMENTTableControlRepeater_ctl01_Button__Button" :: T.Text)
+   , "__LASTFOCUS" := ("ctl00_PageContent_INSPECTIONFilterButton__Button" :: T.Text)
+   , "ctl00$pageLeftCoordinate" := fvEmpty
+   , "ctl00$pageTopCoordinate" := fvEmpty
+   , "ctl00$PageContent$_clientSideIsPostBack" := ("Y" :: T.Text)
+   , "ctl00$PageContent$ESTABLISHMENTSearch" := fvEmpty
+   , "ctl00$PageContent$PREMISE_CITYFilter1" := fvEmpty
+   , "ctl00$PageContent$PREMISE_NAMEFilter" := fvAny
+   , "ctl00$PageContent$PREMISE_CITYFilter" := fvAny
+   , "ctl00$PageContent$PREMISE_ZIPFilter" := fvEmpty
+   , "ctl00$PageContent$EST_TYPE_IDFilter" := et01Restaurant
+   , "ctl00$PageContent$INSPECTION_DATEFromFilter" := fvEmpty
+   , "ctl00$PageContent$INSPECTION_DATEToFilter" := fvEmpty
+   , "ctl00$PageContent$FINAL_SCOREFromFilter" := fvAny
+   , "ctl00$PageContent$COUNTY_IDFilter" := countyID
+   , "ctl00$PageContent$ESTABLISHMENTPagination$_CurrentPage" := (1 :: Int)
+   , "ctl00$PageContent$ESTABLISHMENTPagination$_PageSize" := (10 :: Int)
+   , "hiddenInputToUpdateATBuffer_CommonToolkitScripts" := (1 :: Int)
+   , "__ASYNCPOST" := ("true" :: T.Text)
+   , "__VIEWSTATEGENERATOR" := T.pack viewStateGenerator
+   , "__VIEWSTATE" := T.pack viewState
+   ]
+-}
+
+
+dateRangeParams :: Maybe Day -> Maybe Day -> String -> String -> [FormParam]
+dateRangeParams startDay endDay viewStateGenerator viewState =
+   [ "ctl00$scriptManager1" := ("ctl00$PageContent$UpdatePanel1|ctl00$PageContent$INSPECTIONFilterButton$_Button" :: T.Text)
+   , "__EVENTTARGET" := ("ctl00_PageContent_INSPECTIONFilterButton__Button" :: T.Text)
+   , "__EVENTARGUMENT" := fvEmpty
+   , "__LASTFOCUS" := ("ctl00_PageContent_INSPECTIONFilterButton__Button" :: T.Text)
    , "ctl00$pageLeftCoordinate" := fvEmpty
    , "ctl00$pageTopCoordinate" := fvEmpty
    , "ctl00$PageContent$_clientSideIsPostBack" := ("Y" :: T.Text)
@@ -199,38 +223,10 @@ estRowParams startDay endDay (viewStateGenerator, viewState) =
    ]
 
 
-establishmentParams :: (String, String) -> [FormParam]
-establishmentParams (viewStateGenerator, viewState) =
-   [ "ctl00$scriptManager1" := ("ctl00$PageContent$UpdatePanel1|ctl00$PageContent$INSPECTIONFilterButton$_Button" :: T.Text)
-   , "__EVENTTARGET" := ("ctl00$PageContent$EST_TYPE_IDFilter" :: T.Text)
-   , "__EVENTARGUMENT" := fvEmpty
-   , "__LASTFOCUS" := ("ctl00$PageContent$EST_TYPE_IDFilter" :: T.Text)
-   , "ctl00$pageLeftCoordinate" := fvEmpty
-   , "ctl00$pageTopCoordinate" := fvEmpty
-   , "ctl00$PageContent$_clientSideIsPostBack" := ("Y" :: T.Text)
-   , "ctl00$PageContent$ESTABLISHMENTSearch" := fvEmpty
-   , "ctl00$PageContent$PREMISE_CITYFilter1" := fvEmpty
-   , "ctl00$PageContent$PREMISE_NAMEFilter" := fvAny
-   , "ctl00$PageContent$PREMISE_CITYFilter" := fvAny
-   , "ctl00$PageContent$PREMISE_ZIPFilter" := fvEmpty
-   , "ctl00$PageContent$EST_TYPE_IDFilter" := et01Restaurant
-   , "ctl00$PageContent$INSPECTION_DATEFromFilter" := fvEmpty
-   , "ctl00$PageContent$INSPECTION_DATEToFilter" := fvEmpty
-   , "ctl00$PageContent$FINAL_SCOREFromFilter" := fvAny
-   , "ctl00$PageContent$COUNTY_IDFilter" := countyID
-   , "ctl00$PageContent$ESTABLISHMENTPagination$_CurrentPage" := (1 :: Int)
-   , "ctl00$PageContent$ESTABLISHMENTPagination$_PageSize" := (10 :: Int)
-   , "hiddenInputToUpdateATBuffer_CommonToolkitScripts" := (1 :: Int)
-   , "__ASYNCPOST" := ("true" :: T.Text)
-   , "__VIEWSTATEGENERATOR" := T.pack viewStateGenerator
-   , "__VIEWSTATE" := T.pack viewState
-   ]
-
-
-dateRangeParams :: Maybe Day -> Maybe Day -> (String, String) -> [FormParam]
-dateRangeParams startDay endDay (viewStateGenerator, viewState) =
-   [ "ctl00$scriptManager1" := ("ctl00$PageContent$UpdatePanel1|ctl00$PageContent$INSPECTIONFilterButton$_Button" :: T.Text)
-   , "__EVENTTARGET" := ("ctl00_PageContent_INSPECTIONFilterButton__Button" :: T.Text)
+estRowParams :: Maybe Day -> Maybe Day -> String -> String -> [FormParam]
+estRowParams startDay endDay viewStateGenerator viewState =
+   [ "ctl00$scriptManager1" := ("ctl00$PageContent$UpdatePanel1|ctl00$PageContent$ESTABLISHMENTTableControlRepeater$ctl03$Button$_Button" :: T.Text)
+   , "__EVENTTARGET" := ("ctl00$PageContent$ESTABLISHMENTTableControlRepeater$ctl03$Button$_Button" :: T.Text)
    , "__EVENTARGUMENT" := fvEmpty
    , "__LASTFOCUS" := ("ctl00_PageContent_INSPECTIONFilterButton__Button" :: T.Text)
    , "ctl00$pageLeftCoordinate" := fvEmpty
@@ -259,46 +255,6 @@ formatDay :: Maybe Day -> T.Text
 formatDay (Just day) = T.pack $ printf "%d/%d/%d" m d y
    where (y, m, d) = toGregorian day
 formatDay Nothing    = fvEmpty
-
-
-
-extractViewState :: Response BL.ByteString -> (String, String)
-extractViewState response = (viewStateGenerator tags, viewState tags)
---extractViewState response = (viewStateGenerator (trace (show . take 5 $ tags) tags), viewState tags)
-   where
-      content = response ^. responseBody
-
-      viewState = getValueForID "<input id=__VIEWSTATE"
-      viewStateGenerator = getValueForID "<input id=__VIEWSTATEGENERATOR"
-
-      tags = parseTags . BL.unpack $ content
-
-      getValueForID :: String -> [Tag String] -> String
-      getValueForID pat = fromAttrib "value" . head . dropWhile (~/= pat)
-{-
-extractViewState :: BL.ByteString -> (String, String)
-extractViewState content = (viewStateGenerator tags, viewState tags)
-   where
-      viewState = getValueForID "<input id=__VIEWSTATE"
-      viewStateGenerator = getValueForID "<input id=__VIEWSTATEGENERATOR"
-
-      tags = parseTags . BL.unpack $ content
-
-      getValueForID :: String -> [Tag String] -> String
-      getValueForID pat = fromAttrib "value" . head . dropWhile (~/= pat)
--}
-{-
-extractViewState :: String -> (String, String)
-extractViewState content = (viewStateGenerator tags, viewState tags)
-   where
-      viewState = getValueForID "<input id=__VIEWSTATE"
-      viewStateGenerator = getValueForID "<input id=__VIEWSTATEGENERATOR"
-
-      tags = parseTags content
-
-      getValueForID :: String -> [Tag String] -> String
-      getValueForID pat = fromAttrib "value" . head . dropWhile (~/= pat)
--}
 
 
 {-
