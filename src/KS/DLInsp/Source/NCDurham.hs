@@ -96,19 +96,9 @@ download options destDir = runDL options $ do
       rSearch <- S.postWith opts sess url
          $ dateRangeParams sday eday viewStateGenerator vsStart
 
-      {- FIXME Need code here to fish out each of the button IDs
-      -}
-
-      putStrLn "POST to retrieve one establishment"
-      rEstRedir <- S.postWith opts sess url
-         $ estRowParams sday eday viewStateGenerator (viewStateFromBars rSearch)
-      --print $ rEstRedir ^. responseBody
-      --print $ urlFromBars rEstRedir
-      let estUrl = printf "%s/%s" urlPrefix $ urlFromBars rEstRedir
-      --putStrLn estUrl
-
-      rEst <- S.getWith opts sess estUrl
-      print $ rEst ^. responseBody
+      let viewState = viewStateFromBars rSearch
+      let bls = extractEventTargets rSearch
+      mapM_ (retrieveEstablishment sess sday eday viewStateGenerator viewState) bls
 
       {-
       putStrLn "POST to retrieve one inspection"
@@ -120,6 +110,38 @@ download options destDir = runDL options $ do
       return ()
 
    return ()
+
+
+retrieveEstablishment sess sday eday viewStateGenerator viewState eventTarget = do
+   putStrLn "POST to retrieve one establishment"
+   rEstRedir <- S.postWith opts sess url
+      $ estRowParams sday eday viewStateGenerator viewState eventTarget
+   --print $ rEstRedir ^. responseBody
+   --print $ urlFromBars rEstRedir
+   let estUrl = printf "%s%s" urlPrefix $ urlFromBars rEstRedir
+   putStrLn estUrl
+
+   {-
+   rEst <- S.getWith opts sess estUrl
+   print $ rEst ^. responseBody
+   -}
+
+
+extractEventTargets :: Response BL.ByteString -> [String]
+extractEventTargets resp =
+   map extractEventTarget
+   . map (fromAttrib "href")
+   . map head
+   . sections (~== patAInsp)
+   . parseTags
+   . BL.unpack
+   $ resp ^. responseBody
+
+   where
+      patAInsp :: String
+      patAInsp = "<a title=\"Inspection for this establishment\">"
+
+      extractEventTarget = takeWhile (/= '\'') . tail . dropWhile (/= '\'')
 
 
 urlFromBars :: Response BL.ByteString -> String
@@ -187,10 +209,10 @@ dateRangeParams startDay endDay viewStateGenerator viewState =
    ]
 
 
-estRowParams :: Maybe Day -> Maybe Day -> String -> String -> [FormParam]
-estRowParams startDay endDay viewStateGenerator viewState =
+estRowParams :: Maybe Day -> Maybe Day -> String -> String -> String -> [FormParam]
+estRowParams startDay endDay viewStateGenerator viewState eventTarget =
    [ "ctl00$scriptManager1" := ("ctl00$PageContent$UpdatePanel1|ctl00$PageContent$ESTABLISHMENTTableControlRepeater$ctl03$Button$_Button" :: T.Text)
-   , "__EVENTTARGET" := ("ctl00$PageContent$ESTABLISHMENTTableControlRepeater$ctl03$Button$_Button" :: T.Text)
+   , "__EVENTTARGET" := T.pack eventTarget
    , "__EVENTARGUMENT" := fvEmpty
    , "__LASTFOCUS" := ("ctl00_PageContent_INSPECTIONFilterButton__Button" :: T.Text)
    , "ctl00$pageLeftCoordinate" := fvEmpty
