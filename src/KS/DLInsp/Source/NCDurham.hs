@@ -22,7 +22,7 @@ import qualified Network.Wreq.Session as S
 import           Text.HTML.TagSoup
 import           Text.Printf ( printf )
 
---import qualified KS.Data.Inspection as I
+import qualified KS.Data.Inspection as I
 import           KS.DLInsp.Types ( DL, Downloader,
                   Options ( optEndDate, optPageLimit, optStartDate ),
                   asks, liftIO, runDL )
@@ -155,14 +155,12 @@ retrieveInspection sess url' viewStateGenerator vsEst eventTarget = do
    rInspRedir <- S.postWith opts sess url'
       $ inspRowParams viewStateGenerator vsEst eventTarget
    let inspUrl = printf "%s%s" urlPrefix $ urlFromBars rInspRedir
-   -- Show the inspection page URL
-   putStrLn inspUrl
 
-   {-
    -- Get the inspection page and show it
    rInsp <- S.getWith opts sess inspUrl
-   print $ rInsp ^. responseBody
-   -}
+   insp <- extractInspection inspUrl $ parseTags . BL.unpack $ rInsp ^. responseBody
+   print insp  -- Most of the inspection data
+   print $ I.detail <$> insp  -- The details URL
 
 
 extractInspEventTargets :: Response BL.ByteString -> [String]
@@ -284,3 +282,44 @@ inspRowParams viewStateGenerator viewState eventTarget =
    , "__VIEWSTATEGENERATOR" := T.pack viewStateGenerator
    , "__VIEWSTATE" := T.pack viewState
    ]
+
+
+extractInspection :: String -> [Tag String] -> IO (Either String I.Inspection)
+extractInspection detailUrl tags = do
+   parsed <- I.parseDate dateStr
+   return $ makeInspection <$> parsed
+
+   where
+      makeInspection dateParsed = I.Inspection
+         inspectionSrc
+         (T.pack name)
+         (T.pack . trim $ addr)
+         dateParsed
+         (read . trim $ score)
+         (length violations)
+         (length . filter (== True) $ violations)
+         False  -- reinspection
+         detailUrl
+
+      name = innerText . take 1 . drop 3
+         . dropWhile (~/= TagText ("Name" :: String)) $ tags
+      addr = innerText . take 1 . drop 3
+         . dropWhile (~/= TagText ("Address" :: String)) $ tags
+      dateStr = innerText . take 1 . drop 5
+         . dropWhile (~/= TagText ("Inspection Date" :: String)) $ tags
+      score = innerText . take 1 . drop 9
+         . dropWhile (~/= TagText ("Final Score @ Grade" :: String)) $ tags
+
+      violations =
+         map isCrit
+         . map head
+         . map (drop 2)
+         . tail
+         . sections (~== ("<tr>" :: String))
+         . takeWhile (~/= ("</table>" :: String))
+         . dropWhile (~/= ("<td class=tre>" :: String))
+         $ tags
+
+      isCrit = isPrefixOf ";0000FF" . reverse . fromAttrib "style"
+
+      trim = unwords . words
