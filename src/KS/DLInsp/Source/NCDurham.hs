@@ -6,16 +6,18 @@
 module KS.DLInsp.Source.NCDurham
    where
 
--- New wreq stuff
-import           Control.Lens
---import           Data.Aeson.Lens ( _String, key )
+import           Control.Lens ( (^.), (?~), (.~) , (&) )
 import qualified Data.ByteString.Lazy.Char8 as BL
 import           Data.List ( isPrefixOf, tails )
 import qualified Data.Text as T
 import           Data.Time.Calendar ( Day, toGregorian )
 --import           Debug.Trace ( trace )
 import           Network.HTTP ( urlDecode )
-import           Network.Wreq hiding ( options )  -- FIXME explicit list!
+import           Network.Wreq
+                  ( FormParam ((:=)), Response
+                  , defaults, header, httpProxy, proxy, responseBody
+                  )
+import qualified Network.Wreq as Wreq
 import qualified Network.Wreq.Session as S
 import           Text.HTML.TagSoup
 import           Text.Printf ( printf )
@@ -38,7 +40,19 @@ import           KS.DLInsp.Types ( DL, Downloader,
    Often it's helpful to print out what Tagsoup's parseTags function is really generating:
 
       mapM_ print $ parseTags someUglyPage
+
+
+   Older notes, clean these up
+
+   - For each establishment type (first crack, just est type 1)
+      - Get the form results for the days we want
+      - Get the inspection details urls from all pages
+      - For each establishment
+         - Visit its details page
+         - Scrape the most recent inspection
+         - Save out as JSON using the Inspection type
 -}
+
 
 
 inspectionSrc :: String
@@ -73,26 +87,15 @@ fvEmpty = ""
 
 
 -- This is for debugging
-charlesProxy :: Network.Wreq.Options -> Network.Wreq.Options
+charlesProxy :: Wreq.Options -> Wreq.Options
 charlesProxy = proxy ?~ httpProxy "127.0.0.1" 8888
 
 
 -- Set some headers
-opts :: Network.Wreq.Options
+opts :: Wreq.Options
 opts = defaults
    & header "User-Agent" .~ ["Mozilla/5.0 (X11; Linux x86_64; rv:44.0) Gecko/20100101 Firefox/44.0"]
 
-
-
-{-
-   - For each establishment type (first crack, just est type 1)
-      - Get the form results for the days we want
-      - Get the inspection details urls from all pages
-      - For each establishment
-         - Visit its details page
-         - Scrape the most recent inspection
-         - Save out as JSON using the Inspection type
--}
 
 download :: Downloader
 download options destDir = runDL options $ do
@@ -112,9 +115,9 @@ download options destDir = runDL options $ do
 
       let viewState = viewStateFromBars rSearch
       let eets = extractEstEventTargets rSearch
-      mapM_ (retrieveEstablishment sess viewStateGenerator viewState) eets
+      --mapM_ (retrieveEstablishment sess viewStateGenerator viewState) eets
       -- FIXME Just one establishment for development, remove this later!
-      --retrieveEstablishment sess viewStateGenerator viewState $ head eets
+      retrieveEstablishment sess viewStateGenerator viewState $ head eets
 
       return ()
 
@@ -134,19 +137,15 @@ retrieveEstablishment
    putStrLn "POST to retrieve one establishment"
    rEstRedir <- S.postWith opts sess url
       $ estRowParams vsGenSearch vsSearch eventTarget
-   --print $ rEstRedir ^. responseBody
    let estUrl = printf "%s%s" urlPrefix $ urlFromBars rEstRedir
-   --putStrLn estUrl
 
    rEst <- S.getWith opts sess estUrl
-   --print $ rEst ^. responseBody
    let (vsGenEst, vsEst) = viewStateFromResponse rEst
    let iets = extractInspEventTargets rEst
-   --mapM_ print x
 
-   mapM_ (retrieveInspection sess estUrl vsGenEst vsEst) iets
+   --mapM_ (retrieveInspection sess estUrl vsGenEst vsEst) iets
    -- FIXME Just one inspection for development, remove this later!
-   --retrieveInspection sess estUrl vsGenEst vsEst $ head iets
+   retrieveInspection sess estUrl vsGenEst vsEst $ head iets
 
 
 retrieveInspection :: S.Session -> String -> String -> String -> String -> IO ()
@@ -154,7 +153,6 @@ retrieveInspection sess url' viewStateGenerator vsEst eventTarget = do
    putStrLn "POST to retrieve one inspection"
    rInspRedir <- S.postWith opts sess url'
       $ inspRowParams viewStateGenerator vsEst eventTarget
-   --print $ rInspRedir ^. responseBody
    let inspUrl = printf "%s%s" urlPrefix $ urlFromBars rInspRedir
    -- Show the inspection page URL
    putStrLn inspUrl
