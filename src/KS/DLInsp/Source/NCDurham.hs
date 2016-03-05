@@ -111,10 +111,11 @@ download options destDir = runDL options $ do
 
       putStrLn "POST submitting establishment type and date range"
       rSearch <- S.postWith opts sess url
-         $ dateRangeParams sday eday viewStateGenerator vsStart
+         $ searchParams "ctl00_PageContent_INSPECTIONFilterButton__Button" sday eday viewStateGenerator vsStart
 
       let viewState = viewStateFromBars rSearch
       let eets = extractEstEventTargets rSearch
+      print $ length eets
       --mapM_ (retrieveEstablishment sess viewStateGenerator viewState) eets
       -- FIXME Just one establishment for development, remove this later!
       retrieveEstablishment sess viewStateGenerator viewState $ head eets
@@ -136,16 +137,16 @@ retrieveEstablishment
 
    putStrLn "POST to retrieve one establishment"
    rEstRedir <- S.postWith opts sess url
-      $ estRowParams vsGenSearch vsSearch eventTarget
+      $ searchParams eventTarget Nothing Nothing vsGenSearch vsSearch
    let estUrl = printf "%s%s" urlPrefix $ urlFromBars rEstRedir
 
    rEst <- S.getWith opts sess estUrl
    let (vsGenEst, vsEst) = viewStateFromResponse rEst
    let iets = extractInspEventTargets rEst
 
-   --mapM_ (retrieveInspection sess estUrl vsGenEst vsEst) iets
+   mapM_ (retrieveInspection sess estUrl vsGenEst vsEst) iets
    -- FIXME Just one inspection for development, remove this later!
-   retrieveInspection sess estUrl vsGenEst vsEst $ head iets
+   --retrieveInspection sess estUrl vsGenEst vsEst $ head iets
 
 
 retrieveInspection :: S.Session -> String -> String -> String -> String -> IO ()
@@ -235,10 +236,10 @@ viewStateFromBars resp =
    $ resp ^. responseBody
 
 
-dateRangeParams :: Maybe Day -> Maybe Day -> String -> String -> [FormParam]
-dateRangeParams startDay endDay viewStateGenerator viewState =
+searchParams :: String -> Maybe Day -> Maybe Day -> String -> String -> [FormParam]
+searchParams eventTarget startDay endDay viewStateGenerator viewState =
    [ "ctl00$scriptManager1" := ("ctl00$PageContent$UpdatePanel1|ctl00$PageContent$INSPECTIONFilterButton$_Button" :: T.Text)
-   , "__EVENTTARGET" := ("ctl00_PageContent_INSPECTIONFilterButton__Button" :: T.Text)
+   , "__EVENTTARGET" := T.pack eventTarget
    , "__EVENTARGUMENT" := fvEmpty
    , "__LASTFOCUS" := ("ctl00_PageContent_INSPECTIONFilterButton__Button" :: T.Text)
    , "ctl00$pageLeftCoordinate" := fvEmpty
@@ -267,34 +268,6 @@ dateRangeParams startDay endDay viewStateGenerator viewState =
       formatDay (Just day) = T.pack $ printf "%d/%d/%d" m d y
          where (y, m, d) = toGregorian day
       formatDay Nothing    = fvEmpty
-
-
-estRowParams :: String -> String -> String -> [FormParam]
-estRowParams viewStateGenerator viewState eventTarget =
-   [ "ctl00$scriptManager1" := ("ctl00$PageContent$UpdatePanel1|ctl00$PageContent$ESTABLISHMENTTableControlRepeater$ctl03$Button$_Button" :: T.Text)
-   , "__EVENTTARGET" := T.pack eventTarget
-   , "__EVENTARGUMENT" := fvEmpty
-   , "__LASTFOCUS" := ("ctl00_PageContent_INSPECTIONFilterButton__Button" :: T.Text)
-   , "ctl00$pageLeftCoordinate" := fvEmpty
-   , "ctl00$pageTopCoordinate" := fvEmpty
-   , "ctl00$PageContent$_clientSideIsPostBack" := ("Y" :: T.Text)
-   , "ctl00$PageContent$ESTABLISHMENTSearch" := fvEmpty
-   , "ctl00$PageContent$PREMISE_CITYFilter1" := fvEmpty
-   , "ctl00$PageContent$PREMISE_NAMEFilter" := fvAny
-   , "ctl00$PageContent$PREMISE_CITYFilter" := fvAny
-   , "ctl00$PageContent$PREMISE_ZIPFilter" := fvEmpty
-   , "ctl00$PageContent$EST_TYPE_IDFilter" := et01Restaurant
-   , "ctl00$PageContent$INSPECTION_DATEFromFilter" := fvEmpty
-   , "ctl00$PageContent$INSPECTION_DATEToFilter" := fvEmpty
-   , "ctl00$PageContent$FINAL_SCOREFromFilter" := fvAny
-   , "ctl00$PageContent$COUNTY_IDFilter" := countyID
-   , "ctl00$PageContent$ESTABLISHMENTPagination$_CurrentPage" := (1 :: Int)
-   , "ctl00$PageContent$ESTABLISHMENTPagination$_PageSize" := (10 :: Int)
-   , "hiddenInputToUpdateATBuffer_CommonToolkitScripts" := (1 :: Int)
-   , "__ASYNCPOST" := ("true" :: T.Text)
-   , "__VIEWSTATEGENERATOR" := T.pack viewStateGenerator
-   , "__VIEWSTATE" := T.pack viewState
-   ]
 
 
 inspRowParams :: String -> String -> String -> [FormParam]
