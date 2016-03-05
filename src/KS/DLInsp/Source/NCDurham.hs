@@ -27,6 +27,20 @@ import           KS.DLInsp.Types ( DL, Downloader,
 --import           KS.Util ( withRetry )
 
 
+{- development notes
+
+   General notes
+
+   To examine the body of a response, use this:
+
+      print $ someResponse ^. responseBody
+
+   Often it's helpful to print out what Tagsoup's parseTags function is really generating:
+
+      mapM_ print $ parseTags someUglyPage
+-}
+
+
 inspectionSrc :: String
 inspectionSrc = "nc_durham"
 
@@ -97,39 +111,79 @@ download options destDir = runDL options $ do
          $ dateRangeParams sday eday viewStateGenerator vsStart
 
       let viewState = viewStateFromBars rSearch
-      let bls = extractEventTargets rSearch
-      mapM_ (retrieveEstablishment sess sday eday viewStateGenerator viewState) bls
-
-      {-
-      putStrLn "POST to retrieve one inspection"
-      rInsp <- S.postWith opts sess url
-         $ estInspParams sday eday viewStateGenerator (viewStateFromBars rEst)
-      print $ rInsp ^. responseBody
-      -}
+      let eets = extractEstEventTargets rSearch
+      mapM_ (retrieveEstablishment sess viewStateGenerator viewState) eets
+      -- FIXME Just one establishment for development, remove this later!
+      --retrieveEstablishment sess viewStateGenerator viewState $ head eets
 
       return ()
 
    return ()
 
 
-retrieveEstablishment sess sday eday viewStateGenerator viewState eventTarget = do
+retrieveEstablishment
+   :: S.Session
+   -> String -> String
+   -> String
+   -> IO ()
+retrieveEstablishment
+   sess
+   vsGenSearch vsSearch
+   eventTarget = do
+
    putStrLn "POST to retrieve one establishment"
    rEstRedir <- S.postWith opts sess url
-      $ estRowParams sday eday viewStateGenerator viewState eventTarget
+      $ estRowParams vsGenSearch vsSearch eventTarget
    --print $ rEstRedir ^. responseBody
-   --print $ urlFromBars rEstRedir
    let estUrl = printf "%s%s" urlPrefix $ urlFromBars rEstRedir
-   putStrLn estUrl
+   --putStrLn estUrl
+
+   rEst <- S.getWith opts sess estUrl
+   --print $ rEst ^. responseBody
+   let (vsGenEst, vsEst) = viewStateFromResponse rEst
+   let iets = extractInspEventTargets rEst
+   --mapM_ print x
+
+   mapM_ (retrieveInspection sess estUrl vsGenEst vsEst) iets
+   -- FIXME Just one inspection for development, remove this later!
+   --retrieveInspection sess estUrl vsGenEst vsEst $ head iets
+
+
+retrieveInspection :: S.Session -> String -> String -> String -> String -> IO ()
+retrieveInspection sess url' viewStateGenerator vsEst eventTarget = do
+   putStrLn "POST to retrieve one inspection"
+   rInspRedir <- S.postWith opts sess url'
+      $ inspRowParams viewStateGenerator vsEst eventTarget
+   --print $ rInspRedir ^. responseBody
+   let inspUrl = printf "%s%s" urlPrefix $ urlFromBars rInspRedir
+   -- Show the inspection page URL
+   putStrLn inspUrl
 
    {-
-   rEst <- S.getWith opts sess estUrl
-   print $ rEst ^. responseBody
+   -- Get the inspection page and show it
+   rInsp <- S.getWith opts sess inspUrl
+   print $ rInsp ^. responseBody
    -}
 
 
-extractEventTargets :: Response BL.ByteString -> [String]
-extractEventTargets resp =
-   map extractEventTarget
+extractInspEventTargets :: Response BL.ByteString -> [String]
+extractInspEventTargets resp =
+   map extractWithinSQuotes
+   . map (fromAttrib "href")
+   . map head
+   . sections (~== patAVio)
+   . parseTags
+   . BL.unpack
+   $ resp ^. responseBody
+
+   where
+      patAVio :: String
+      patAVio = "<a title=\"Show Violations\">"
+
+
+extractEstEventTargets :: Response BL.ByteString -> [String]
+extractEstEventTargets resp =
+   map extractWithinSQuotes
    . map (fromAttrib "href")
    . map head
    . sections (~== patAInsp)
@@ -141,7 +195,9 @@ extractEventTargets resp =
       patAInsp :: String
       patAInsp = "<a title=\"Inspection for this establishment\">"
 
-      extractEventTarget = takeWhile (/= '\'') . tail . dropWhile (/= '\'')
+
+extractWithinSQuotes :: String -> String
+extractWithinSQuotes = takeWhile (/= '\'') . tail . dropWhile (/= '\'')
 
 
 urlFromBars :: Response BL.ByteString -> String
@@ -208,9 +264,15 @@ dateRangeParams startDay endDay viewStateGenerator viewState =
    , "__VIEWSTATE" := T.pack viewState
    ]
 
+   where
+      formatDay :: Maybe Day -> T.Text
+      formatDay (Just day) = T.pack $ printf "%d/%d/%d" m d y
+         where (y, m, d) = toGregorian day
+      formatDay Nothing    = fvEmpty
 
-estRowParams :: Maybe Day -> Maybe Day -> String -> String -> String -> [FormParam]
-estRowParams startDay endDay viewStateGenerator viewState eventTarget =
+
+estRowParams :: String -> String -> String -> [FormParam]
+estRowParams viewStateGenerator viewState eventTarget =
    [ "ctl00$scriptManager1" := ("ctl00$PageContent$UpdatePanel1|ctl00$PageContent$ESTABLISHMENTTableControlRepeater$ctl03$Button$_Button" :: T.Text)
    , "__EVENTTARGET" := T.pack eventTarget
    , "__EVENTARGUMENT" := fvEmpty
@@ -224,8 +286,8 @@ estRowParams startDay endDay viewStateGenerator viewState eventTarget =
    , "ctl00$PageContent$PREMISE_CITYFilter" := fvAny
    , "ctl00$PageContent$PREMISE_ZIPFilter" := fvEmpty
    , "ctl00$PageContent$EST_TYPE_IDFilter" := et01Restaurant
-   , "ctl00$PageContent$INSPECTION_DATEFromFilter" := formatDay startDay
-   , "ctl00$PageContent$INSPECTION_DATEToFilter" := formatDay endDay
+   , "ctl00$PageContent$INSPECTION_DATEFromFilter" := fvEmpty
+   , "ctl00$PageContent$INSPECTION_DATEToFilter" := fvEmpty
    , "ctl00$PageContent$FINAL_SCOREFromFilter" := fvAny
    , "ctl00$PageContent$COUNTY_IDFilter" := countyID
    , "ctl00$PageContent$ESTABLISHMENTPagination$_CurrentPage" := (1 :: Int)
@@ -237,7 +299,17 @@ estRowParams startDay endDay viewStateGenerator viewState eventTarget =
    ]
 
 
-formatDay :: Maybe Day -> T.Text
-formatDay (Just day) = T.pack $ printf "%d/%d/%d" m d y
-   where (y, m, d) = toGregorian day
-formatDay Nothing    = fvEmpty
+inspRowParams :: String -> String -> String -> [FormParam]
+inspRowParams viewStateGenerator viewState eventTarget =
+   [ "ctl00$scriptManager1" := ("ctl00$PageContent$UpdatePanel1|ctl00$PageContent$ESTABLISHMENTTableControlRepeater$ctl03$Button$_Button" :: T.Text)
+   , "__EVENTTARGET" := T.pack eventTarget
+   , "__EVENTARGUMENT" := fvEmpty
+   , "ctl00$pageLeftCoordinate" := fvEmpty
+   , "ctl00$pageTopCoordinate" := fvEmpty
+   , "ctl00$PageContent$_clientSideIsPostBack" := ("N" :: T.Text)
+   , "ctl00$PageContent$ESTABLISHMENTPagination$_CurrentPage" := (1 :: Int)
+   , "ctl00$PageContent$ESTABLISHMENTPagination$_PageSize" := (10 :: Int)
+   , "__ASYNCPOST" := ("true" :: T.Text)
+   , "__VIEWSTATEGENERATOR" := T.pack viewStateGenerator
+   , "__VIEWSTATE" := T.pack viewState
+   ]
