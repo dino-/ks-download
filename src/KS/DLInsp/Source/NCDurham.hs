@@ -8,6 +8,7 @@ module KS.DLInsp.Source.NCDurham
 
 import           Control.Lens ( (^.), (?~), (.~) , (&) )
 import qualified Data.ByteString.Lazy.Char8 as BL
+import           Data.Either ( partitionEithers )
 import           Data.List ( isPrefixOf, tails )
 import qualified Data.Text as T
 import           Data.Time.Calendar ( Day, toGregorian )
@@ -107,18 +108,21 @@ download options destDir = runDL options $ do
       putStrLn "GET start page"
       rStart <- S.getWith opts sess url
 
-      let (viewStateGenerator, vsStart) = viewStateFromResponse rStart
+      let (vsGenStart, vsStart) = viewStateFromResponse rStart
 
       putStrLn "POST submitting establishment type and date range"
-      rSearch <- S.postWith opts sess url
-         $ searchParams "ctl00_PageContent_INSPECTIONFilterButton__Button" sday eday viewStateGenerator vsStart
+      rSearch <- S.postWith opts sess url $ searchParams
+         "ctl00_PageContent_INSPECTIONFilterButton__Button"
+         sday eday vsGenStart vsStart
 
-      let viewState = viewStateFromBars rSearch
+      let vsSearch = viewStateFromBars rSearch
       let eets = extractEstEventTargets rSearch
-      print $ length eets
-      --mapM_ (retrieveEstablishment sess viewStateGenerator viewState) eets
-      -- FIXME Just one establishment for development, remove this later!
-      retrieveEstablishment sess viewStateGenerator viewState $ head eets
+      eis <- concat <$> mapM (retrieveEstablishment sess vsGenStart vsSearch) eets
+
+      let (failures, successes) = partitionEithers eis
+
+      mapM_ (\emsg -> putStrLn $ "ERROR parsing inspection: " ++ emsg) failures
+      mapM_ (I.saveInspection destDir) successes
 
       return ()
 
@@ -129,38 +133,41 @@ retrieveEstablishment
    :: S.Session
    -> String -> String
    -> String
-   -> IO ()
+   -> IO [Either String I.Inspection]
 retrieveEstablishment
    sess
-   vsGenSearch vsSearch
+   vsGenStart vsSearch
    eventTarget = do
 
    putStrLn "POST to retrieve one establishment"
    rEstRedir <- S.postWith opts sess url
-      $ searchParams eventTarget Nothing Nothing vsGenSearch vsSearch
+      $ searchParams eventTarget Nothing Nothing vsGenStart vsSearch
    let estUrl = printf "%s%s" urlPrefix $ urlFromBars rEstRedir
 
    rEst <- S.getWith opts sess estUrl
    let (vsGenEst, vsEst) = viewStateFromResponse rEst
-   let iets = extractInspEventTargets rEst
 
-   mapM_ (retrieveInspection sess estUrl vsGenEst vsEst) iets
-   -- FIXME Just one inspection for development, remove this later!
-   --retrieveInspection sess estUrl vsGenEst vsEst $ head iets
+   {- FIXME Without the `take 1` this is ALL of the inspections. Most
+      often we want just the first one, BUT needs to be
+      switchable(?) for gathering the initial pile. Is it worth
+      designing this switchability into the code?
+   -}
+   let iets = take 1 . extractInspEventTargets $ rEst
+
+   mapM (retrieveInspection sess estUrl vsGenEst vsEst) iets
 
 
-retrieveInspection :: S.Session -> String -> String -> String -> String -> IO ()
-retrieveInspection sess url' viewStateGenerator vsEst eventTarget = do
+retrieveInspection :: S.Session -> String -> String -> String -> String
+   -> IO (Either String I.Inspection)
+retrieveInspection sess url' vsGenEst vsEst eventTarget = do
    putStrLn "POST to retrieve one inspection"
    rInspRedir <- S.postWith opts sess url'
-      $ inspRowParams viewStateGenerator vsEst eventTarget
+      $ inspRowParams vsGenEst vsEst eventTarget
    let inspUrl = printf "%s%s" urlPrefix $ urlFromBars rInspRedir
 
-   -- Get the inspection page and show it
+   -- Get the inspection page and extract data from it
    rInsp <- S.getWith opts sess inspUrl
-   insp <- extractInspection inspUrl $ parseTags . BL.unpack $ rInsp ^. responseBody
-   print insp  -- Most of the inspection data
-   print $ I.detail <$> insp  -- The details URL
+   extractInspection inspUrl $ parseTags . BL.unpack $ rInsp ^. responseBody
 
 
 extractInspEventTargets :: Response BL.ByteString -> [String]
@@ -286,6 +293,7 @@ inspRowParams viewStateGenerator viewState eventTarget =
 
 extractInspection :: String -> [Tag String] -> IO (Either String I.Inspection)
 extractInspection detailUrl tags = do
+   putStrLn $ "Parsing inspection data for " ++ name
    parsed <- I.parseDate dateStr
    return $ makeInspection <$> parsed
 
@@ -298,7 +306,7 @@ extractInspection detailUrl tags = do
          (read . trim $ score)
          (length violations)
          (length . filter (== True) $ violations)
-         False  -- reinspection
+         False  -- We can't determine reinspections from this system
          detailUrl
 
       name = innerText . take 1 . drop 3
