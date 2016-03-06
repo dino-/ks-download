@@ -301,7 +301,7 @@ extractInspection detailUrl tags = do
       makeInspection dateParsed = I.Inspection
          inspectionSrc
          (T.pack name)
-         (T.pack . trim $ addr)
+         (T.pack . trim $ ((trim addr) ++ ", " ++ csz))
          dateParsed
          (read . trim $ score)
          (length violations)
@@ -313,6 +313,8 @@ extractInspection detailUrl tags = do
          . dropWhile (~/= TagText ("Name" :: String)) $ tags
       addr = innerText . take 1 . drop 3
          . dropWhile (~/= TagText ("Address" :: String)) $ tags
+      csz = innerText . takeWhile (~/= ("</tr>" :: String)) . drop 8
+         . dropWhile (~/= TagText ("City/State/ZIP" :: String)) $ tags
       dateStr = innerText . take 1 . drop 5
          . dropWhile (~/= TagText ("Inspection Date" :: String)) $ tags
       score = innerText . take 1 . drop 9
