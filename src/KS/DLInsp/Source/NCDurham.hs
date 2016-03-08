@@ -98,6 +98,7 @@ opts = defaults
    & header "User-Agent" .~ ["Mozilla/5.0 (X11; Linux x86_64; rv:44.0) Gecko/20100101 Firefox/44.0"]
 
 
+{-
 download :: Downloader
 download options destDir = runDL options $ do
    -- We need these for building the search params further down
@@ -117,6 +118,7 @@ download options destDir = runDL options $ do
 
       let vsSearch = viewStateFromBars rSearch
       let eets = extractEstEventTargets rSearch
+      printf "Number of establishments found: %d\n" (length eets)
       eis <- concat <$> mapM (retrieveEstablishment sess vsGenStart vsSearch) eets
 
       let (failures, successes) = partitionEithers eis
@@ -127,6 +129,48 @@ download options destDir = runDL options $ do
       return ()
 
    return ()
+-}
+
+
+download :: Downloader
+download options destDir = runDL options $ do
+   -- We need these for building the search params further down
+   sday <- asks optStartDate
+   eday <- asks optEndDate
+
+   liftIO $ S.withSession $ \sess -> do
+      putStrLn "GET start page"
+      rStart <- S.getWith opts sess url
+
+      processEstablishmentPage 
+         "ctl00_PageContent_INSPECTIONFilterButton__Button"
+         sday eday sess rStart destDir
+
+   return ()
+
+
+processEstablishmentPage :: String -> Maybe Day -> Maybe Day -> S.Session
+   -> Response BL.ByteString -> FilePath -> IO ()
+processEstablishmentPage eventTarget sday eday sess rPrior destDir = do
+      let (vsGenPrior, vsPrior) = viewStateFromResponse rPrior
+
+      putStrLn "POST to get page of establishments"
+      rCurrent <- S.postWith opts sess url $ searchParams
+         eventTarget sday eday vsGenPrior vsPrior
+
+      let vsCurrent = viewStateFromBars rCurrent
+      let eets = extractEstEventTargets rCurrent
+      printf "Number of establishments found on current page: %d\n" (length eets)
+      eis <- concat <$> mapM (retrieveEstablishment sess vsGenPrior vsCurrent) eets
+
+      let (failures, successes) = partitionEithers eis
+
+      mapM_ (\emsg -> putStrLn $ "ERROR parsing inspection: " ++ emsg) failures
+      mapM_ (I.saveInspection destDir) successes
+
+      -- FIXME Check the status of the next-page control and recurse if necessary
+      -- processEstablishmentPage eventTarget? sday eday sess rCurrent destDir
+      return ()
 
 
 retrieveEstablishment
