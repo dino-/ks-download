@@ -124,7 +124,7 @@ processEstablishmentPage destDir sday eday sess params = do
       let vsCurrent = viewStateFromBars rCurrent
       let eets = extractEstEventTargets rCurrent
       printf "Number of establishments found on current page: %d\n" (length eets)
-      eis <- concat <$> mapM (retrieveEstablishment sess vsCurrent) eets
+      eis <- concat <$> mapM (retrieveEstablishment Latest sess vsCurrent) eets
 
       let (failures, successes) = partitionEithers eis
 
@@ -151,9 +151,17 @@ hasNextPage resp =
          _  -> True
 
 
-retrieveEstablishment :: S.Session -> String -> String
+data Scope = Latest | FirstPage
+
+retrieveEstablishment :: Scope -> S.Session -> String -> String
    -> IO [Either String I.Inspection]
-retrieveEstablishment sess vsSearch eventTarget = do
+retrieveEstablishment Latest = retrieveEstablishment' (take 1)
+retrieveEstablishment FirstPage = retrieveEstablishment' id
+
+
+retrieveEstablishment' :: ([String] -> [String]) -> S.Session -> String -> String
+   -> IO [Either String I.Inspection]
+retrieveEstablishment' limitF sess vsSearch eventTarget = do
    putStrLn "POST to retrieve one establishment"
    rEstRedir <- S.postWith opts sess url
       $ searchParams eventTarget Nothing Nothing "" vsSearch
@@ -162,12 +170,7 @@ retrieveEstablishment sess vsSearch eventTarget = do
    rEst <- S.getWith opts sess estUrl
    let (vsGenEst, vsEst) = viewStateFromResponse rEst
 
-   {- FIXME Without the `take 1` this is ALL of the inspections. Most
-      often we want just the first one, BUT needs to be
-      switchable(?) for gathering the initial pile. Is it worth
-      designing this switchability into the code?
-   -}
-   let iets = take 1 . extractInspEventTargets $ rEst
+   let iets = limitF . extractInspEventTargets $ rEst
 
    mapM (retrieveInspection sess estUrl vsGenEst vsEst) iets
 
