@@ -124,8 +124,7 @@ processEstablishmentPage destDir sday eday sess params = do
       let vsCurrent = viewStateFromBars rCurrent
       let eets = extractEstEventTargets rCurrent
       printf "Number of establishments found on current page: %d\n" (length eets)
-      --eis <- concat <$> mapM (retrieveEstablishment sess vsGenPrior vsCurrent) eets
-      eis <- concat <$> mapM (retrieveEstablishment sess "" vsCurrent) eets
+      eis <- concat <$> mapM (retrieveEstablishment sess vsCurrent) eets
 
       let (failures, successes) = partitionEithers eis
 
@@ -156,19 +155,12 @@ nextPageEventTarget resp =
          _  -> Nothing
 
 
-retrieveEstablishment
-   :: S.Session
-   -> String -> String
-   -> String
+retrieveEstablishment :: S.Session -> String -> String
    -> IO [Either String I.Inspection]
-retrieveEstablishment
-   sess
-   vsGenStart vsSearch
-   eventTarget = do
-
+retrieveEstablishment sess vsSearch eventTarget = do
    putStrLn "POST to retrieve one establishment"
    rEstRedir <- S.postWith opts sess url
-      $ searchParams eventTarget Nothing Nothing vsGenStart vsSearch
+      $ searchParams eventTarget Nothing Nothing "" vsSearch
    let estUrl = printf "%s%s" urlPrefix $ urlFromBars rEstRedir
 
    rEst <- S.getWith opts sess estUrl
