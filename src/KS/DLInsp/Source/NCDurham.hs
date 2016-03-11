@@ -137,7 +137,7 @@ processEstablishmentPage destDir sday eday sess params = do
       --return ()
 
       maybe (return ())
-         (const (processEstablishmentPage destDir sday eday sess (pagingParams sday eday "" vsCurrent)))
+         (const (processEstablishmentPage destDir sday eday sess (pagingParams sday eday vsCurrent)))
          (nextPageEventTarget rCurrent)
 
 
@@ -295,15 +295,9 @@ searchParams eventTarget startDay endDay viewStateGenerator viewState =
    , "__VIEWSTATE" := T.pack viewState
    ]
 
-   where
-      formatDay :: Maybe Day -> T.Text
-      formatDay (Just day) = T.pack $ printf "%d/%d/%d" m d y
-         where (y, m, d) = toGregorian day
-      formatDay Nothing    = fvEmpty
 
-
-pagingParams :: Maybe Day -> Maybe Day -> String -> String -> [FormParam]
-pagingParams startDay endDay viewStateGenerator viewState =
+pagingParams :: Maybe Day -> Maybe Day -> String -> [FormParam]
+pagingParams startDay endDay viewState =
    [ "ctl00$scriptManager1" := ("ctl00$PageContent$UpdatePanel1|ctl00$PageContent$ESTABLISHMENTPagination$_NextPage" :: T.Text)
    , "__EVENTTARGET" := fvEmpty
    , "__EVENTARGUMENT" := fvEmpty
@@ -325,17 +319,17 @@ pagingParams startDay endDay viewStateGenerator viewState =
    , "ctl00$PageContent$ESTABLISHMENTPagination$_PageSize" := (10 :: Int)
    , "hiddenInputToUpdateATBuffer_CommonToolkitScripts" := (1 :: Int)
    , "__ASYNCPOST" := ("true" :: T.Text)
-   , "__VIEWSTATEGENERATOR" := T.pack viewStateGenerator
+   , "__VIEWSTATEGENERATOR" := fvEmpty
    , "__VIEWSTATE" := T.pack viewState
    , "ctl00$PageContent$ESTABLISHMENTPagination$_NextPage.x" := (7 :: Int)
    , "ctl00$PageContent$ESTABLISHMENTPagination$_NextPage.y" := (12 :: Int)
    ]
 
-   where
-      formatDay :: Maybe Day -> T.Text
-      formatDay (Just day) = T.pack $ printf "%d/%d/%d" m d y
-         where (y, m, d) = toGregorian day
-      formatDay Nothing    = fvEmpty
+
+formatDay :: Maybe Day -> T.Text
+formatDay (Just day) = T.pack $ printf "%d/%d/%d" m d y
+   where (y, m, d) = toGregorian day
+formatDay Nothing    = fvEmpty
 
 
 inspRowParams :: String -> String -> String -> [FormParam]
