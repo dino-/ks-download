@@ -190,6 +190,7 @@ test-suite test-Locate
     other-modules:
         NameWords
     ghc-options: -Wall
+
 test-suite test-Database
     type: exitcode-stdio-1.0
     main-is: test-Database.hs
