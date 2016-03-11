@@ -131,18 +131,14 @@ processEstablishmentPage destDir sday eday sess params = do
       mapM_ (\emsg -> putStrLn $ "ERROR parsing inspection: " ++ emsg) failures
       mapM_ (I.saveInspection destDir) successes
 
-      -- FIXME Check the status of the next-page control and recurse if necessary
-      -- processEstablishmentPage eventTarget? sday eday sess rCurrent destDir
-      --return ()
-
-      maybe (return ())
-         (const (processEstablishmentPage destDir sday eday sess (pagingParams sday eday vsCurrent)))
-         (nextPageEventTarget rCurrent)
+      if (hasNextPage rCurrent)
+         then processEstablishmentPage destDir sday eday sess (pagingParams sday eday vsCurrent)
+         else return ()
 
 
-nextPageEventTarget :: Response BL.ByteString -> Maybe String
-nextPageEventTarget resp =
-   maybeDisabled
+hasNextPage :: Response BL.ByteString -> Bool
+hasNextPage resp =
+   not . isDisabled
    . head
    . dropWhile (~/= ("<input title=\"Next page\">" :: String))
    . parseTags
@@ -150,9 +146,9 @@ nextPageEventTarget resp =
    $ resp ^. responseBody
 
    where
-      maybeDisabled tag = case (fromAttrib "disabled" tag) of
-         "" -> Just "ctl00_PageContent_INSPECTIONPagination__NextPage"
-         _  -> Nothing
+      isDisabled tag = case (fromAttrib "disabled" tag) of
+         "" -> False
+         _  -> True
 
 
 retrieveEstablishment :: S.Session -> String -> String
