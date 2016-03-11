@@ -98,7 +98,6 @@ opts = defaults
    & header "User-Agent" .~ ["Mozilla/5.0 (X11; Linux x86_64; rv:44.0) Gecko/20100101 Firefox/44.0"]
 
 
-{-
 download :: Downloader
 download options destDir = runDL options $ do
    -- We need these for building the search params further down
@@ -109,59 +108,24 @@ download options destDir = runDL options $ do
       putStrLn "GET start page"
       rStart <- S.getWith opts sess url
 
-      let (vsGenStart, vsStart) = viewStateFromResponse rStart
-
-      putStrLn "POST submitting establishment type and date range"
-      rSearch <- S.postWith opts sess url $ searchParams
-         "ctl00_PageContent_INSPECTIONFilterButton__Button"
-         sday eday vsGenStart vsStart
-
-      let vsSearch = viewStateFromBars rSearch
-      let eets = extractEstEventTargets rSearch
-      printf "Number of establishments found: %d\n" (length eets)
-      eis <- concat <$> mapM (retrieveEstablishment sess vsGenStart vsSearch) eets
-
-      let (failures, successes) = partitionEithers eis
-
-      mapM_ (\emsg -> putStrLn $ "ERROR parsing inspection: " ++ emsg) failures
-      mapM_ (I.saveInspection destDir) successes
-
-      return ()
-
-   return ()
--}
-
-
-download :: Downloader
-download options destDir = runDL options $ do
-   -- We need these for building the search params further down
-   sday <- asks optStartDate
-   eday <- asks optEndDate
-
-   liftIO $ S.withSession $ \sess -> do
-      putStrLn "GET start page"
-      rStart <- S.getWith opts sess url
-
-      processEstablishmentPage 
-         "ctl00_PageContent_INSPECTIONFilterButton__Button"
-         sday eday sess rStart destDir
+      let (vsGen, vs) = viewStateFromResponse rStart
+      processEstablishmentPage destDir sday eday sess (searchParams
+         "ctl00_PageContent_INSPECTIONFilterButton__Button" sday eday vsGen vs)
 
    return ()
 
 
-processEstablishmentPage :: String -> Maybe Day -> Maybe Day -> S.Session
-   -> Response BL.ByteString -> FilePath -> IO ()
-processEstablishmentPage eventTarget sday eday sess rPrior destDir = do
-      let (vsGenPrior, vsPrior) = viewStateFromResponse rPrior
-
+processEstablishmentPage :: FilePath -> Maybe Day -> Maybe Day -> S.Session
+   -> [FormParam] -> IO ()
+processEstablishmentPage destDir sday eday sess params = do
       putStrLn "POST to get page of establishments"
-      rCurrent <- S.postWith opts sess url $ searchParams
-         eventTarget sday eday vsGenPrior vsPrior
+      rCurrent <- S.postWith opts sess url $ params
 
       let vsCurrent = viewStateFromBars rCurrent
       let eets = extractEstEventTargets rCurrent
       printf "Number of establishments found on current page: %d\n" (length eets)
-      eis <- concat <$> mapM (retrieveEstablishment sess vsGenPrior vsCurrent) eets
+      --eis <- concat <$> mapM (retrieveEstablishment sess vsGenPrior vsCurrent) eets
+      eis <- concat <$> mapM (retrieveEstablishment sess "" vsCurrent) eets
 
       let (failures, successes) = partitionEithers eis
 
@@ -170,7 +134,26 @@ processEstablishmentPage eventTarget sday eday sess rPrior destDir = do
 
       -- FIXME Check the status of the next-page control and recurse if necessary
       -- processEstablishmentPage eventTarget? sday eday sess rCurrent destDir
-      return ()
+      --return ()
+
+      maybe (return ())
+         (const (processEstablishmentPage destDir sday eday sess (pagingParams sday eday "" vsCurrent)))
+         (nextPageEventTarget rCurrent)
+
+
+nextPageEventTarget :: Response BL.ByteString -> Maybe String
+nextPageEventTarget resp =
+   maybeDisabled
+   . head
+   . dropWhile (~/= ("<input title=\"Next page\">" :: String))
+   . parseTags
+   . BL.unpack
+   $ resp ^. responseBody
+
+   where
+      maybeDisabled tag = case (fromAttrib "disabled" tag) of
+         "" -> Just "ctl00_PageContent_INSPECTIONPagination__NextPage"
+         _  -> Nothing
 
 
 retrieveEstablishment
@@ -310,6 +293,42 @@ searchParams eventTarget startDay endDay viewStateGenerator viewState =
    , "__ASYNCPOST" := ("true" :: T.Text)
    , "__VIEWSTATEGENERATOR" := T.pack viewStateGenerator
    , "__VIEWSTATE" := T.pack viewState
+   ]
+
+   where
+      formatDay :: Maybe Day -> T.Text
+      formatDay (Just day) = T.pack $ printf "%d/%d/%d" m d y
+         where (y, m, d) = toGregorian day
+      formatDay Nothing    = fvEmpty
+
+
+pagingParams :: Maybe Day -> Maybe Day -> String -> String -> [FormParam]
+pagingParams startDay endDay viewStateGenerator viewState =
+   [ "ctl00$scriptManager1" := ("ctl00$PageContent$UpdatePanel1|ctl00$PageContent$ESTABLISHMENTPagination$_NextPage" :: T.Text)
+   , "__EVENTTARGET" := fvEmpty
+   , "__EVENTARGUMENT" := fvEmpty
+   , "__LASTFOCUS" := ("ctl00_PageContent_ESTABLISHMENTPagination__NextPage" :: T.Text)
+   , "ctl00$pageLeftCoordinate" := fvEmpty
+   , "ctl00$pageTopCoordinate" := fvEmpty
+   , "ctl00$PageContent$_clientSideIsPostBack" := ("Y" :: T.Text)
+   , "ctl00$PageContent$ESTABLISHMENTSearch" := fvEmpty
+   , "ctl00$PageContent$PREMISE_CITYFilter1" := fvEmpty
+   , "ctl00$PageContent$PREMISE_NAMEFilter" := fvAny
+   , "ctl00$PageContent$PREMISE_CITYFilter" := fvAny
+   , "ctl00$PageContent$PREMISE_ZIPFilter" := fvEmpty
+   , "ctl00$PageContent$EST_TYPE_IDFilter" := et01Restaurant
+   , "ctl00$PageContent$INSPECTION_DATEFromFilter" := formatDay startDay
+   , "ctl00$PageContent$INSPECTION_DATEToFilter" := formatDay endDay
+   , "ctl00$PageContent$FINAL_SCOREFromFilter" := fvAny
+   , "ctl00$PageContent$COUNTY_IDFilter" := countyID
+   , "ctl00$PageContent$ESTABLISHMENTPagination$_CurrentPage" := (1 :: Int)
+   , "ctl00$PageContent$ESTABLISHMENTPagination$_PageSize" := (10 :: Int)
+   , "hiddenInputToUpdateATBuffer_CommonToolkitScripts" := (1 :: Int)
+   , "__ASYNCPOST" := ("true" :: T.Text)
+   , "__VIEWSTATEGENERATOR" := T.pack viewStateGenerator
+   , "__VIEWSTATE" := T.pack viewState
+   , "ctl00$PageContent$ESTABLISHMENTPagination$_NextPage.x" := (7 :: Int)
+   , "ctl00$PageContent$ESTABLISHMENTPagination$_NextPage.y" := (12 :: Int)
    ]
 
    where
