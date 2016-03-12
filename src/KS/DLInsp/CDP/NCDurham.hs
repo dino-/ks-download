@@ -3,7 +3,7 @@
 
 {-# LANGUAGE OverloadedStrings #-}
 
-module KS.DLInsp.Source.NCDurham
+module KS.DLInsp.CDP.NCDurham
    where
 
 import           Control.Lens ( (^.), (?~), (.~) , (&) )
@@ -24,7 +24,7 @@ import           Text.HTML.TagSoup
 import           Text.Printf ( printf )
 
 import qualified KS.Data.Inspection as I
-import           KS.DLInsp.Types ( DL, Downloader,
+import           KS.DLInsp.CDP.Types ( DL, Downloader,
                   Options ( optEndDate, optPageLimit, optStartDate ),
                   asks, liftIO, runDL )
 --import           KS.Util ( withRetry )
