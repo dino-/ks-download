@@ -9,7 +9,7 @@ module KS.DLInsp.CDP.Opts
    where
 
 import Control.Exception
-import Data.Time ( Day, TimeZone, fromGregorian )
+import Data.Time ( Day, fromGregorian, hoursToTimeZone )
 import Data.Version ( showVersion )
 import Paths_ks_download ( version )
 import System.Console.GetOpt
@@ -55,8 +55,9 @@ parseInputDate str =
          "Bad date format: " ++ str ++ "\n" ++ usageText
 
 
-setDates :: TimeZone -> Options -> IO Options
-setDates tz opts = do
+setDates :: Int -> Options -> IO Options
+setDates offset opts = do
+   let tz = hoursToTimeZone offset
    newStartDate <- setDate tz $ optStartDate opts
    newEndDate <- setDate tz $ optEndDate opts
    return $ opts
