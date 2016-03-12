@@ -26,12 +26,13 @@ import System.IO
    , hSetBuffering, stdout, stderr
    )
 import Text.Printf ( printf )
+import Text.Regex ( matchRegex, mkRegex )
 
 import qualified KS.Database.Mongo.Config as MC
 import KS.Database.Mongo.Util ( parseLastError )
 import KS.Log
 import KS.RegionUpd.Opts
-import qualified KS.RegionUpd.Region as R
+import KS.SourceConfig ( SourceConfig (centroid, displayName), loadConfig )
 
 
 coll_regional_data :: Collection
@@ -65,7 +66,7 @@ main = do
    (access pipe slaveOk (MC.database mongoConf)
       $ auth (MC.username mongoConf) (MC.password mongoConf)) >>=
       \tf -> noticeM lname $ "Authenticated with Mongo: " ++ (show tf)
-   result <- updateRegions mongoConf pipe
+   result <- updateRegions confDir mongoConf pipe
 
    close pipe
 
@@ -74,8 +75,8 @@ main = do
    exitWith . toExitCode $ result
 
 
-updateRegions :: MC.MongoConfig -> Pipe -> IO Bool
-updateRegions mc pipe = do
+updateRegions :: FilePath -> MC.MongoConfig -> Pipe -> IO Bool
+updateRegions confDir mc pipe = do
    -- Get the stats for all regions in recent_inspections
    computedStats <- access pipe slaveOk (MC.database mc) $ aggregate
       "recent_inspections" [mkStatsQuery]
@@ -84,7 +85,7 @@ updateRegions mc pipe = do
    now <- utcTimeToEpoch <$> getCurrentTime
 
    -- Construct the regional_stats documents
-   let newDocs = map (mkRegionalStats now R.regions) computedStats
+   newDocs <- mapM (mkRegionalStats now confDir) computedStats
 
    -- Report what we're about to do
    infoM lname $ printf "Inserting these stats into the %s collection:"
@@ -114,30 +115,35 @@ updateStatsDocument mc pipe doc = do
       result
 
 
-mkRegionalStats :: Int -> R.Regions -> Document -> Document
-mkRegionalStats now regions stats =
-   [ "source" =: region
-   , "doctype" =: ("regional_stats" :: T.Text)
-   , "date" =: now
-   , "state" =: state
-   , "county" =: county
-   , "count_total" =: (("count_total" `at` stats) :: Int)
-   , "count_a1" =: (("count_a1" `at` stats) :: Int)
-   , "count_a2" =: (("count_a2" `at` stats) :: Int)
-   , "count_a3" =: (("count_a3" `at` stats) :: Int)
-   , "count_a4" =: (("count_a4" `at` stats) :: Int)
-   , "count_b" =: (("count_b" `at` stats) :: Int)
-   , "count_c" =: (("count_c" `at` stats) :: Int)
-   , "min_score" =: (("min_score" `at` stats) :: Float)
-   , "max_score" =: (("max_score" `at` stats) :: Float)
-   , "avg_score" =: (("avg_score" `at` stats) :: Float)
-   ]
+mkRegionalStats :: Int -> FilePath -> Document -> IO Document
+mkRegionalStats now confDir stats = do
+   let source = "_id" `at` stats
+   sourceConfig <- loadConfig confDir source
+   let (state : county : _) =
+         fromJust
+         . matchRegex (mkRegex "^(.+) County, (.+)$")
+         . T.unpack
+         $ displayName sourceConfig
 
-   where
-      region :: T.Text
-      region = "_id" `at` stats
-
-      (state, county) = fromJust . R.lookup region $ regions
+   return $
+      [ "source" =: source
+      , "doctype" =: ("regional_stats" :: T.Text)
+      , "date" =: now
+      , "location" =: centroid sourceConfig
+      , "display_name" =: displayName sourceConfig
+      , "state" =: state
+      , "county" =: county
+      , "count_total" =: (("count_total" `at` stats) :: Int)
+      , "count_a1" =: (("count_a1" `at` stats) :: Int)
+      , "count_a2" =: (("count_a2" `at` stats) :: Int)
+      , "count_a3" =: (("count_a3" `at` stats) :: Int)
+      , "count_a4" =: (("count_a4" `at` stats) :: Int)
+      , "count_b" =: (("count_b" `at` stats) :: Int)
+      , "count_c" =: (("count_c" `at` stats) :: Int)
+      , "min_score" =: (("min_score" `at` stats) :: Float)
+      , "max_score" =: (("max_score" `at` stats) :: Float)
+      , "avg_score" =: (("avg_score" `at` stats) :: Float)
+      ]
 
 
 mkStatsQuery :: Document

@@ -1,7 +1,7 @@
 -- License: BSD3 (see LICENSE)
 -- Author: Dino Morelli <dino@ui3.info>
 
-{-# LANGUAGE StandaloneDeriving #-}
+{-# LANGUAGE OverloadedStrings, StandaloneDeriving #-}
 {-# OPTIONS_GHC -fno-warn-orphans #-}
 
 module KS.SourceConfig
@@ -13,16 +13,18 @@ module KS.SourceConfig
 
 import qualified Data.Map as Map
 import qualified Data.Text as T
-import Data.Time.LocalTime ( TimeZone (..) )
+import KS.Data.Place ( GeoPoint (..) )
 import System.FilePath
 import TCE.Data.ReadConf ( readConfig )
 
 
-deriving instance Read TimeZone
+deriving instance Read GeoPoint
 
 
 data SourceConfig = SourceConfig
-   { timeZone :: TimeZone
+   { timeZone :: Int
+   , centroid :: GeoPoint
+   , displayName :: T.Text
    , namewordsStopwords :: [T.Text]
    , namewordsSpecialCases :: Map.Map T.Text [T.Text]
    , placesTypes :: [String]
@@ -32,7 +34,7 @@ data SourceConfig = SourceConfig
 
 nullSourceConfig :: SourceConfig
 nullSourceConfig =
-   SourceConfig (TimeZone (-300) False "EST") [] (Map.fromList []) []
+   SourceConfig (-5) (GeoPoint 0.0 0.0) "" [] (Map.fromList []) []
 
 
 loadConfig :: FilePath -> String -> IO SourceConfig
