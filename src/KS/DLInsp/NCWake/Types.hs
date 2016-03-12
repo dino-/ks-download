@@ -1,7 +1,7 @@
 -- License: BSD3 (see LICENSE)
 -- Author: Dino Morelli <dino@ui3.info>
 
-module KS.DLInsp.Types
+module KS.DLInsp.NCWake.Types
    ( Options (..)
    , Downloader
    , DL, runDL
@@ -11,7 +11,7 @@ module KS.DLInsp.Types
    )
    where
 
-import Control.Monad.Reader
+import Control.Monad.Reader ( ReaderT, asks, liftIO, runReaderT )
 import Data.Time.Calendar ( Day )
 import System.FilePath ()
 

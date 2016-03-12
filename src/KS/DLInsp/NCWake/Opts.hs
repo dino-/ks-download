@@ -1,23 +1,22 @@
 -- License: BSD3 (see LICENSE)
 -- Author: Dino Morelli <dino@ui3.info>
 
-module KS.DLInsp.Opts
+module KS.DLInsp.NCWake.Opts
    ( Options (..)
    , parseOpts, usageText
+   , setDates
    )
    where
 
 import Control.Exception
-import Data.List ( intercalate )
-import qualified Data.Map as M
-import Data.Time ( Day, fromGregorian )
+import Data.Time ( Day, TimeZone, fromGregorian )
 import Data.Version ( showVersion )
 import Paths_ks_download ( version )
 import System.Console.GetOpt
 import Text.Regex
 
-import KS.DLInsp.Source.Downloaders
-import KS.DLInsp.Types ( Options (..) )
+import KS.DLInsp.NCWake.Types ( Options (..) )
+import KS.Util ( setDate )
 
 
 defaultOptions :: Options
@@ -56,6 +55,16 @@ parseInputDate str =
          "Bad date format: " ++ str ++ "\n" ++ usageText
 
 
+setDates :: TimeZone -> Options -> IO Options
+setDates tz opts = do
+   newStartDate <- setDate tz $ optStartDate opts
+   newEndDate <- setDate tz $ optEndDate opts
+   return $ opts
+      { optStartDate = newStartDate
+      , optEndDate = newEndDate
+      }
+
+
 -- Perform the args parsing
 parseOpts :: [String] -> IO (Options, [String])
 parseOpts args = handle ioError $
@@ -68,16 +77,14 @@ usageText :: String
 usageText = (usageInfo header options) ++ "\n" ++ footer
    where
       header = init $ unlines
-         [ "Usage: ks-dlinsp [OPTIONS] CONFDIR SOURCE DESTDIR"
-         , "Acquire inspection data for a source (like a county or similar region)"
+         [ "Usage: ks-dlinsp-nc_wake [OPTIONS] CONFDIR DESTDIR"
+         , "Acquire inspection data for Wake County, North Carolina"
          , ""
          , "Options:"
          ]
       footer = init $ unlines
          [ "Note: If run with no dates, you will get all of the inspections from two days ago. The idea is to give the inspection workers time to get their data into the system and is a good default for daily runs."
          , "Expects to find ks-download-SOURCE.conf in the CONFDIR specified."
-         , ""
-         , "SOURCE is one of: " ++ (intercalate ", " $ M.keys downloaders)
          , ""
          , "DESTDIR is the directory for downloaded inspection JSON files."
          , ""

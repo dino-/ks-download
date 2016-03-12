@@ -3,7 +3,7 @@
 
 module KS.Util
    ( withRetry
-   , setDates
+   , setDate
    )
    where
 
@@ -11,8 +11,6 @@ import Control.Concurrent ( threadDelay )
 import Control.Monad.Catch ( catchAll )
 import Data.Time ( Day, TimeZone,
          addDays, getCurrentTime, hoursToTimeZone, localDay, utcToLocalTime )
-
-import KS.DLInsp.Types ( Options (optStartDate, optEndDate) )
 
 
 withRetry :: Int -> Int -> IO a -> (String -> IO ()) -> IO (Either String a)
@@ -28,9 +26,8 @@ withRetry tryNumber delay action logF = withRetry' tryNumber where
             withRetry' $ tryNumber' - 1
 
 
-setDates :: Int -> Options -> IO Options
-setDates offset opts = do
-   let tz = hoursToTimeZone offset
+setDates :: TimeZone -> Options -> IO Options
+setDates tz opts = do
    newStartDate <- setDate tz $ optStartDate opts
    newEndDate <- setDate tz $ optEndDate opts
    return $ opts

@@ -34,8 +34,8 @@ source-repository head
     type: darcs
     location: http://hub.darcs.net/dino/ks-download
 
-executable ks-dlinsp
-    main-is: ks-dlinsp.hs
+executable ks-dlinsp-nc_wake
+    main-is: ks-dlinsp-nc_wake.hs
     build-depends:
         aeson ==0.9.*,
         base >=3 && <5,
@@ -57,11 +57,9 @@ executable ks-dlinsp
         wreq
     hs-source-dirs: src
     other-modules:
-        KS.DLInsp.Opts
-        KS.DLInsp.Source.Downloaders
-        KS.DLInsp.Source.NCDurham
-        KS.DLInsp.Source.NCWake
-        KS.DLInsp.Types
+        KS.DLInsp.NCWake.Downloader
+        KS.DLInsp.NCWake.Opts
+        KS.DLInsp.NCWake.Types
         KS.SourceConfig
         KS.Util
     ghc-options: -Wall
