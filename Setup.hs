@@ -31,7 +31,7 @@ copyBinDestDir copyFlags localBuildInfo = destDir
 copyCustomBinFiles :: FilePath -> IO ()
 copyCustomBinFiles destDir = do
    -- src path info
-   let srcFile = "ks-dl-nightly.sh"
+   let srcFile = "ks-dl-nightly-nc_wake.sh"
    let srcDir = "util"
 
    putStrLn $ "Installing additional binaries in " ++ destDir
