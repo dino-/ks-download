@@ -20,7 +20,7 @@ cd $workDir
 
 # Scrape new inspections from two days ago
 
-ks-dlinsp $configDir nc_wake insp > ks-dlinsp.log
+ks-dlinsp-nc_wake $configDir insp > ks-dlinsp.log
 
 
 # Places match the inspections
