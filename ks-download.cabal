@@ -45,8 +45,8 @@ executable ks-dlinsp-cdp
         filepath >=1.4.0.0 && <1.5,
         HTTP >=4000.2.23 && <4000.3,
         ks-library >=1.7,
-        lens,
-        lens-aeson,
+        lens >=4.13.2.1 && <4.14,
+        lens-aeson >=1.0.0.5 && <1.1,
         mtl >=2.2.1 && <2.3,
         regex-compat >=0.95.1 && <0.96,
         tagsoup >=0.13.8 && <0.14,
@@ -54,7 +54,7 @@ executable ks-dlinsp-cdp
         text >=1.2.1.3 && <1.3,
         time >=1.5.0.1 && <1.6,
         utf8-string >=1.0.1.1 && <1.1,
-        wreq
+        wreq >=0.4.1.0 && <0.5
     hs-source-dirs: src
     other-modules:
         KS.DLInsp.CDP.NCDurham
@@ -215,7 +215,6 @@ test-suite test-Locate
     other-modules:
         NameWords
     ghc-options: -Wall
-
 test-suite test-Database
     type: exitcode-stdio-1.0
     main-is: test-Database.hs
