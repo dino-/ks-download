@@ -119,7 +119,7 @@ mkRegionalStats :: Int -> FilePath -> Document -> IO Document
 mkRegionalStats now confDir stats = do
    let source = "_id" `at` stats
    sourceConfig <- loadConfig confDir source
-   let (state : county : _) =
+   let (county : state : _) =
          fromJust
          . matchRegex (mkRegex "^(.+) County, (.+)$")
          . T.unpack
