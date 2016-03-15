@@ -11,6 +11,10 @@ workDirParent=/data/ksnitch/download/nc_wake
 #workDirParent=/home/dino/dev/ksnitch/download
 
 
+# When running outside of this zone (or on a system using UTC),
+# need this set explicitly for both the `date` binary and ks-dlinsp
+export TZ="America/New_York"
+
 workDir=${workDirParent}/nc_wake_$(date +"%Y-%m-%d" --date='2 days ago')
 
 
