@@ -101,7 +101,8 @@ updateRecord :: (BSON.Document, D.Document) -> IO (BSON.Document, D.Document)
 updateRecord oldDocT = runFix oldDocT $ do
    display
    fixHost
-   fixDate
+   --fixDate
+   upgradeDate
    return =<< get
 
 
@@ -116,10 +117,12 @@ display = do
    doc <- gets snd
    let placeID = P.place_id . D.place $ doc
    let ut = posixSecondsToUTCTime . realToFrac . I.date . D.inspection $ doc
+   let placeName = P.name . D.place $ doc
    let detail = I.detail . D.inspection $ doc
    liftIO $ do
       date <- formatTime defaultTimeLocale "%FT%T%z" <$> utcToLocalZonedTime ut
-      printf "----------\nInspection %s %s\n  %s\n" (T.unpack placeID) date detail
+      printf "----------\nInspection %s %s %s\n  %s\n" (T.unpack placeID) date
+         (T.unpack placeName) detail
 
 
 fixHost :: Fix ()
@@ -160,6 +163,24 @@ fixDate = do
       updateSnd newDoc
       date <- liftIO $ formatTime defaultTimeLocale "%FT%T%z" <$> utcToLocalZonedTime newUT
       liftIO $ printf "  Fixed date: %s\n" date
+
+   return ()
+
+
+upgradeDate :: Fix ()
+upgradeDate = do
+   oldDoc <- gets snd
+
+   let ut = posixSecondsToUTCTime . realToFrac . I.date . D.inspection $ oldDoc
+   zt <- liftIO $ utcToLocalZonedTime ut
+   let (y, m, d) = toGregorian . localDay . zonedTimeToLocalTime $ zt
+   let newDate = read $ printf "%d%02d%02d" y m d
+
+   let newInsp = (D.inspection oldDoc) { I.date = newDate }
+   let newDoc = oldDoc { D.inspection = newInsp }
+
+   updateSnd newDoc
+   liftIO $ printf "  Fixed date: %s\n" (show newDate)
 
    return ()
 
