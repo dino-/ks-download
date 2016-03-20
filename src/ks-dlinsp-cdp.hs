@@ -5,7 +5,7 @@ import Control.Monad ( when )
 import Data.Maybe ( fromJust )
 import Data.Version ( showVersion )
 import Paths_ks_download ( version )
-import System.Environment ( getArgs )
+import System.Environment ( getArgs, setEnv )
 import System.Exit ( exitFailure, exitSuccess )
 import System.IO
    ( BufferMode ( NoBuffering )
@@ -35,7 +35,8 @@ main = do
    -- We need to get the source config to see its time zone to
    -- supply proper values for optStartDate and optEndDate
    sourceConfig <- loadConfig confDir source
-   fixedOptions <- setDates (timeZone sourceConfig) options
+   setEnv "TZ" $ timeZone sourceConfig
+   fixedOptions <- setDates options
 
    printf "Downloading inspections between dates %s and %s\n"
       (show . fromJust . optStartDate $ fixedOptions)

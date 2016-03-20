@@ -14,12 +14,13 @@ import Data.Aeson.Bson ( toBson )
 import qualified Data.ByteString.Char8 as B
 import Data.Maybe ( fromJust )
 import qualified Data.Text as T
-import Data.Time ( getCurrentTime )
+import Data.Time ( getCurrentTime, utcToLocalZonedTime, zonedTimeToLocalTime )
+import Data.Time.Calendar ( toGregorian )
+import Data.Time.LocalTime ( LocalTime (localDay) )
 import Data.Version ( showVersion )
 import Database.MongoDB hiding ( options )
-import KS.Data.Common ( utcTimeToEpoch )
 import Paths_ks_download ( version )
-import System.Environment ( getArgs )
+import System.Environment ( getArgs, setEnv )
 import System.Exit ( ExitCode (..), exitFailure, exitSuccess, exitWith )
 import System.IO
    ( BufferMode ( NoBuffering )
@@ -32,7 +33,8 @@ import qualified KS.Database.Mongo.Config as MC
 import KS.Database.Mongo.Util ( parseLastError )
 import KS.Log
 import KS.RegionUpd.Opts
-import KS.SourceConfig ( SourceConfig (centroid, displayName), loadConfig )
+import KS.SourceConfig
+   ( SourceConfig (centroid, displayName, timeZone), loadConfig )
 
 
 coll_regional_data :: Collection
@@ -81,11 +83,8 @@ updateRegions confDir mc pipe = do
    computedStats <- access pipe slaveOk (MC.database mc) $ aggregate
       "recent_inspections" [mkStatsQuery]
 
-   -- Get the date right now
-   now <- utcTimeToEpoch <$> getCurrentTime
-
    -- Construct the regional_stats documents
-   newDocs <- mapM (mkRegionalStats now confDir) computedStats
+   newDocs <- mapM (mkRegionalStats confDir) computedStats
 
    -- Report what we're about to do
    infoM lname $ printf "Inserting these stats into the %s collection:"
@@ -115,10 +114,17 @@ updateStatsDocument mc pipe doc = do
       result
 
 
-mkRegionalStats :: Int -> FilePath -> Document -> IO Document
-mkRegionalStats now confDir stats = do
+mkRegionalStats :: FilePath -> Document -> IO Document
+mkRegionalStats confDir stats = do
    let source = "_id" `at` stats
    sourceConfig <- loadConfig confDir source
+
+   -- Get today's date
+   setEnv "TZ" $ timeZone sourceConfig
+   (y, m, d) <- toGregorian . localDay . zonedTimeToLocalTime
+      <$> (utcToLocalZonedTime =<< getCurrentTime)
+   let today = read $ printf "%d%02d%02d" y m d
+
    let (county : state : _) =
          fromJust
          . matchRegex (mkRegex "^(.+) County, (.+)$")
@@ -128,7 +134,7 @@ mkRegionalStats now confDir stats = do
    return $
       [ "source" =: source
       , "doctype" =: ("regional_stats" :: T.Text)
-      , "date" =: now
+      , "date" =: (today :: Int)
       , "location" =: centroid sourceConfig
       , "display_name" =: displayName sourceConfig
       , "state" =: state

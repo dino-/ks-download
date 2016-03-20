@@ -22,7 +22,7 @@ deriving instance Read GeoPoint
 
 
 data SourceConfig = SourceConfig
-   { timeZone :: Int
+   { timeZone :: String
    , centroid :: GeoPoint
    , displayName :: T.Text
    , namewordsStopwords :: [T.Text]
@@ -34,7 +34,7 @@ data SourceConfig = SourceConfig
 
 nullSourceConfig :: SourceConfig
 nullSourceConfig =
-   SourceConfig (-5) (GeoPoint 0.0 0.0) "" [] (Map.fromList []) []
+   SourceConfig "America/New_York" (GeoPoint 0.0 0.0) "" [] (Map.fromList []) []
 
 
 loadConfig :: FilePath -> String -> IO SourceConfig
