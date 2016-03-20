@@ -30,17 +30,12 @@ import Text.Printf ( printf )
 import Text.Regex ( matchRegex, mkRegex )
 
 import qualified KS.Database.Mongo.Config as MC
-import KS.Database.Mongo.Util ( parseLastError )
+import KS.Database.Mongo.Util
+   ( coll_inspections_recent, coll_stats_recent, parseLastError )
 import KS.Log
 import KS.RegionUpd.Opts
 import KS.SourceConfig
    ( SourceConfig (centroid, displayName, timeZone), loadConfig )
-
-
-coll_regional_data :: Collection
-
-coll_regional_data = "regional_data"
---coll_regional_data = "test_regional_data"  -- For development
 
 
 main :: IO ()
@@ -79,16 +74,16 @@ main = do
 
 updateRegions :: FilePath -> MC.MongoConfig -> Pipe -> IO Bool
 updateRegions confDir mc pipe = do
-   -- Get the stats for all regions in recent_inspections
+   -- Get the stats for all regions
    computedStats <- access pipe slaveOk (MC.database mc) $ aggregate
-      "recent_inspections" [mkStatsQuery]
+      coll_inspections_recent [mkStatsQuery]
 
    -- Construct the regional_stats documents
    newDocs <- mapM (mkRegionalStats confDir) computedStats
 
    -- Report what we're about to do
    infoM lname $ printf "Inserting these stats into the %s collection:"
-      (T.unpack coll_regional_data)
+      (T.unpack coll_stats_recent)
    mapM_ (infoM lname . show) newDocs
 
    -- Upsert them into the regional_data collection
@@ -105,7 +100,7 @@ updateStatsDocument :: MC.MongoConfig -> Pipe -> Document -> IO Bool
 updateStatsDocument mc pipe doc = do
    result <- access pipe slaveOk (MC.database mc) $ do
       upsert (select [ "source" =: (("source" `at` doc) :: T.Text) ]
-         coll_regional_data) doc
+         coll_stats_recent) doc
       parseLastError <$> runCommand [ "getLastError" =: (1::Int) ]
 
    either
