@@ -7,7 +7,7 @@ module KS.DLInsp.CDP.NCDurham
    where
 
 import           Control.Lens ( (^.), (?~), (.~) , (&) )
-import Control.Monad.State
+import Control.Monad.Reader
 import qualified Data.ByteString.Lazy.Char8 as BL
 import           Data.Either ( partitionEithers )
 import           Data.List ( isPrefixOf, tails )
@@ -107,10 +107,10 @@ data ScrapeST = ScrapeST
    , session :: S.Session
    }
 
-type Scrape a = (StateT ScrapeST IO) a
+type Scrape a = (ReaderT ScrapeST IO) a
 
 runScrape :: ScrapeST -> Scrape () -> IO ()
-runScrape st ev = evalStateT ev st
+runScrape env ev = runReaderT ev env
 
 
 download :: Downloader
@@ -128,7 +128,7 @@ download options destDir' = runDL options $ do
 
 processEstType :: Scrape ()
 processEstType = do
-   session' <- gets session
+   session' <- asks session
 
    rStart <- liftIO $ do
       putStrLn "GET start page"
@@ -141,8 +141,8 @@ processEstType = do
 
 processEstablishmentPage :: [FormParam] -> Scrape ()
 processEstablishmentPage params = do
-      destDir' <- gets destDir
-      session' <- gets session
+      destDir' <- asks destDir
+      session' <- asks session
 
       liftIO $ putStrLn "POST to get page of establishments"
       rCurrent <- liftIO $ S.postWith opts session' url $ params
@@ -188,7 +188,7 @@ retrieveEstablishment FirstPage = retrieveEstablishment' id
 retrieveEstablishment' :: ([String] -> [String]) -> String -> String
    -> Scrape [Either String I.Inspection]
 retrieveEstablishment' limitF vsSearch eventTarget = do
-   session' <- gets session
+   session' <- asks session
    liftIO $ putStrLn "POST to retrieve one establishment"
    searchFormFields <- searchParams eventTarget vsSearch
    rEstRedir <- liftIO $ S.postWith opts session' url searchFormFields
@@ -205,7 +205,7 @@ retrieveEstablishment' limitF vsSearch eventTarget = do
 retrieveInspection :: String -> String -> String
    -> Scrape (Either String I.Inspection)
 retrieveInspection url' vsEst eventTarget = do
-   session' <- gets session
+   session' <- asks session
    liftIO $ putStrLn "POST to retrieve one inspection"
    rInspRedir <- liftIO $ S.postWith opts session' url'
       $ inspRowParams vsEst eventTarget
@@ -287,9 +287,9 @@ viewStateFromBars resp =
 
 searchParams :: String -> String -> Scrape [FormParam]
 searchParams eventTarget viewState = do
-   startDay' <- gets startDay
-   endDay' <- gets endDay
-   estType' <- gets estType
+   startDay' <- asks startDay
+   endDay' <- asks endDay
+   estType' <- asks estType
    return
       [ "ctl00$scriptManager1" := ("ctl00$PageContent$UpdatePanel1|ctl00$PageContent$INSPECTIONFilterButton$_Button" :: T.Text)
       , "__EVENTTARGET" := T.pack eventTarget
@@ -319,9 +319,9 @@ searchParams eventTarget viewState = do
 
 pagingParams :: String -> Scrape [FormParam]
 pagingParams viewState = do
-   startDay' <- gets startDay
-   endDay' <- gets endDay
-   estType' <- gets estType
+   startDay' <- asks startDay
+   endDay' <- asks endDay
+   estType' <- asks estType
 
    return
       [ "ctl00$scriptManager1" := ("ctl00$PageContent$UpdatePanel1|ctl00$PageContent$ESTABLISHMENTPagination$_NextPage" :: T.Text)
