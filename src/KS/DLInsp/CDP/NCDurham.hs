@@ -25,9 +25,8 @@ import           Text.HTML.TagSoup
 import           Text.Printf ( printf )
 
 import qualified KS.Data.Inspection as I
-import           KS.DLInsp.CDP.Types ( DL, Downloader,
-                  Options ( optEndDate, optPageLimit, optStartDate ),
-                  asks, liftIO, runDL )
+import KS.DLInsp.CDP.Types
+   ( Downloader, Options ( optEndDate, optStartDate ) )
 --import           KS.Util ( withRetry )
 
 
@@ -114,16 +113,10 @@ runScrape env ev = runReaderT ev env
 
 
 download :: Downloader
-download options destDir' = runDL options $ do
-   -- We need these for building the search params further down
-   startDay' <- asks optStartDate
-   endDay' <- asks optEndDate
-
-   liftIO $ S.withSession $ \sess -> do
-      let initialState = ScrapeST destDir' startDay' endDay' et01Restaurant sess
-      runScrape initialState processEstType
-
-   return ()
+download options destDir' =
+   S.withSession $ \sess -> do
+      let env = ScrapeST destDir' (optStartDate options) (optEndDate options) et01Restaurant sess
+      runScrape env processEstType
 
 
 processEstType :: Scrape ()

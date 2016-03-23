@@ -4,14 +4,9 @@
 module KS.DLInsp.CDP.Types
    ( Options (..)
    , Downloader
-   , DL, runDL
-
-   -- re-exporting
-   , asks, liftIO
    )
    where
 
-import Control.Monad.Reader ( ReaderT, asks, liftIO, runReaderT )
 import Data.Time.Calendar ( Day )
 import System.FilePath ()
 
@@ -25,9 +20,3 @@ data Options = Options
 
 
 type Downloader = Options -> FilePath -> IO ()
-
-
-type DL a = (ReaderT Options IO) a
-
-runDL :: Options -> DL a -> IO a
-runDL env ev = runReaderT ev env
