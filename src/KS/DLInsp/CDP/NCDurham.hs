@@ -98,24 +98,25 @@ opts = defaults
    & header "User-Agent" .~ ["Mozilla/5.0 (X11; Linux x86_64; rv:44.0) Gecko/20100101 Firefox/44.0"]
 
 
-data ScrapeST = ScrapeST
+data ScrapeEnv = ScrapeEnv
    { destDir :: FilePath
    , startDay :: Maybe Day
    , endDay :: Maybe Day
    , estType :: EstablishmentType
    , session :: S.Session
+   , viewState :: String
    }
 
-type Scrape a = (ReaderT ScrapeST IO) a
+type Scrape a = (ReaderT ScrapeEnv IO) a
 
-runScrape :: ScrapeST -> Scrape () -> IO ()
+runScrape :: ScrapeEnv -> Scrape () -> IO ()
 runScrape env ev = runReaderT ev env
 
 
 download :: Downloader
 download options destDir' =
    S.withSession $ \sess -> do
-      let env = ScrapeST destDir' (optStartDate options) (optEndDate options) et01Restaurant sess
+      let env = ScrapeEnv destDir' (optStartDate options) (optEndDate options) et01Restaurant sess ""
       runScrape env processEstType
 
 
@@ -127,7 +128,7 @@ processEstType = do
       putStrLn "GET start page"
       S.getWith opts session' url
 
-   processEstablishmentPage =<< (searchParams "ctl00_PageContent_INSPECTIONFilterButton__Button" $ viewStateFromResponse rStart)
+   local (\r -> r { viewState = viewStateFromResponse rStart }) $ searchParams "ctl00_PageContent_INSPECTIONFilterButton__Button" >>= processEstablishmentPage
 
    return ()
 
@@ -140,19 +141,19 @@ processEstablishmentPage params = do
       liftIO $ putStrLn "POST to get page of establishments"
       rCurrent <- liftIO $ S.postWith opts session' url $ params
 
-      let vsCurrent = viewStateFromBars rCurrent
-      let eets = extractEstEventTargets rCurrent
-      liftIO $ printf "Number of establishments found on current page: %d\n" (length eets)
-      eis <- concat <$> mapM (retrieveEstablishment Latest vsCurrent) eets
+      local (\r -> r { viewState = viewStateFromBars rCurrent}) $ do
+         let eets = extractEstEventTargets rCurrent
+         liftIO $ printf "Number of establishments found on current page: %d\n" (length eets)
+         eis <- concat <$> mapM (retrieveEstablishment Latest) eets
 
-      let (failures, successes) = partitionEithers eis
+         let (failures, successes) = partitionEithers eis
 
-      liftIO $ mapM_ (\emsg -> putStrLn $ "ERROR parsing inspection: " ++ emsg) failures
-      liftIO $ mapM_ (I.saveInspection destDir') successes
+         liftIO $ mapM_ (\emsg -> putStrLn $ "ERROR parsing inspection: " ++ emsg) failures
+         liftIO $ mapM_ (I.saveInspection destDir') successes
 
-      if (hasNextPage rCurrent)
-         then pagingParams vsCurrent >>= processEstablishmentPage
-         else return ()
+         if (hasNextPage rCurrent)
+            then pagingParams >>= processEstablishmentPage
+            else return ()
 
 
 hasNextPage :: Response BL.ByteString -> Bool
@@ -172,36 +173,35 @@ hasNextPage resp =
 
 data Scope = Latest | FirstPage
 
-retrieveEstablishment :: Scope -> String -> String
+retrieveEstablishment :: Scope -> String
    -> Scrape [Either String I.Inspection]
 retrieveEstablishment Latest = retrieveEstablishment' (take 1)
 retrieveEstablishment FirstPage = retrieveEstablishment' id
 
 
-retrieveEstablishment' :: ([String] -> [String]) -> String -> String
+retrieveEstablishment' :: ([String] -> [String]) -> String
    -> Scrape [Either String I.Inspection]
-retrieveEstablishment' limitF vsSearch eventTarget = do
+retrieveEstablishment' limitF eventTarget = do
    session' <- asks session
    liftIO $ putStrLn "POST to retrieve one establishment"
-   searchFormFields <- searchParams eventTarget vsSearch
+   searchFormFields <- searchParams eventTarget
    rEstRedir <- liftIO $ S.postWith opts session' url searchFormFields
    let estUrl = printf "%s%s" urlPrefix $ urlFromBars rEstRedir
 
    rEst <- liftIO $ S.getWith opts session' estUrl
-   let vsEst = viewStateFromResponse rEst
 
    let iets = limitF . extractInspEventTargets $ rEst
 
-   mapM (retrieveInspection estUrl vsEst) iets
+   local (\r -> r { viewState = viewStateFromResponse rEst }) $ mapM (retrieveInspection estUrl) iets
 
 
-retrieveInspection :: String -> String -> String
+retrieveInspection :: String -> String
    -> Scrape (Either String I.Inspection)
-retrieveInspection url' vsEst eventTarget = do
+retrieveInspection url' eventTarget = do
    session' <- asks session
    liftIO $ putStrLn "POST to retrieve one inspection"
-   rInspRedir <- liftIO $ S.postWith opts session' url'
-      $ inspRowParams vsEst eventTarget
+   irps <- inspRowParams eventTarget
+   rInspRedir <- liftIO $ S.postWith opts session' url' irps
    let inspUrl = printf "%s%s" urlPrefix $ urlFromBars rInspRedir
 
    -- Get the inspection page and extract data from it
@@ -278,11 +278,13 @@ viewStateFromBars resp =
    $ resp ^. responseBody
 
 
-searchParams :: String -> String -> Scrape [FormParam]
-searchParams eventTarget viewState = do
+searchParams :: String -> Scrape [FormParam]
+searchParams eventTarget = do
    startDay' <- asks startDay
    endDay' <- asks endDay
    estType' <- asks estType
+   viewState' <- asks viewState
+
    return
       [ "ctl00$scriptManager1" := ("ctl00$PageContent$UpdatePanel1|ctl00$PageContent$INSPECTIONFilterButton$_Button" :: T.Text)
       , "__EVENTTARGET" := T.pack eventTarget
@@ -306,15 +308,16 @@ searchParams eventTarget viewState = do
       , "hiddenInputToUpdateATBuffer_CommonToolkitScripts" := (1 :: Int)
       , "__ASYNCPOST" := ("true" :: T.Text)
       , "__VIEWSTATEGENERATOR" := fvEmpty
-      , "__VIEWSTATE" := T.pack viewState
+      , "__VIEWSTATE" := T.pack viewState'
       ]
 
 
-pagingParams :: String -> Scrape [FormParam]
-pagingParams viewState = do
+pagingParams :: Scrape [FormParam]
+pagingParams = do
    startDay' <- asks startDay
    endDay' <- asks endDay
    estType' <- asks estType
+   viewState' <- asks viewState
 
    return
       [ "ctl00$scriptManager1" := ("ctl00$PageContent$UpdatePanel1|ctl00$PageContent$ESTABLISHMENTPagination$_NextPage" :: T.Text)
@@ -339,7 +342,7 @@ pagingParams viewState = do
       , "hiddenInputToUpdateATBuffer_CommonToolkitScripts" := (1 :: Int)
       , "__ASYNCPOST" := ("true" :: T.Text)
       , "__VIEWSTATEGENERATOR" := fvEmpty
-      , "__VIEWSTATE" := T.pack viewState
+      , "__VIEWSTATE" := T.pack viewState'
       , "ctl00$PageContent$ESTABLISHMENTPagination$_NextPage.x" := (7 :: Int)
       , "ctl00$PageContent$ESTABLISHMENTPagination$_NextPage.y" := (12 :: Int)
       ]
@@ -351,20 +354,23 @@ formatDay (Just day) = T.pack $ printf "%d/%d/%d" m d y
 formatDay Nothing    = fvEmpty
 
 
-inspRowParams :: String -> String -> [FormParam]
-inspRowParams viewState eventTarget =
-   [ "ctl00$scriptManager1" := ("ctl00$PageContent$UpdatePanel1|ctl00$PageContent$ESTABLISHMENTTableControlRepeater$ctl03$Button$_Button" :: T.Text)
-   , "__EVENTTARGET" := T.pack eventTarget
-   , "__EVENTARGUMENT" := fvEmpty
-   , "ctl00$pageLeftCoordinate" := fvEmpty
-   , "ctl00$pageTopCoordinate" := fvEmpty
-   , "ctl00$PageContent$_clientSideIsPostBack" := ("N" :: T.Text)
-   , "ctl00$PageContent$ESTABLISHMENTPagination$_CurrentPage" := (1 :: Int)
-   , "ctl00$PageContent$ESTABLISHMENTPagination$_PageSize" := (10 :: Int)
-   , "__ASYNCPOST" := ("true" :: T.Text)
-   , "__VIEWSTATEGENERATOR" := fvEmpty
-   , "__VIEWSTATE" := T.pack viewState
-   ]
+inspRowParams :: String -> Scrape [FormParam]
+inspRowParams eventTarget = do
+   viewState' <- asks viewState
+
+   return
+      [ "ctl00$scriptManager1" := ("ctl00$PageContent$UpdatePanel1|ctl00$PageContent$ESTABLISHMENTTableControlRepeater$ctl03$Button$_Button" :: T.Text)
+      , "__EVENTTARGET" := T.pack eventTarget
+      , "__EVENTARGUMENT" := fvEmpty
+      , "ctl00$pageLeftCoordinate" := fvEmpty
+      , "ctl00$pageTopCoordinate" := fvEmpty
+      , "ctl00$PageContent$_clientSideIsPostBack" := ("N" :: T.Text)
+      , "ctl00$PageContent$ESTABLISHMENTPagination$_CurrentPage" := (1 :: Int)
+      , "ctl00$PageContent$ESTABLISHMENTPagination$_PageSize" := (10 :: Int)
+      , "__ASYNCPOST" := ("true" :: T.Text)
+      , "__VIEWSTATEGENERATOR" := fvEmpty
+      , "__VIEWSTATE" := T.pack viewState'
+      ]
 
 
 extractInspection :: String -> [Tag String] -> Scrape (Either String I.Inspection)
