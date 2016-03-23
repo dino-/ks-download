@@ -7,6 +7,7 @@ module KS.DLInsp.CDP.NCDurham
    where
 
 import           Control.Lens ( (^.), (?~), (.~) , (&) )
+import Control.Monad.State
 import qualified Data.ByteString.Lazy.Char8 as BL
 import           Data.Either ( partitionEithers )
 import           Data.List ( isPrefixOf, tails )
@@ -98,6 +99,20 @@ opts = defaults
    & header "User-Agent" .~ ["Mozilla/5.0 (X11; Linux x86_64; rv:44.0) Gecko/20100101 Firefox/44.0"]
 
 
+data ScrapeST = ScrapeST
+   { destDir :: FilePath
+   , startDay :: Maybe Day
+   , endDay :: Maybe Day
+   , estType :: EstablishmentType
+   , session :: S.Session
+   }
+
+type Scrape a = (StateT ScrapeST IO) a
+
+runScrape :: ScrapeST -> Scrape () -> IO ()
+runScrape st ev = evalStateT ev st
+
+
 download :: Downloader
 download options destDir = runDL options $ do
    -- We need these for building the search params further down
@@ -105,34 +120,58 @@ download options destDir = runDL options $ do
    eday <- asks optEndDate
 
    liftIO $ S.withSession $ \sess -> do
-      putStrLn "GET start page"
-      rStart <- S.getWith opts sess url
-
-      let (vsGen, vs) = viewStateFromResponse rStart
-      processEstablishmentPage destDir sday eday sess (searchParams
-         "ctl00_PageContent_INSPECTIONFilterButton__Button" sday eday vsGen vs)
+      let initialState = ScrapeST destDir sday eday et01Restaurant sess
+      runScrape initialState processEstType
 
    return ()
 
 
-processEstablishmentPage :: FilePath -> Maybe Day -> Maybe Day -> S.Session
-   -> [FormParam] -> IO ()
-processEstablishmentPage destDir sday eday sess params = do
-      putStrLn "POST to get page of establishments"
-      rCurrent <- S.postWith opts sess url $ params
+processEstType :: Scrape ()
+processEstType = do
+   -- We need these for building the search params further down
+   startDay' <- gets startDay
+   endDay' <- gets endDay
+   session' <- gets session
+   estType' <- gets estType
+
+   rStart <- liftIO $ do
+      putStrLn "GET start page"
+      S.getWith opts session' url
+
+   let (vsGen, vs) = viewStateFromResponse rStart
+   {- processEstablishmentPage destDir sday eday sess (searchParams
+      "ctl00_PageContent_INSPECTIONFilterButton__Button" sday eday vsGen vs) -}
+   --formParams <- searchParams vsGen vs
+   --processEstablishmentPage []
+   processEstablishmentPage (searchParams estType'
+      "ctl00_PageContent_INSPECTIONFilterButton__Button" startDay' endDay' vsGen vs)
+
+   return ()
+
+
+processEstablishmentPage :: [FormParam] -> Scrape ()
+processEstablishmentPage params = do
+      destDir' <- gets destDir
+      startDay' <- gets startDay
+      endDay' <- gets endDay
+      session' <- gets session
+      estType' <- gets estType
+
+      liftIO $ putStrLn "POST to get page of establishments"
+      rCurrent <- liftIO $ S.postWith opts session' url $ params
 
       let vsCurrent = viewStateFromBars rCurrent
       let eets = extractEstEventTargets rCurrent
-      printf "Number of establishments found on current page: %d\n" (length eets)
-      eis <- concat <$> mapM (retrieveEstablishment Latest sess vsCurrent) eets
+      liftIO $ printf "Number of establishments found on current page: %d\n" (length eets)
+      eis <- concat <$> mapM (retrieveEstablishment Latest vsCurrent) eets
 
       let (failures, successes) = partitionEithers eis
 
-      mapM_ (\emsg -> putStrLn $ "ERROR parsing inspection: " ++ emsg) failures
-      mapM_ (I.saveInspection destDir) successes
+      liftIO $ mapM_ (\emsg -> putStrLn $ "ERROR parsing inspection: " ++ emsg) failures
+      liftIO $ mapM_ (I.saveInspection destDir') successes
 
       if (hasNextPage rCurrent)
-         then processEstablishmentPage destDir sday eday sess (pagingParams sday eday vsCurrent)
+         then processEstablishmentPage (pagingParams estType' startDay' endDay' vsCurrent)
          else return ()
 
 
@@ -153,12 +192,29 @@ hasNextPage resp =
 
 data Scope = Latest | FirstPage
 
-retrieveEstablishment :: Scope -> S.Session -> String -> String
-   -> IO [Either String I.Inspection]
+retrieveEstablishment :: Scope -> String -> String
+   -> Scrape [Either String I.Inspection]
 retrieveEstablishment Latest = retrieveEstablishment' (take 1)
 retrieveEstablishment FirstPage = retrieveEstablishment' id
 
 
+retrieveEstablishment' :: ([String] -> [String]) -> String -> String
+   -> Scrape [Either String I.Inspection]
+retrieveEstablishment' limitF vsSearch eventTarget = do
+   session' <- gets session
+   estType' <- gets estType
+   liftIO $ putStrLn "POST to retrieve one establishment"
+   rEstRedir <- liftIO $ S.postWith opts session' url
+      $ searchParams estType' eventTarget Nothing Nothing "" vsSearch
+   let estUrl = printf "%s%s" urlPrefix $ urlFromBars rEstRedir
+
+   rEst <- liftIO $ S.getWith opts session' estUrl
+   let (vsGenEst, vsEst) = viewStateFromResponse rEst
+
+   let iets = limitF . extractInspEventTargets $ rEst
+
+   mapM (retrieveInspection estUrl vsGenEst vsEst) iets
+{-
 retrieveEstablishment' :: ([String] -> [String]) -> S.Session -> String -> String
    -> IO [Either String I.Inspection]
 retrieveEstablishment' limitF sess vsSearch eventTarget = do
@@ -173,8 +229,22 @@ retrieveEstablishment' limitF sess vsSearch eventTarget = do
    let iets = limitF . extractInspEventTargets $ rEst
 
    mapM (retrieveInspection sess estUrl vsGenEst vsEst) iets
+-}
 
 
+retrieveInspection :: String -> String -> String -> String
+   -> Scrape (Either String I.Inspection)
+retrieveInspection url' vsGenEst vsEst eventTarget = do
+   session' <- gets session
+   liftIO $ putStrLn "POST to retrieve one inspection"
+   rInspRedir <- liftIO $ S.postWith opts session' url'
+      $ inspRowParams vsGenEst vsEst eventTarget
+   let inspUrl = printf "%s%s" urlPrefix $ urlFromBars rInspRedir
+
+   -- Get the inspection page and extract data from it
+   rInsp <- liftIO $ S.getWith opts session' inspUrl
+   extractInspection inspUrl $ parseTags . BL.unpack $ rInsp ^. responseBody
+{-
 retrieveInspection :: S.Session -> String -> String -> String -> String
    -> IO (Either String I.Inspection)
 retrieveInspection sess url' vsGenEst vsEst eventTarget = do
@@ -186,6 +256,7 @@ retrieveInspection sess url' vsGenEst vsEst eventTarget = do
    -- Get the inspection page and extract data from it
    rInsp <- S.getWith opts sess inspUrl
    extractInspection inspUrl $ parseTags . BL.unpack $ rInsp ^. responseBody
+-}
 
 
 extractInspEventTargets :: Response BL.ByteString -> [String]
@@ -259,6 +330,63 @@ viewStateFromBars resp =
    $ resp ^. responseBody
 
 
+searchParams :: EstablishmentType -> String -> Maybe Day -> Maybe Day -> String -> String -> [FormParam]
+searchParams estType eventTarget startDay endDay viewStateGenerator viewState =
+   [ "ctl00$scriptManager1" := ("ctl00$PageContent$UpdatePanel1|ctl00$PageContent$INSPECTIONFilterButton$_Button" :: T.Text)
+   , "__EVENTTARGET" := T.pack eventTarget
+   , "__EVENTARGUMENT" := fvEmpty
+   , "__LASTFOCUS" := ("ctl00_PageContent_INSPECTIONFilterButton__Button" :: T.Text)
+   , "ctl00$pageLeftCoordinate" := fvEmpty
+   , "ctl00$pageTopCoordinate" := fvEmpty
+   , "ctl00$PageContent$_clientSideIsPostBack" := ("Y" :: T.Text)
+   , "ctl00$PageContent$ESTABLISHMENTSearch" := fvEmpty
+   , "ctl00$PageContent$PREMISE_CITYFilter1" := fvEmpty
+   , "ctl00$PageContent$PREMISE_NAMEFilter" := fvAny
+   , "ctl00$PageContent$PREMISE_CITYFilter" := fvAny
+   , "ctl00$PageContent$PREMISE_ZIPFilter" := fvEmpty
+   , "ctl00$PageContent$EST_TYPE_IDFilter" := estType
+   , "ctl00$PageContent$INSPECTION_DATEFromFilter" := formatDay startDay
+   , "ctl00$PageContent$INSPECTION_DATEToFilter" := formatDay endDay
+   , "ctl00$PageContent$FINAL_SCOREFromFilter" := fvAny
+   , "ctl00$PageContent$COUNTY_IDFilter" := countyID
+   , "ctl00$PageContent$ESTABLISHMENTPagination$_CurrentPage" := (1 :: Int)
+   , "ctl00$PageContent$ESTABLISHMENTPagination$_PageSize" := (10 :: Int)
+   , "hiddenInputToUpdateATBuffer_CommonToolkitScripts" := (1 :: Int)
+   , "__ASYNCPOST" := ("true" :: T.Text)
+   , "__VIEWSTATEGENERATOR" := T.pack viewStateGenerator
+   , "__VIEWSTATE" := T.pack viewState
+   ]
+
+
+pagingParams :: EstablishmentType -> Maybe Day -> Maybe Day -> String -> [FormParam]
+pagingParams estType startDay endDay viewState =
+   [ "ctl00$scriptManager1" := ("ctl00$PageContent$UpdatePanel1|ctl00$PageContent$ESTABLISHMENTPagination$_NextPage" :: T.Text)
+   , "__EVENTTARGET" := fvEmpty
+   , "__EVENTARGUMENT" := fvEmpty
+   , "__LASTFOCUS" := ("ctl00_PageContent_ESTABLISHMENTPagination__NextPage" :: T.Text)
+   , "ctl00$pageLeftCoordinate" := fvEmpty
+   , "ctl00$pageTopCoordinate" := fvEmpty
+   , "ctl00$PageContent$_clientSideIsPostBack" := ("Y" :: T.Text)
+   , "ctl00$PageContent$ESTABLISHMENTSearch" := fvEmpty
+   , "ctl00$PageContent$PREMISE_CITYFilter1" := fvEmpty
+   , "ctl00$PageContent$PREMISE_NAMEFilter" := fvAny
+   , "ctl00$PageContent$PREMISE_CITYFilter" := fvAny
+   , "ctl00$PageContent$PREMISE_ZIPFilter" := fvEmpty
+   , "ctl00$PageContent$EST_TYPE_IDFilter" := estType
+   , "ctl00$PageContent$INSPECTION_DATEFromFilter" := formatDay startDay
+   , "ctl00$PageContent$INSPECTION_DATEToFilter" := formatDay endDay
+   , "ctl00$PageContent$FINAL_SCOREFromFilter" := fvAny
+   , "ctl00$PageContent$COUNTY_IDFilter" := countyID
+   , "ctl00$PageContent$ESTABLISHMENTPagination$_CurrentPage" := (1 :: Int)
+   , "ctl00$PageContent$ESTABLISHMENTPagination$_PageSize" := (10 :: Int)
+   , "hiddenInputToUpdateATBuffer_CommonToolkitScripts" := (1 :: Int)
+   , "__ASYNCPOST" := ("true" :: T.Text)
+   , "__VIEWSTATEGENERATOR" := fvEmpty
+   , "__VIEWSTATE" := T.pack viewState
+   , "ctl00$PageContent$ESTABLISHMENTPagination$_NextPage.x" := (7 :: Int)
+   , "ctl00$PageContent$ESTABLISHMENTPagination$_NextPage.y" := (12 :: Int)
+   ]
+{-
 searchParams :: String -> Maybe Day -> Maybe Day -> String -> String -> [FormParam]
 searchParams eventTarget startDay endDay viewStateGenerator viewState =
    [ "ctl00$scriptManager1" := ("ctl00$PageContent$UpdatePanel1|ctl00$PageContent$INSPECTIONFilterButton$_Button" :: T.Text)
@@ -315,6 +443,7 @@ pagingParams startDay endDay viewState =
    , "ctl00$PageContent$ESTABLISHMENTPagination$_NextPage.x" := (7 :: Int)
    , "ctl00$PageContent$ESTABLISHMENTPagination$_NextPage.y" := (12 :: Int)
    ]
+-}
 
 
 formatDay :: Maybe Day -> T.Text
@@ -339,6 +468,49 @@ inspRowParams viewStateGenerator viewState eventTarget =
    ]
 
 
+extractInspection :: String -> [Tag String] -> Scrape (Either String I.Inspection)
+extractInspection detailUrl tags = do
+   liftIO $ putStrLn $ "Parsing inspection data for " ++ name
+   parsed <- liftIO $ I.parseDate dateStr
+   return $ makeInspection <$> parsed
+
+   where
+      makeInspection dateParsed = I.Inspection
+         inspectionSrc
+         (T.pack name)
+         (T.pack . trim $ ((trim addr) ++ ", " ++ csz))
+         dateParsed
+         (read . trim $ score)
+         (length violations)
+         (length . filter (== True) $ violations)
+         False  -- We can't determine reinspections from this system
+         detailUrl
+
+      name = innerText . take 1 . drop 3
+         . dropWhile (~/= TagText ("Name" :: String)) $ tags
+      addr = innerText . take 1 . drop 3
+         . dropWhile (~/= TagText ("Address" :: String)) $ tags
+      csz = innerText . takeWhile (~/= ("</tr>" :: String)) . drop 8
+         . dropWhile (~/= TagText ("City/State/ZIP" :: String)) $ tags
+      dateStr = innerText . take 1 . drop 5
+         . dropWhile (~/= TagText ("Inspection Date" :: String)) $ tags
+      score = innerText . take 1 . drop 9
+         . dropWhile (~/= TagText ("Final Score @ Grade" :: String)) $ tags
+
+      violations =
+         map isCrit
+         . map head
+         . map (drop 2)
+         . tail
+         . sections (~== ("<tr>" :: String))
+         . takeWhile (~/= ("</table>" :: String))
+         . dropWhile (~/= ("<td class=tre>" :: String))
+         $ tags
+
+      isCrit = isPrefixOf ";0000FF" . reverse . fromAttrib "style"
+
+      trim = unwords . words
+{-
 extractInspection :: String -> [Tag String] -> IO (Either String I.Inspection)
 extractInspection detailUrl tags = do
    putStrLn $ "Parsing inspection data for " ++ name
@@ -381,3 +553,4 @@ extractInspection detailUrl tags = do
       isCrit = isPrefixOf ";0000FF" . reverse . fromAttrib "style"
 
       trim = unwords . words
+-}
