@@ -25,6 +25,7 @@ import System.IO.Error ( tryIOError )
 import Text.Printf ( printf )
 
 import qualified KS.Data.Document as D
+import qualified KS.Data.Inspection as I
 import qualified KS.Data.Place as P
 import qualified KS.Database.Mongo.Config as MC
 import KS.Database.Mongo.Util
@@ -80,7 +81,12 @@ loadAndInsert mongoConf pipe path = do
             let bson = toBSON doc
 
             -- Insert into the collection where all inspections are stored
-            save coll_inspections_all bson
+            -- Avoiding duplicates based on the Places ID and inspection date
+            upsert (select
+               [ "place.place_id" =: (P.place_id . D.place $ doc)
+               , "inspection.date" =: (I.date . D.inspection $ doc)
+               ]
+               coll_inspections_all) bson
             sr <- parseLastError `fmap` runCommand [ "getLastError" =: (1::Int) ]
 
             -- Insert or modify the one document in recent_inspections
