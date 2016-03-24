@@ -3,6 +3,7 @@
 -- License: BSD3 (see LICENSE)
 -- Author: Dino Morelli <dino@ui3.info>
 
+import Control.Monad ( forM_ )
 import Distribution.Simple ( defaultMainWithHooks, postCopy,
    simpleUserHooks )
 import Distribution.Simple.LocalBuildInfo
@@ -31,12 +32,16 @@ copyBinDestDir copyFlags localBuildInfo = destDir
 copyCustomBinFiles :: FilePath -> IO ()
 copyCustomBinFiles destDir = do
    -- src path info
-   let srcFile = "ks-dl-nightly-nc_wake.sh"
    let srcDir = "util"
+   let srcFiles =
+         [ "ks-dl-nightly-nc_durham.sh"
+         , "ks-dl-nightly-nc_wake.sh"
+         ]
 
    putStrLn $ "Installing additional binaries in " ++ destDir
 
-   copyFile (srcDir </> srcFile) (destDir </> srcFile)
+   forM_ srcFiles $ \srcFile ->
+      copyFile (srcDir </> srcFile) (destDir </> srcFile)
 
 
 main = defaultMainWithHooks (simpleUserHooks
