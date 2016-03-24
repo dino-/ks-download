@@ -81,6 +81,14 @@ et02FoodStands = 2
 et03MobileFood = 3
 et04PushCarts  = 4
 
+allEstTypes :: [EstablishmentType]
+allEstTypes =
+   [ et01Restaurant
+   , et02FoodStands
+   , et03MobileFood
+   , et04PushCarts
+   ]
+
 
 fvAny, fvEmpty :: T.Text
 fvAny = "--ANY--"
@@ -115,9 +123,11 @@ runScrape env ev = runReaderT ev env
 
 download :: Downloader
 download options destDir' =
-   S.withSession $ \sess -> do
-      let env = ScrapeEnv destDir' (optStartDate options) (optEndDate options) et01Restaurant sess ""
+   S.withSession $ \sess -> mapM_ (\et -> do
+      putStrLn $ "Processing establishment type " ++ (show et)
+      let env = ScrapeEnv destDir' (optStartDate options) (optEndDate options) et sess ""
       runScrape env processEstType
+      ) allEstTypes
 
 
 processEstType :: Scrape ()
