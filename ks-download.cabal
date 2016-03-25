@@ -16,7 +16,9 @@ author: Dino Morelli
 tested-with: GHC >=7.10.1
 data-files:
     resources/ks-download.conf
+    resources/ks-download-nc_chatham.conf
     resources/ks-download-nc_durham.conf
+    resources/ks-download-nc_orange.conf
     resources/ks-download-nc_wake.conf
     resources/mongodb.conf
 extra-source-files:
@@ -58,7 +60,7 @@ executable ks-dlinsp-cdp
         wreq >=0.4.1.0 && <0.5
     hs-source-dirs: src
     other-modules:
-        KS.DLInsp.CDP.NCDurham
+        KS.DLInsp.CDP.Downloader
         KS.DLInsp.CDP.Opts
         KS.DLInsp.CDP.Types
         KS.SourceConfig

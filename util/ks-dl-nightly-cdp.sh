@@ -1,5 +1,7 @@
 #! /bin/bash
 
+ksSource=${1:?Must specify a source}
+
 # Add the location of the ks-download binaries and scripts to the PATH
 PATH="/opt/ksnitch/ks-download/bin:${PATH}"
 
@@ -7,11 +9,15 @@ configDir=/home/ksadmin/.config/ksnitch
 
 # This is where inspections are downloaded and places-matched
 # This is a good candidate for backup
-workDirParent=/data/ksnitch/download/nc_durham
-#workDirParent=/home/dino/dev/ksnitch/download
+workDirParent=/data/ksnitch/download/$ksSource
+#workDirParent=/home/dino/dev/ksnitch/download/$ksSource
 
 
-workDir=${workDirParent}/nc_durham_$(date +"%Y-%m-%d" --date='2 days ago')
+# Need this set explicitly for both the `date` binary below
+export TZ="America/New_York"
+
+
+workDir=${workDirParent}/$ksSource_$(date +"%Y-%m-%d" --date='2 days ago')
 
 
 mkdir -p $workDir/{insp,succ,fail}
@@ -20,7 +26,7 @@ cd $workDir
 
 # Scrape new inspections from two days ago
 
-ks-dlinsp-cdp $configDir nc_durham insp > ks-dlinsp.log
+ks-dlinsp-cdp $configDir $ksSource insp > ks-dlinsp.log
 
 
 # Places match the inspections

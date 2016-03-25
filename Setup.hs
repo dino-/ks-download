@@ -34,7 +34,7 @@ copyCustomBinFiles destDir = do
    -- src path info
    let srcDir = "util"
    let srcFiles =
-         [ "ks-dl-nightly-nc_durham.sh"
+         [ "ks-dl-nightly-cdp.sh"
          , "ks-dl-nightly-nc_wake.sh"
          ]
 

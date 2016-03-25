@@ -13,10 +13,9 @@ import System.IO
    )
 import Text.Printf ( printf )
 
-import qualified KS.DLInsp.CDP.NCDurham as NCDurham
+import KS.DLInsp.CDP.Downloader ( download )
 import KS.DLInsp.CDP.Opts ( Options (optEndDate, optHelp, optStartDate)
    , parseOpts, setDates, usageText )
-import KS.DLInsp.CDP.Types ( Downloader )
 import KS.SourceConfig ( SourceConfig (timeZone), loadConfig )
 
 
@@ -42,9 +41,4 @@ main = do
       (show . fromJust . optStartDate $ fixedOptions)
       (show . fromJust . optEndDate $ fixedOptions)
 
-   (lookupDownloader source) fixedOptions destDir
-
-
-lookupDownloader :: String -> Downloader
-lookupDownloader "nc_durham" = NCDurham.download
-lookupDownloader _ = undefined
+   download source fixedOptions destDir

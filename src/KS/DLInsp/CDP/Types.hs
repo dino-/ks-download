@@ -4,6 +4,7 @@
 module KS.DLInsp.CDP.Types
    ( Options (..)
    , Downloader
+   , lookupCountyID
    )
    where
 
@@ -21,3 +22,10 @@ data Options = Options
 
 
 type Downloader = Options -> FilePath -> IO ()
+
+
+lookupCountyID :: String -> Int
+lookupCountyID "nc_chatham" = 19
+lookupCountyID "nc_durham" = 32
+lookupCountyID "nc_orange" = 68
+lookupCountyID _ = undefined

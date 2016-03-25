@@ -3,7 +3,7 @@
 
 {-# LANGUAGE OverloadedStrings #-}
 
-module KS.DLInsp.CDP.NCDurham
+module KS.DLInsp.CDP.Downloader
    where
 
 import           Control.Lens ( (^.), (?~), (.~) , (&) )
@@ -26,7 +26,7 @@ import           Text.HTML.TagSoup
 import           Text.Printf ( printf )
 
 import qualified KS.Data.Inspection as I
-import KS.DLInsp.CDP.Types ( Downloader, Options (..) )
+import KS.DLInsp.CDP.Types ( Downloader, Options (..), lookupCountyID )
 --import           KS.Util ( withRetry )
 
 
@@ -55,24 +55,12 @@ import KS.DLInsp.CDP.Types ( Downloader, Options (..) )
 -}
 
 
-
-{- FIXME When the time comes to parameterize the source in this code, these two things (inspectionSrc and countyID) are pretty much linked and should be sent in or maybe one used to look-up the other. Something like that.
--}
-
-inspectionSrc :: String
-inspectionSrc = "nc_durham"
-
-
-countyID :: Int
-countyID = 32  -- Durham county, NC
-
-
 urlPrefix :: String
 urlPrefix = "https://public.cdpehs.com"
 
 
-url :: String
-url = printf "%s/NCENVPBL/ESTABLISHMENT/ShowESTABLISHMENTTablePage.aspx?ESTTST_CTY=%d" urlPrefix countyID
+mkUrl :: Int -> String
+mkUrl countyID = printf "%s/NCENVPBL/ESTABLISHMENT/ShowESTABLISHMENTTablePage.aspx?ESTTST_CTY=%d" urlPrefix countyID
 
 
 type EstablishmentType = T.Text
@@ -112,7 +100,9 @@ data Scope = Latest | FirstPage
 
 
 data ScrapeEnv = ScrapeEnv
-   { destDir :: FilePath
+   { inspSrc :: String
+   , url :: String
+   , destDir :: FilePath
    , scope :: Scope
    , startDay :: Maybe Day
    , endDay :: Maybe Day
@@ -128,42 +118,51 @@ runScrape :: ScrapeEnv -> Scrape a -> IO a
 runScrape env ev = runReaderT ev env
 
 
-download :: Downloader
-download options destDir' =
-   if (optEstNames options == True) then do
-      putStrLn "Downloading establishment list"
-      S.withSession $ \sess -> do
-         ests <- sort . concat <$> mapM (\et -> do
-            putStrLn $ "Processing establishment type " ++ (T.unpack et)
-            let env = ScrapeEnv destDir' Latest (optStartDate options) (optEndDate options) et fvAny sess ""
-            runScrape env downloadEstList
-            ) allEstTypes
-         writeFile "establishments" $ unlines ests
-         putStrLn "Wrote list into file './establishments'"
+download :: String -> Downloader
+download source options destDir' = do
+   putStrLn $ "Downloading inspections for " ++ source
+   let url' = mkUrl $ lookupCountyID source
 
-   else if (isJust $ optName options) then do
-      let (Just name) = optName options
-      putStrLn $ "Downloading inspections for " ++ name
-      S.withSession $ \sess -> do
-         let env = ScrapeEnv destDir' FirstPage (optStartDate options) (optEndDate options) etAll (T.pack name) sess ""
-         runScrape env downloadInspections
+   if (optEstNames options == True)
+      then do
+         putStrLn "Downloading establishment list"
+         S.withSession $ \sess -> do
+            ests <- sort . concat <$> mapM (\et -> do
+               putStrLn $ "Processing establishment type " ++ (T.unpack et)
+               let env = ScrapeEnv source url' destDir' Latest (optStartDate options)
+                     (optEndDate options) et fvAny sess ""
+               runScrape env downloadEstList
+               ) allEstTypes
+            writeFile "establishments" $ unlines ests
+            putStrLn "Wrote list into file './establishments'"
 
-   else do
-      putStrLn "Downloading latest inspections"
-      S.withSession $ \sess -> mapM_ (\et -> do
-         putStrLn $ "Processing establishment type " ++ (T.unpack et)
-         let env = ScrapeEnv destDir' Latest (optStartDate options) (optEndDate options) et fvAny sess ""
-         runScrape env downloadInspections
-         ) allEstTypes
+      else if (isJust $ optName options)
+         then do
+            let (Just name) = optName options
+            putStrLn $ "Downloading inspections for " ++ name
+            S.withSession $ \sess -> do
+               let env = ScrapeEnv source url' destDir' FirstPage (optStartDate options)
+                     (optEndDate options) etAll (T.pack name) sess ""
+               runScrape env downloadInspections
+
+         else do
+            putStrLn "Downloading latest inspections"
+            S.withSession $ \sess -> mapM_ (\et -> do
+               putStrLn $ "Processing establishment type " ++ (T.unpack et)
+               let env = ScrapeEnv source url' destDir' Latest (optStartDate options)
+                     (optEndDate options) et fvAny sess ""
+               runScrape env downloadInspections
+               ) allEstTypes
 
 
 downloadInspections :: Scrape ()
 downloadInspections = do
    session' <- asks session
+   url' <- asks url
 
    rStart <- liftIO $ do
       putStrLn "GET start page"
-      S.getWith opts session' url
+      S.getWith opts session' url'
 
    local (\r -> r { viewState = viewStateFromResponse rStart }) $ searchParams "ctl00_PageContent_INSPECTIONFilterButton__Button" >>= processEstablishmentPage
 
@@ -174,9 +173,10 @@ processEstablishmentPage :: [FormParam] -> Scrape ()
 processEstablishmentPage params = do
    destDir' <- asks destDir
    session' <- asks session
+   url' <- asks url
 
    liftIO $ putStrLn "POST to get page of establishments"
-   rCurrent <- liftIO $ S.postWith opts session' url $ params
+   rCurrent <- liftIO $ S.postWith opts session' url' $ params
 
    local (\r -> r { viewState = viewStateFromBars rCurrent}) $ do
       let eets = extractEstEventTargets rCurrent
@@ -224,9 +224,11 @@ retrieveEstablishment :: String -> Scrape [Either String I.Inspection]
 retrieveEstablishment eventTarget = do
    session' <- asks session
    limitF <- getLimitF <$> asks scope
+   url' <- asks url
+
    liftIO $ putStrLn "POST to retrieve one establishment"
    searchFormFields <- searchParams eventTarget
-   rEstRedir <- liftIO $ S.postWith opts session' url searchFormFields
+   rEstRedir <- liftIO $ S.postWith opts session' url' searchFormFields
    let estUrl = printf "%s%s" urlPrefix $ urlFromBars rEstRedir
 
    rEst <- liftIO $ S.getWith opts session' estUrl
@@ -330,6 +332,7 @@ searchParams eventTarget = do
    estType' <- asks estType
    estName' <- asks estName
    viewState' <- asks viewState
+   countyID <- lookupCountyID <$> asks inspSrc
 
    return
       [ "ctl00$scriptManager1" := ("ctl00$PageContent$UpdatePanel1|ctl00$PageContent$INSPECTIONFilterButton$_Button" :: T.Text)
@@ -365,6 +368,7 @@ pagingParams = do
    estType' <- asks estType
    estName' <- asks estName
    viewState' <- asks viewState
+   countyID <- lookupCountyID <$> asks inspSrc
 
    return
       [ "ctl00$scriptManager1" := ("ctl00$PageContent$UpdatePanel1|ctl00$PageContent$ESTABLISHMENTPagination$_NextPage" :: T.Text)
@@ -426,11 +430,12 @@ extractInspection :: String -> [Tag String] -> Scrape (Either String I.Inspectio
 extractInspection detailUrl tags = do
    liftIO $ putStrLn $ "Parsing inspection data for " ++ name
    parsed <- liftIO $ I.parseDate dateStr
-   return $ makeInspection <$> parsed
+   inspSrc' <- asks inspSrc
+   return $ makeInspection inspSrc' <$> parsed
 
    where
-      makeInspection dateParsed = I.Inspection
-         inspectionSrc
+      makeInspection inspSrc' dateParsed = I.Inspection
+         inspSrc'
          (T.pack name)
          (T.pack . trim $ ((trim addr) ++ ", " ++ csz))
          dateParsed
@@ -474,15 +479,16 @@ dayToDateInt day = read $ printf "%d%02d%02d" y m d
 downloadEstList :: Scrape [String]
 downloadEstList = do
    session' <- asks session
+   url' <- asks url
 
    rStart <- liftIO $ do
       putStrLn "GET start page"
-      S.getWith opts session' url
+      S.getWith opts session' url'
 
    local (\r -> r { viewState = viewStateFromResponse rStart }) $ do
       params <- searchParams "ctl00_PageContent_INSPECTIONFilterButton__Button"
       liftIO $ putStrLn "POST to get page of establishments"
-      rCurrent <- liftIO $ S.postWith opts session' url $ params
+      rCurrent <- liftIO $ S.postWith opts session' url' $ params
 
       return $ extractEstList rCurrent
 
