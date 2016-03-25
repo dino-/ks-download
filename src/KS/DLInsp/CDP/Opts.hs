@@ -15,6 +15,7 @@ import Paths_ks_download ( version )
 import System.Console.GetOpt
 import Text.Regex
 
+--import KS.DLInsp.CDP.Types ( Options (..), Scope ( Latest, FirstPage ) )
 import KS.DLInsp.CDP.Types ( Options (..) )
 import KS.Util ( setDate )
 
@@ -23,7 +24,9 @@ defaultOptions :: Options
 defaultOptions = Options
    { optStartDate = Nothing
    , optEndDate = Nothing
-   , optPageLimit = Nothing
+   --, optScope = Latest
+   , optName = Nothing
+   , optEstNames = False
    , optHelp = False
    }
 
@@ -38,9 +41,17 @@ options =
       (ReqArg (\s opts -> opts { optEndDate = Just $ parseInputDate s } )
          "YYYYMMDD")
       "Ending date for inspection searches. Default: two days ago"
-   , Option ['l'] ["page-limit"]
-      (ReqArg (\l opts -> opts { optPageLimit = Just $ read l } ) "PAGES")
-      "Number of pages to download (applies only to nc_wake?) Default: all of them"
+   {-
+   , Option ['a'] ["all"]
+      (NoArg (\opts -> opts { optScope = FirstPage } ))
+      "Get all inspections on the page for each establishment. Default: only get the first (latest) inspection"
+   -}
+   , Option ['n'] ["name"]
+      (ReqArg (\s opts -> opts { optName = Just s } ) "ESTABLISHMENT_NAME")
+      "Retrieve inspections for a particular named establishment"
+   , Option [] ["est-names"]
+      (NoArg (\opts -> opts { optEstNames = True } ))
+      "Retrieve a list of establishment names that have inspections between the specified dates. Default: false"
    , Option ['h'] ["help"]
       (NoArg (\opts -> opts { optHelp = True } ))
       "This help text"
@@ -86,6 +97,8 @@ usageText = (usageInfo header options) ++ "\n" ++ footer
       footer = init $ unlines
          [ "Note: If run with no dates, you will get all of the inspections from two days ago. The idea is to give the inspection workers time to get their data into the system and is a good default for daily runs."
          , "Expects to find ks-download-SOURCE.conf in the CONFDIR specified."
+         , ""
+         , "The --name and --est-names switches are intended to be used for gathering historical data as opposed to 'dailies' of the latest inspections in a date range."
          , ""
          , "SOURCE is one of: nc_durham"
          , ""

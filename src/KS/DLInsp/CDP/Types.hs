@@ -14,7 +14,8 @@ import System.FilePath ()
 data Options = Options
    { optStartDate :: Maybe Day
    , optEndDate :: Maybe Day
-   , optPageLimit :: Maybe Int
+   , optName :: Maybe String
+   , optEstNames :: Bool
    , optHelp :: Bool
    }
 

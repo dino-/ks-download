@@ -10,7 +10,8 @@ import           Control.Lens ( (^.), (?~), (.~) , (&) )
 import Control.Monad.Reader
 import qualified Data.ByteString.Lazy.Char8 as BL
 import           Data.Either ( partitionEithers )
-import           Data.List ( isPrefixOf, tails )
+import Data.List ( isPrefixOf, sort, tails )
+import Data.Maybe ( isJust )
 import qualified Data.Text as T
 import           Data.Time.Calendar ( Day, toGregorian )
 --import           Debug.Trace ( trace )
@@ -25,8 +26,7 @@ import           Text.HTML.TagSoup
 import           Text.Printf ( printf )
 
 import qualified KS.Data.Inspection as I
-import KS.DLInsp.CDP.Types
-   ( Downloader, Options ( optEndDate, optStartDate ) )
+import KS.DLInsp.CDP.Types ( Downloader, Options (..) )
 --import           KS.Util ( withRetry )
 
 
@@ -56,6 +56,9 @@ import KS.DLInsp.CDP.Types
 
 
 
+{- FIXME When the time comes to parameterize the source in this code, these two things (inspectionSrc and countyID) are pretty much linked and should be sent in or maybe one used to look-up the other. Something like that.
+-}
+
 inspectionSrc :: String
 inspectionSrc = "nc_durham"
 
@@ -72,14 +75,15 @@ url :: String
 url = printf "%s/NCENVPBL/ESTABLISHMENT/ShowESTABLISHMENTTablePage.aspx?ESTTST_CTY=%d" urlPrefix countyID
 
 
-type EstablishmentType = Int
+type EstablishmentType = T.Text
 
-et01Restaurant, et02FoodStands, et03MobileFood, et04PushCarts :: EstablishmentType
+etAll, et01Restaurant, et02FoodStands, et03MobileFood, et04PushCarts :: EstablishmentType
 
-et01Restaurant = 1
-et02FoodStands = 2
-et03MobileFood = 3
-et04PushCarts  = 4
+etAll = "--ANY--"
+et01Restaurant = "1"
+et02FoodStands = "2"
+et03MobileFood = "3"
+et04PushCarts  = "4"
 
 allEstTypes :: [EstablishmentType]
 allEstTypes =
@@ -106,32 +110,57 @@ opts = defaults
    & header "User-Agent" .~ ["Mozilla/5.0 (X11; Linux x86_64; rv:44.0) Gecko/20100101 Firefox/44.0"]
 
 
+data Scope = Latest | FirstPage
+
+
 data ScrapeEnv = ScrapeEnv
    { destDir :: FilePath
+   , scope :: Scope
    , startDay :: Maybe Day
    , endDay :: Maybe Day
    , estType :: EstablishmentType
+   , estName :: T.Text
    , session :: S.Session
    , viewState :: String
    }
 
 type Scrape a = (ReaderT ScrapeEnv IO) a
 
-runScrape :: ScrapeEnv -> Scrape () -> IO ()
+runScrape :: ScrapeEnv -> Scrape a -> IO a
 runScrape env ev = runReaderT ev env
 
 
 download :: Downloader
 download options destDir' =
-   S.withSession $ \sess -> mapM_ (\et -> do
-      putStrLn $ "Processing establishment type " ++ (show et)
-      let env = ScrapeEnv destDir' (optStartDate options) (optEndDate options) et sess ""
-      runScrape env processEstType
-      ) allEstTypes
+   if (optEstNames options == True) then do
+      putStrLn "Downloading establishment list"
+      S.withSession $ \sess -> do
+         ests <- sort . concat <$> mapM (\et -> do
+            putStrLn $ "Processing establishment type " ++ (T.unpack et)
+            let env = ScrapeEnv destDir' Latest (optStartDate options) (optEndDate options) et fvAny sess ""
+            runScrape env downloadEstList
+            ) allEstTypes
+         writeFile "establishments" $ unlines ests
+         putStrLn "Wrote list into file './establishments'"
+
+   else if (isJust $ optName options) then do
+      let (Just name) = optName options
+      putStrLn $ "Downloading inspections for " ++ name
+      S.withSession $ \sess -> do
+         let env = ScrapeEnv destDir' FirstPage (optStartDate options) (optEndDate options) etAll (T.pack name) sess ""
+         runScrape env downloadInspections
+
+   else do
+      putStrLn "Downloading latest inspections"
+      S.withSession $ \sess -> mapM_ (\et -> do
+         putStrLn $ "Processing establishment type " ++ (T.unpack et)
+         let env = ScrapeEnv destDir' Latest (optStartDate options) (optEndDate options) et fvAny sess ""
+         runScrape env downloadInspections
+         ) allEstTypes
 
 
-processEstType :: Scrape ()
-processEstType = do
+downloadInspections :: Scrape ()
+downloadInspections = do
    session' <- asks session
 
    rStart <- liftIO $ do
@@ -145,25 +174,37 @@ processEstType = do
 
 processEstablishmentPage :: [FormParam] -> Scrape ()
 processEstablishmentPage params = do
-      destDir' <- asks destDir
-      session' <- asks session
+   destDir' <- asks destDir
+   session' <- asks session
 
-      liftIO $ putStrLn "POST to get page of establishments"
-      rCurrent <- liftIO $ S.postWith opts session' url $ params
+   liftIO $ putStrLn "POST to get page of establishments"
+   rCurrent <- liftIO $ S.postWith opts session' url $ params
 
-      local (\r -> r { viewState = viewStateFromBars rCurrent}) $ do
-         let eets = extractEstEventTargets rCurrent
-         liftIO $ printf "Number of establishments found on current page: %d\n" (length eets)
-         eis <- concat <$> mapM (retrieveEstablishment Latest) eets
+   local (\r -> r { viewState = viewStateFromBars rCurrent}) $ do
+      let eets = extractEstEventTargets rCurrent
+      liftIO $ printf "Number of establishments found on current page: %d\n" (length eets)
+      eis <- concat <$> mapM retrieveEstablishment eets
 
-         let (failures, successes) = partitionEithers eis
+      let (failures, allSuccesses) = partitionEithers eis
+      successes <- filterM withinDates allSuccesses
 
-         liftIO $ mapM_ (\emsg -> putStrLn $ "ERROR parsing inspection: " ++ emsg) failures
-         liftIO $ mapM_ (I.saveInspection destDir') successes
+      liftIO $ mapM_ (\emsg -> putStrLn $ "ERROR parsing inspection: " ++ emsg) failures
+      liftIO $ mapM_ (I.saveInspection destDir') successes
 
-         if (hasNextPage rCurrent)
-            then pagingParams >>= processEstablishmentPage
-            else return ()
+      if (hasNextPage rCurrent)
+         then pagingParams >>= processEstablishmentPage
+         else return ()
+
+   where
+      {- Is this inspection's date within the dates contained within
+         our Reader monad environment
+      -}
+      withinDates :: I.Inspection -> Scrape Bool
+      withinDates i = do
+         startDate <- maybe 0 dayToDateInt <$> asks startDay
+         endDate <- maybe 99999999 dayToDateInt <$> asks endDay
+         let inspDate = I.date i
+         return $ inspDate >= startDate && inspDate <= endDate
 
 
 hasNextPage :: Response BL.ByteString -> Bool
@@ -181,18 +222,10 @@ hasNextPage resp =
          _  -> True
 
 
-data Scope = Latest | FirstPage
-
-retrieveEstablishment :: Scope -> String
-   -> Scrape [Either String I.Inspection]
-retrieveEstablishment Latest = retrieveEstablishment' (take 1)
-retrieveEstablishment FirstPage = retrieveEstablishment' id
-
-
-retrieveEstablishment' :: ([String] -> [String]) -> String
-   -> Scrape [Either String I.Inspection]
-retrieveEstablishment' limitF eventTarget = do
+retrieveEstablishment :: String -> Scrape [Either String I.Inspection]
+retrieveEstablishment eventTarget = do
    session' <- asks session
+   limitF <- getLimitF <$> asks scope
    liftIO $ putStrLn "POST to retrieve one establishment"
    searchFormFields <- searchParams eventTarget
    rEstRedir <- liftIO $ S.postWith opts session' url searchFormFields
@@ -203,6 +236,10 @@ retrieveEstablishment' limitF eventTarget = do
    let iets = limitF . extractInspEventTargets $ rEst
 
    local (\r -> r { viewState = viewStateFromResponse rEst }) $ mapM (retrieveInspection estUrl) iets
+
+   where
+      getLimitF Latest    = take 1
+      getLimitF FirstPage = id
 
 
 retrieveInspection :: String -> String
@@ -293,6 +330,7 @@ searchParams eventTarget = do
    startDay' <- asks startDay
    endDay' <- asks endDay
    estType' <- asks estType
+   estName' <- asks estName
    viewState' <- asks viewState
 
    return
@@ -305,7 +343,7 @@ searchParams eventTarget = do
       , "ctl00$PageContent$_clientSideIsPostBack" := ("Y" :: T.Text)
       , "ctl00$PageContent$ESTABLISHMENTSearch" := fvEmpty
       , "ctl00$PageContent$PREMISE_CITYFilter1" := fvEmpty
-      , "ctl00$PageContent$PREMISE_NAMEFilter" := fvAny
+      , "ctl00$PageContent$PREMISE_NAMEFilter" := estName'
       , "ctl00$PageContent$PREMISE_CITYFilter" := fvAny
       , "ctl00$PageContent$PREMISE_ZIPFilter" := fvEmpty
       , "ctl00$PageContent$EST_TYPE_IDFilter" := estType'
@@ -327,6 +365,7 @@ pagingParams = do
    startDay' <- asks startDay
    endDay' <- asks endDay
    estType' <- asks estType
+   estName' <- asks estName
    viewState' <- asks viewState
 
    return
@@ -339,7 +378,7 @@ pagingParams = do
       , "ctl00$PageContent$_clientSideIsPostBack" := ("Y" :: T.Text)
       , "ctl00$PageContent$ESTABLISHMENTSearch" := fvEmpty
       , "ctl00$PageContent$PREMISE_CITYFilter1" := fvEmpty
-      , "ctl00$PageContent$PREMISE_NAMEFilter" := fvAny
+      , "ctl00$PageContent$PREMISE_NAMEFilter" := estName'
       , "ctl00$PageContent$PREMISE_CITYFilter" := fvAny
       , "ctl00$PageContent$PREMISE_ZIPFilter" := fvEmpty
       , "ctl00$PageContent$EST_TYPE_IDFilter" := estType'
@@ -358,6 +397,8 @@ pagingParams = do
       ]
 
 
+{- This formatter is for submitting dates to the form
+-}
 formatDay :: Maybe Day -> T.Text
 formatDay (Just day) = T.pack $ printf "%d/%d/%d" m d y
    where (y, m, d) = toGregorian day
@@ -425,3 +466,36 @@ extractInspection detailUrl tags = do
       isCrit = isPrefixOf ";0000FF" . reverse . fromAttrib "style"
 
       trim = unwords . words
+
+
+dayToDateInt :: Day -> Int
+dayToDateInt day = read $ printf "%d%02d%02d" y m d
+   where (y, m, d) = toGregorian day
+
+
+downloadEstList :: Scrape [String]
+downloadEstList = do
+   session' <- asks session
+
+   rStart <- liftIO $ do
+      putStrLn "GET start page"
+      S.getWith opts session' url
+
+   local (\r -> r { viewState = viewStateFromResponse rStart }) $ do
+      params <- searchParams "ctl00_PageContent_INSPECTIONFilterButton__Button"
+      liftIO $ putStrLn "POST to get page of establishments"
+      rCurrent <- liftIO $ S.postWith opts session' url $ params
+
+      return $ extractEstList rCurrent
+
+
+extractEstList :: Response BL.ByteString -> [String]
+extractEstList response =
+   tail
+   . map (fromTagText . head . tail)
+   . sections (~== ("<option" :: String))
+   . takeWhile (~/= ("</select>" :: String))
+   . dropWhile (~/= ("<select name=ctl00$PageContent$PREMISE_NAMEFilter" :: String))
+   . parseTags
+   . BL.unpack
+   $ response ^. responseBody
