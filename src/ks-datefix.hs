@@ -180,7 +180,7 @@ upgradeDate = do
    let newDoc = oldDoc { D.inspection = newInsp }
 
    updateSnd newDoc
-   liftIO $ printf "  Fixed date: %s\n" (show newDate)
+   liftIO $ printf "  Upgraded date: %s\n" (show newDate)
 
    return ()
 
