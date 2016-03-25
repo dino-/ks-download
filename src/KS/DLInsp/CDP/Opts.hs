@@ -15,7 +15,6 @@ import Paths_ks_download ( version )
 import System.Console.GetOpt
 import Text.Regex
 
---import KS.DLInsp.CDP.Types ( Options (..), Scope ( Latest, FirstPage ) )
 import KS.DLInsp.CDP.Types ( Options (..) )
 import KS.Util ( setDate )
 
@@ -24,7 +23,6 @@ defaultOptions :: Options
 defaultOptions = Options
    { optStartDate = Nothing
    , optEndDate = Nothing
-   --, optScope = Latest
    , optName = Nothing
    , optEstNames = False
    , optHelp = False
@@ -41,11 +39,6 @@ options =
       (ReqArg (\s opts -> opts { optEndDate = Just $ parseInputDate s } )
          "YYYYMMDD")
       "Ending date for inspection searches. Default: two days ago"
-   {-
-   , Option ['a'] ["all"]
-      (NoArg (\opts -> opts { optScope = FirstPage } ))
-      "Get all inspections on the page for each establishment. Default: only get the first (latest) inspection"
-   -}
    , Option ['n'] ["name"]
       (ReqArg (\s opts -> opts { optName = Just s } ) "ESTABLISHMENT_NAME")
       "Retrieve inspections for a particular named establishment"
