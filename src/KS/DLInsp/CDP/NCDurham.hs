@@ -81,6 +81,7 @@ etAll, et01Restaurant, et02FoodStands, et03MobileFood, et04PushCarts :: Establis
 
 etAll = "--ANY--"
 et01Restaurant = "1"
+-- 2016-03-25 These types are proving to be full of weird crap that causes Places match problems
 et02FoodStands = "2"
 et03MobileFood = "3"
 et04PushCarts  = "4"
@@ -88,9 +89,6 @@ et04PushCarts  = "4"
 allEstTypes :: [EstablishmentType]
 allEstTypes =
    [ et01Restaurant
-   , et02FoodStands
-   , et03MobileFood
-   , et04PushCarts
    ]
 
 
