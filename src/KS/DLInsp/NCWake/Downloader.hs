@@ -73,9 +73,7 @@ isolateInspTags= partitions isFacAnchor
 
 -- Extract the Inspection data from a facility's tags
 extractInsp :: [Tag String] -> IO (Either String I.Inspection)
-extractInsp tags = do
-   parsed <- I.parseDate date
-   return $ makeInspection <$> parsed
+extractInsp tags = return $ makeInspection <$> I.parseDate date
 
    where
       makeInspection dateParsed = I.Inspection

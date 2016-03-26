@@ -429,9 +429,8 @@ inspRowParams eventTarget = do
 extractInspection :: String -> [Tag String] -> Scrape (Either String I.Inspection)
 extractInspection detailUrl tags = do
    liftIO $ putStrLn $ "Parsing inspection data for " ++ name
-   parsed <- liftIO $ I.parseDate dateStr
    inspSrc' <- asks inspSrc
-   return $ makeInspection inspSrc' <$> parsed
+   return $ makeInspection inspSrc' <$> I.parseDate dateStr
 
    where
       makeInspection inspSrc' dateParsed = I.Inspection
