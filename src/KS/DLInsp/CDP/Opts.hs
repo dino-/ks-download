@@ -93,7 +93,7 @@ usageText = (usageInfo header options) ++ "\n" ++ footer
          , ""
          , "The --name and --est-names switches are intended to be used for gathering historical data as opposed to 'dailies' of the latest inspections in a date range."
          , ""
-         , "SOURCE is one of: nc_durham"
+         , "SOURCE is one of: nc_chatham, nc_durham, nc_orange"
          , ""
          , "DESTDIR is the directory for downloaded inspection JSON files."
          , ""
