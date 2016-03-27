@@ -142,7 +142,7 @@ download source options destDir' = do
             putStrLn $ "Downloading inspections for " ++ name
             S.withSession $ \sess -> do
                let env = ScrapeEnv source url' destDir' FirstPage (optStartDate options)
-                     (optEndDate options) etAll (T.pack name) sess ""
+                     (optEndDate options) et01Restaurant (T.pack name) sess ""
                runScrape env downloadInspections
 
          else do
