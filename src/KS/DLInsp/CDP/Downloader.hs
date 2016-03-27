@@ -435,7 +435,7 @@ extractInspection detailUrl tags = do
    where
       makeInspection inspSrc' dateParsed = I.Inspection
          inspSrc'
-         (T.pack name)
+         (T.pack . trim $ name)
          (T.pack . trim $ ((trim addr) ++ ", " ++ csz))
          dateParsed
          (read . trim $ score)
