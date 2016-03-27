@@ -87,19 +87,39 @@ loadAndInsert mongoConf pipe path = do
                , "inspection.date" =: (I.date . D.inspection $ doc)
                ]
                coll_inspections_all) bson
-            sr <- parseLastError `fmap` runCommand [ "getLastError" =: (1::Int) ]
+            allResult <- parseLastError `fmap` runCommand [ "getLastError" =: (1::Int) ]
 
-            -- Insert or modify the one document in recent_inspections
-            upsert (select ["place.place_id" =: (P.place_id . D.place $ doc)]
-               coll_inspections_recent) bson
-            ur <- parseLastError `fmap` runCommand [ "getLastError" =: (1::Int) ]
+            -- Insert or modify the one document in inspections_recent
+            -- Determine if this document should be inserted at all
+            -- (if it's older than the one already there, then no)
+            existingDocs <- rest =<< find (select
+               [ "place.place_id" =: (P.place_id . D.place $ doc) ]
+               coll_inspections_recent)
 
-            -- Combine the results
-            return $ sr >> ur
+            let shouldInsert = case existingDocs of
+                  [] -> True
+                  (existingDoc : _) -> isLater (I.date . D.inspection $ doc) existingDoc
+
+            if shouldInsert
+               then do
+                  upsert (select ["place.place_id" =: (P.place_id . D.place $ doc)]
+                     coll_inspections_recent) bson
+                  recentResult <- parseLastError `fmap` runCommand [ "getLastError" =: (1::Int) ]
+
+                  -- Combine the results
+                  return $ allResult >> recentResult
+               else
+                  return allResult
 
    printf "%s %s\n" path (either id id $ result)
 
    return . isLeft $ result
+
+
+isLater :: Int -> Document -> Bool
+isLater newDate existingDoc = newDate > existingDate
+   where
+      existingDate = "date" `at` ("inspection" `at` existingDoc)
 
 
 buildFileList :: FilePath -> IO [FilePath]
