@@ -32,6 +32,7 @@ import Text.Printf ( printf )
 import Text.Regex ( mkRegex, subRegex )
 
 import qualified KS.Database.Mongo.Config as MC
+import KS.Database.Mongo.Util ( coll_inspections_all, coll_inspections_recent )
 
 
 coll_inspections :: Collection
@@ -45,9 +46,10 @@ main = do
    -- No buffering, it messes with the order of output
    mapM_ (flip hSetBuffering NoBuffering) [ stdout, stderr ]
 
-   (confDir : _) <- getArgs
+   printf "ks-misc version %s started\n" (showVersion version)
+   putStrLn "BE VERY CAREFUL WITH THIS UTILITY! It contains one-off, often destructive code that's been used to modify the databases. Run this only if you know what you're doing. You have been warned."
 
-   printf "ks-datefix version %s started\n" (showVersion version)
+   (confDir : _) <- getArgs
 
    mongoConf <- MC.loadMongoConfig confDir
 
@@ -58,11 +60,61 @@ main = do
    (access pipe slaveOk (MC.database mongoConf)
       $ auth (MC.username mongoConf) (MC.password mongoConf)) >>=
       \tf -> putStrLn $ "Authenticated with Mongo: " ++ (show tf)
-   result <- updateRecords mongoConf pipe
+   --result <- updateRecords mongoConf pipe
+   mapM_ (fixRecents mongoConf pipe) dates
 
    close pipe
 
+   let result = True
    exitWith . toExitCode $ result
+
+dates =
+   [ 20150331
+   , 20150406
+   , 20150702
+   , 20150928
+   , 20151124
+   , 20151202
+   ]
+
+fixRecents :: MC.MongoConfig -> Pipe -> Int -> IO ()
+fixRecents mc pipe date = do
+   -- Find place_idS in inspections_recent for the date
+   recentDocs <- access pipe slaveOk (MC.database mc) $ rest =<<
+      find (select ["inspection.date" =: date] coll_inspections_recent)
+
+   forM_ recentDocs $ \d -> do
+      putStrLn $ "-----\nFixing: " ++ (displayBrief d)
+      let place_id = "place_id" `at` ("place" `at` d)
+      fixRecent mc pipe place_id
+
+
+fixRecent :: MC.MongoConfig -> Pipe -> T.Text -> IO ()
+fixRecent mc pipe place_id = do
+   -- Get the most recent doc for that place_id from inspections_all
+   latest <- head <$> (access pipe slaveOk (MC.database mc) $ rest =<<
+      find (select ["place.place_id" =: place_id] coll_inspections_all)
+         { sort = ["inspection.date" =: (-1 :: Int)]
+         , limit = (1 :: Limit)
+         })
+   putStrLn $ "Most recent: " ++ (displayBrief latest)
+
+   putStrLn "Deleting the bad document from inspections_recent"
+   _ <- access pipe slaveOk (MC.database mc) $
+      deleteOne (select ["place.place_id" =: place_id] coll_inspections_recent)
+
+   putStrLn "Inserting the good document"
+   _ <- access pipe slaveOk (MC.database mc) $
+      insert_ coll_inspections_recent latest
+
+   return ()
+
+
+displayBrief doc = printf "%d %s %s"
+   ("date" `at` ("inspection" `at` doc) :: Int)
+   (T.unpack $ "place_id" `at` ("place" `at` doc))
+   (T.unpack $ "name" `at` ("place" `at` doc))
+   
 
 
 type Fix a = (StateT (BSON.Document, D.Document) IO) a
