@@ -15,6 +15,7 @@ import TCE.Data.ReadConf ( readConfig )
 
 data MongoConfig = MongoConfig
    { ip       :: String
+   , port     :: Int
    , username :: T.Text
    , password :: T.Text
    , database :: T.Text

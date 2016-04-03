@@ -54,7 +54,8 @@ main = do
    mongoConf <- MC.loadMongoConfig confDir
 
    -- Get a connection to Mongo, they call it a 'pipe'
-   pipe <- connect . host . MC.ip $ mongoConf
+   pipe <- connect $ Host (MC.ip mongoConf)
+      (PortNumber . fromIntegral . MC.port $ mongoConf)
 
    -- Authenticate with mongo, show the auth state on stdout
    (access pipe slaveOk (MC.database mongoConf)
