@@ -18,10 +18,11 @@ module KS.Locate.Places.Places
    ( coordsToPlaces )
    where
 
-import           Data.Aeson ( FromJSON, Value (Object), (.:), eitherDecode,
-                  parseJSON )
+import Data.Aeson ( FromJSON, Value (Object)
+   , (.:), (.:?), (.!=), eitherDecode, parseJSON )
 import qualified Data.ByteString.Lazy.Char8 as BL
 import qualified Data.List as L
+import Data.Maybe ( catMaybes )
 import           Data.Text ( Text, intercalate, unpack )
 import           GHC.Generics ( Generic )
 import           Network.HTTP ( urlEncode )
@@ -49,6 +50,7 @@ data RawPlace = RawPlace
    , location :: GeoPoint
    , types :: [String]
    , place_id :: Text
+   , closed :: Bool
    }
    deriving Generic
 
@@ -63,6 +65,7 @@ instance FromJSON RawPlace where
          <*> (return $ GeoPoint lat' lng')
          <*> o .: "types"
          <*> o .: "place_id"
+         <*> o .:? "permanently_closed" .!= False
    parseJSON o = fail . show $ o
 
 
@@ -96,13 +99,14 @@ coordsToPlaces coords = do
       displayAndReturn parseResult
 
 
-convert :: RawPlace -> Place
-convert (RawPlace n v l t pid) = Place n v l t pid
+convert :: RawPlace -> Maybe Place
+convert (RawPlace _ _ _ _ _   True) = Nothing
+convert (RawPlace n v l t pid _   ) = Just $ Place n v l t pid
 
 
 displayAndReturn :: Places -> KSDL [Place]
 displayAndReturn (Places rps) = do
-   let ps = L.map convert rps
+   let ps = catMaybes . L.map convert $ rps
    liftIO $ do
       noticeM lname "Places returned:"
       mapM_ (noticeM lname . show) ps
