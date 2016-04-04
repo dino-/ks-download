@@ -23,25 +23,25 @@ import Data.Aeson ( FromJSON, Value (Object)
 import qualified Data.ByteString.Lazy.Char8 as BL
 import qualified Data.List as L
 import Data.Maybe ( catMaybes )
-import           Data.Text ( Text, intercalate, unpack )
-import           GHC.Generics ( Generic )
-import           Network.HTTP ( urlEncode )
-import           Network.HTTP.Conduit ( simpleHttp )
-import           Text.Printf ( printf )
+import Data.Text ( Text, intercalate, unpack )
+import GHC.Generics ( Generic )
+import Network.HTTP ( urlEncode )
+import Network.HTTP.Conduit ( simpleHttp )
+import Text.Printf ( printf )
 
-import           KS.Data.Place ( GeoPoint (..), Place (..) )
-import           KS.Locate.Config ( Config (googleApiKey), keyString )
-import           KS.Locate.Locate
-                  ( Env (getConfig, getSourceConfig)
-                  , ErrMsg (..), KSDL
-                  , asks, eitherThrowCritical, liftIO,
-                  throwError, when
-                  )
-import           KS.Locate.Places.Geocoding ( GeoLatLng (..) )
-import           KS.Locate.Places.NameWords ( toList )
-import           KS.Log ( Priority (ERROR), debugM, errorM, lname, noticeM )
-import           KS.SourceConfig ( SourceConfig (placesTypes) )
-import           KS.Util ( withRetry )
+import KS.Data.Place ( GeoPoint (..), Place (..) )
+import KS.Locate.Config ( Config (googleApiKey), keyString )
+import KS.Locate.Locate
+   ( Env (getConfig, getSourceConfig)
+   , ErrMsg (..), KSDL
+   , asks, eitherThrowCritical, liftIO,
+   throwError, when
+   )
+import KS.Locate.Places.Geocoding ( GeoLatLng (..) )
+import KS.Locate.Places.NameWords ( toList )
+import KS.Log ( Priority (ERROR), debugM, errorM, lname, noticeM )
+import KS.SourceConfig ( SourceConfig (placesTypes) )
+import KS.Util ( withRetry )
 
 
 data RawPlace = RawPlace

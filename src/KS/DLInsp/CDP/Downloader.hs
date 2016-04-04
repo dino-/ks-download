@@ -6,28 +6,28 @@
 module KS.DLInsp.CDP.Downloader
    where
 
-import           Control.Lens ( (^.), (?~), (.~) , (&) )
+import Control.Lens ( (^.), (?~), (.~) , (&) )
 import Control.Monad.Reader
 import qualified Data.ByteString.Lazy.Char8 as BL
-import           Data.Either ( partitionEithers )
+import Data.Either ( partitionEithers )
 import Data.List ( isPrefixOf, sort, tails )
 import Data.Maybe ( isJust )
 import qualified Data.Text as T
-import           Data.Time.Calendar ( Day, toGregorian )
---import           Debug.Trace ( trace )
-import           Network.HTTP ( urlDecode )
-import           Network.Wreq
-                  ( FormParam ((:=)), Response
-                  , defaults, header, httpProxy, proxy, responseBody
-                  )
+import Data.Time.Calendar ( Day, toGregorian )
+--import Debug.Trace ( trace )
+import Network.HTTP ( urlDecode )
+import Network.Wreq
+   ( FormParam ((:=)), Response
+   , defaults, header, httpProxy, proxy, responseBody
+   )
 import qualified Network.Wreq as Wreq
 import qualified Network.Wreq.Session as S
-import           Text.HTML.TagSoup
-import           Text.Printf ( printf )
+import Text.HTML.TagSoup
+import Text.Printf ( printf )
 
 import qualified KS.Data.Inspection as I
 import KS.DLInsp.CDP.Types ( Downloader, Options (..), lookupCountyID )
---import           KS.Util ( withRetry )
+--import KS.Util ( withRetry )
 
 
 {- development notes
