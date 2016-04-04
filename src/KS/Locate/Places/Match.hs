@@ -82,8 +82,15 @@ match ps = do
    so we can show our users the true address.
 -}
 isMatch :: T.Text -> T.Text -> (Bool, T.Text)
-isMatch iaddr pvic = (prefix iaddr == prefix newPvic, newPvic)
+isMatch iaddr pvic =
+   if (not . T.null $ pIaddr) && (not . T.null $ pNewPvic)
+         && (prefix iaddr == prefix newPvic)
+      then (True, newPvic)
+      else (False, newPvic)
+
    where
+      pIaddr = prefix iaddr
+      pNewPvic = prefix newPvic
       newPvic = removePrefixZip pvic
       prefix = T.takeWhile isDigit
 
