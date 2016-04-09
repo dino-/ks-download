@@ -18,6 +18,7 @@ import Data.Time ( getCurrentTime, utcToLocalZonedTime, zonedTimeToLocalTime )
 import Data.Time.Calendar ( toGregorian )
 import Data.Time.LocalTime ( LocalTime (localDay) )
 import Data.Version ( showVersion )
+import Database.Mongo.Util ( lastStatus )
 import Database.MongoDB hiding ( options )
 import Paths_ks_download ( version )
 import System.Environment ( getArgs, setEnv )
@@ -31,7 +32,7 @@ import Text.Regex ( matchRegex, mkRegex )
 
 import qualified KS.Database.Mongo.Config as MC
 import KS.Database.Mongo.Util
-   ( coll_inspections_recent, coll_stats_recent, parseLastError )
+   ( coll_inspections_recent, coll_stats_recent )
 import KS.Log
 import KS.RegionUpd.Opts
 import KS.SourceConfig
@@ -102,7 +103,7 @@ updateStatsDocument mc pipe doc = do
    result <- access pipe slaveOk (MC.database mc) $ do
       upsert (select [ "source" =: (("source" `at` doc) :: T.Text) ]
          coll_stats_recent) doc
-      parseLastError <$> runCommand [ "getLastError" =: (1::Int) ]
+      lastStatus
 
    either
       (\e -> errorM lname e >> return False)

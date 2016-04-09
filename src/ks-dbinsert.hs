@@ -11,6 +11,7 @@ import Data.Bson.Generic
 import Data.Either ( isLeft )
 import Data.List ( isPrefixOf )
 import Data.Version ( showVersion )
+import Database.Mongo.Util ( lastStatus )
 import Database.MongoDB hiding ( options )
 import Paths_ks_download ( version )
 import System.Directory ( doesFileExist, getDirectoryContents )
@@ -29,7 +30,7 @@ import qualified KS.Data.Inspection as I
 import qualified KS.Data.Place as P
 import qualified KS.Database.Mongo.Config as MC
 import KS.Database.Mongo.Util
-   ( coll_inspections_all, coll_inspections_recent, parseLastError )
+   ( coll_inspections_all, coll_inspections_recent )
 import KS.DBInsert.Opts
 
 
@@ -88,7 +89,7 @@ loadAndInsert mongoConf pipe path = do
                , "inspection.date" =: (I.date . D.inspection $ doc)
                ]
                coll_inspections_all) bson
-            allResult <- parseLastError `fmap` runCommand [ "getLastError" =: (1::Int) ]
+            allResult <- lastStatus
 
             -- Insert or modify the one document in inspections_recent
             -- Determine if this document should be inserted at all
@@ -105,7 +106,7 @@ loadAndInsert mongoConf pipe path = do
                then do
                   upsert (select ["place.place_id" =: (P.place_id . D.place $ doc)]
                      coll_inspections_recent) bson
-                  recentResult <- parseLastError `fmap` runCommand [ "getLastError" =: (1::Int) ]
+                  recentResult <- lastStatus
 
                   -- Combine the results
                   return $ allResult >> recentResult
