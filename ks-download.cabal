@@ -1,6 +1,6 @@
 name: ks-download
 version: 1.21
-cabal-version: >=1.8
+cabal-version: >=1.10
 build-type: Custom
 license: BSD3
 license-file: LICENSE
@@ -58,6 +58,7 @@ executable ks-dlinsp-cdp
         time >=1.5.0.1 && <1.6,
         utf8-string >=1.0.1.1 && <1.1,
         wreq >=0.4.1.0 && <0.5
+    default-language: Haskell2010
     hs-source-dirs: src
     other-modules:
         KS.DLInsp.CDP.Downloader
@@ -85,6 +86,7 @@ executable ks-dlinsp-nc_wake
         text >=1.2.1.3 && <1.3,
         time >=1.5.0.1 && <1.6,
         utf8-string >=1.0.1.1 && <1.1
+    default-language: Haskell2010
     hs-source-dirs: src
     other-modules:
         KS.DLInsp.NCWake.Downloader
@@ -119,6 +121,7 @@ executable ks-locate
         text-format >=0.3.1.1 && <0.4,
         time >=1.5.0.1 && <1.6,
         utf8-string >=1.0.1.1 && <1.1
+    default-language: Haskell2010
     hs-source-dirs: src
     other-modules:
         KS.Locate.Config
@@ -159,6 +162,7 @@ executable ks-dbinsert
         text-format >=0.3.1.1 && <0.4,
         time >=1.5.0.1 && <1.6,
         utf8-string >=1.0.1.1 && <1.1
+    default-language: Haskell2010
     hs-source-dirs: src
     other-modules:
         KS.Database.Mongo.Config
@@ -186,6 +190,7 @@ executable ks-regionupd
         text-format >=0.3.1.1 && <0.4,
         time >=1.5.0.1 && <1.6,
         utf8-string >=1.0.1.1 && <1.1
+    default-language: Haskell2010
     hs-source-dirs: src
     other-modules:
         KS.Database.Mongo.Config
@@ -215,6 +220,7 @@ executable ks-regionupd
 --        text-format >=0.3.1.1 && <0.4,
 --        time >=1.5.0.1 && <1.6,
 --        utf8-string >=1.0.1.1 && <1.1
+--    default-language: Haskell2010
 --    hs-source-dirs: src
 --    other-modules:
 --        KS.Database.Mongo.Config
@@ -242,6 +248,7 @@ test-suite test-Locate
         text >=1.2.1.3 && <1.3,
         time >=1.5.0.1 && <1.6,
         utf8-string >=1.0.1.1 && <1.1
+    default-language: Haskell2010
     hs-source-dirs: src testsuite
     other-modules:
         NameWords
