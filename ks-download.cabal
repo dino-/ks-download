@@ -1,5 +1,5 @@
 name: ks-download
-version: 1.21
+version: 1.22
 cabal-version: >=1.10
 build-type: Custom
 license: BSD3
