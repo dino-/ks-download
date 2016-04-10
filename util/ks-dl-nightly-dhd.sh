@@ -1,6 +1,6 @@
 #! /bin/bash
 
-ksSource="nc_wake"
+ksSource=${1:?Must specify a source}
 
 # Add the location of the ks-download binaries and scripts to the PATH
 PATH="/opt/ksnitch/ks-download/bin:${PATH}"
@@ -26,7 +26,7 @@ cd $workDir
 
 # Scrape new inspections from two days ago
 
-ks-dlinsp-nc_wake $configDir insp > ks-dlinsp.log
+ks-dlinsp-dhd $configDir $ksSource insp > ks-dlinsp.log
 
 
 # Places match the inspections

@@ -28,7 +28,8 @@ extra-source-files:
     util/gentags.sh
     util/inspconv.coffee
     util/install.sh
-    util/ks-dl-nightly.sh
+    util/ks-dl-nightly-cdp.sh
+    util/ks-dl-nightly-dhd.sh
     util/resources/geocode.json
     util/resources/nc-wake/searchResultPage.html
     util/resources/places.json
@@ -68,8 +69,8 @@ executable ks-dlinsp-cdp
         KS.Util
     ghc-options: -Wall
 
-executable ks-dlinsp-nc_wake
-    main-is: ks-dlinsp-nc_wake.hs
+executable ks-dlinsp-dhd
+    main-is: ks-dlinsp-dhd.hs
     build-depends:
         aeson ==0.9.*,
         base >=3 && <5,

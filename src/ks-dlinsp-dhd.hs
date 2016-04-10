@@ -26,14 +26,14 @@ main = do
 
    (options, args) <- getArgs >>= parseOpts
    when (optHelp options) $ putStrLn usageText >> exitSuccess
-   when (length args < 2) $ putStrLn usageText >> exitFailure
-   let (confDir : destDir : _) = args
+   when (length args < 3) $ putStrLn usageText >> exitFailure
+   let (confDir : source : destDir : _) = args
 
-   putStrLn $ "ks-dlinsp-nc_wake version " ++ (showVersion version) ++ " started"
+   putStrLn $ "ks-dlinsp-dhd version " ++ (showVersion version) ++ " started"
 
    -- We need to get the source config to see its time zone to
    -- supply proper values for optStartDate and optEndDate
-   sourceConfig <- loadConfig confDir "nc_wake"
+   sourceConfig <- loadConfig confDir source
    setEnv "TZ" $ timeZone sourceConfig
    fixedOptions <- setDates options
 

@@ -40,7 +40,7 @@ options =
       "Ending date for inspection searches. Default: two days ago"
    , Option ['l'] ["page-limit"]
       (ReqArg (\l opts -> opts { optPageLimit = Just $ read l } ) "PAGES")
-      "Number of pages to download (applies only to nc_wake?) Default: all of them"
+      "Number of pages to download. Default: all of them"
    , Option ['h'] ["help"]
       (NoArg (\opts -> opts { optHelp = True } ))
       "This help text"
@@ -78,14 +78,16 @@ usageText :: String
 usageText = (usageInfo header options) ++ "\n" ++ footer
    where
       header = init $ unlines
-         [ "Usage: ks-dlinsp-nc_wake [OPTIONS] CONFDIR DESTDIR"
-         , "Acquire inspection data for Wake County, North Carolina"
+         [ "Usage: ks-dlinsp-dhd [OPTIONS] CONFDIR SOURCE DESTDIR"
+         , "Acquire North Carolina inspection data from DHD websites"
          , ""
          , "Options:"
          ]
       footer = init $ unlines
          [ "Note: If run with no dates, you will get all of the inspections from two days ago. The idea is to give the inspection workers time to get their data into the system and is a good default for daily runs."
          , "Expects to find ks-download-SOURCE.conf in the CONFDIR specified."
+         , ""
+         , "SOURCE is one of: nc_wake"
          , ""
          , "DESTDIR is the directory for downloaded inspection JSON files."
          , ""
