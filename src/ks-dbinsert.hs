@@ -113,7 +113,7 @@ loadAndInsert mongoConf pipe path = do
                   -- Combine the results
                   return $ allResult >> recentResult
                else do
-                  liftIO $ printf "NOT INSERTING EXISTING DOCUMENT: %s %d %s"
+                  liftIO $ printf "NOT INSERTING EXISTING DOCUMENT: %s %d %s\n"
                      (T.unpack . P.place_id . D.place $ doc)
                      (I.date . D.inspection $ doc)
                      (T.unpack . P.name . D.place $ doc)
