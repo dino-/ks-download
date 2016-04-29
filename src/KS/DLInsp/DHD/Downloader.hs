@@ -1,7 +1,7 @@
 -- License: BSD3 (see LICENSE)
 -- Author: Dino Morelli <dino@ui3.info>
 
-module KS.DLInsp.NCWake.Downloader
+module KS.DLInsp.DHD.Downloader
    ( download )
    where
 
@@ -20,7 +20,7 @@ import           Text.HTML.TagSoup ( Tag (TagText), (~==), (~/=), fromAttrib,
                   sections )
 import           Text.Printf ( printf )
 
-import           KS.DLInsp.NCWake.Types ( DL, Downloader,
+import           KS.DLInsp.DHD.Types ( DL, Downloader,
                   Options ( optEndDate, optPageLimit, optStartDate ),
                   asks, liftIO, runDL )
 import           KS.Util ( withRetry )

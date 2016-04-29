@@ -1,7 +1,7 @@
 -- License: BSD3 (see LICENSE)
 -- Author: Dino Morelli <dino@ui3.info>
 
-module KS.DLInsp.NCWake.Opts
+module KS.DLInsp.DHD.Opts
    ( Options (..)
    , parseOpts, usageText
    )
@@ -14,7 +14,7 @@ import Paths_ks_download ( version )
 import System.Console.GetOpt
 import Text.Regex
 
-import KS.DLInsp.NCWake.Types ( Options (..) )
+import KS.DLInsp.DHD.Types ( Options (..) )
 
 
 defaultOptions :: Options

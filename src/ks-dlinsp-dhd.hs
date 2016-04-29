@@ -13,9 +13,9 @@ import System.IO
    )
 import Text.Printf ( printf )
 
-import KS.DLInsp.NCWake.Opts ( Options (optEndDate, optHelp, optStartDate)
+import KS.DLInsp.DHD.Opts ( Options (optEndDate, optHelp, optStartDate)
    , parseOpts, usageText )
-import KS.DLInsp.NCWake.Downloader ( download )
+import KS.DLInsp.DHD.Downloader ( download )
 import KS.DLInsp.Util ( setDates )
 import KS.SourceConfig ( SourceConfig (timeZone), loadConfig )
 
