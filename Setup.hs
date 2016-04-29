@@ -35,7 +35,7 @@ copyCustomBinFiles destDir = do
    let srcDir = "util"
    let srcFiles =
          [ "ks-dl-nightly-cdp.sh"
-         , "ks-dl-nightly-nc_wake.sh"
+         , "ks-dl-nightly-dhd.sh"
          ]
 
    putStrLn $ "Installing additional binaries in " ++ destDir
