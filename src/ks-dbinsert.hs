@@ -7,9 +7,11 @@
 -}
 
 import Control.Monad ( when )
+import Control.Monad.Trans ( liftIO )
 import Data.Bson.Generic
 import Data.Either ( isLeft )
 import Data.List ( isPrefixOf )
+import qualified Data.Text as T
 import Data.Version ( showVersion )
 import Database.Mongo.Util ( lastStatus )
 import Database.MongoDB hiding ( options )
@@ -110,7 +112,11 @@ loadAndInsert mongoConf pipe path = do
 
                   -- Combine the results
                   return $ allResult >> recentResult
-               else
+               else do
+                  liftIO $ printf "NOT INSERTING EXISTING DOCUMENT: %s %d %s"
+                     (T.unpack . P.place_id . D.place $ doc)
+                     (I.date . D.inspection $ doc)
+                     (T.unpack . P.name . D.place $ doc)
                   return allResult
 
    printf "%s %s\n" path (either id id $ result)
