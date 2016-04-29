@@ -4,19 +4,17 @@
 module KS.DLInsp.CDP.Opts
    ( Options (..)
    , parseOpts, usageText
-   , setDates
    )
    where
 
 import Control.Exception
-import Data.Time ( Day, fromGregorian, getCurrentTimeZone )
+import Data.Time ( Day, fromGregorian )
 import Data.Version ( showVersion )
 import Paths_ks_download ( version )
 import System.Console.GetOpt
 import Text.Regex
 
 import KS.DLInsp.CDP.Types ( Options (..) )
-import KS.Util ( setDate )
 
 
 defaultOptions :: Options
@@ -34,11 +32,11 @@ options =
    [ Option ['s']    ["start-date"]
       (ReqArg (\s opts -> opts { optStartDate = Just $ parseInputDate s } )
          "YYYYMMDD")
-      "Starting date for inspection searches. Default: two days ago"
+      "Starting date for inspection searches. Default: date of last inspection in the db or two days ago if that's not available"
    , Option ['e']    ["end-date"]
       (ReqArg (\s opts -> opts { optEndDate = Just $ parseInputDate s } )
          "YYYYMMDD")
-      "Ending date for inspection searches. Default: two days ago"
+      "Ending date for inspection searches. Default: today"
    , Option ['n'] ["name"]
       (ReqArg (\s opts -> opts { optName = Just s } ) "ESTABLISHMENT_NAME")
       "Retrieve inspections for a particular named establishment"
@@ -59,17 +57,6 @@ parseInputDate str =
          "Bad date format: " ++ str ++ "\n" ++ usageText
 
 
-setDates :: Options -> IO Options
-setDates opts = do
-   tz <- getCurrentTimeZone
-   newStartDate <- setDate tz $ optStartDate opts
-   newEndDate <- setDate tz $ optEndDate opts
-   return $ opts
-      { optStartDate = newStartDate
-      , optEndDate = newEndDate
-      }
-
-
 -- Perform the args parsing
 parseOpts :: [String] -> IO (Options, [String])
 parseOpts args = handle ioError $
@@ -88,7 +75,7 @@ usageText = (usageInfo header options) ++ "\n" ++ footer
          , "Options:"
          ]
       footer = init $ unlines
-         [ "Note: If run with no dates, you will get all of the inspections from two days ago. The idea is to give the inspection workers time to get their data into the system and is a good default for daily runs."
+         [ "Note: If run with no dates, you will get all of the inspections from the past two days. The idea is to give the inspection workers time to get their data into the system and is a good default for daily runs."
          , "Expects to find ks-download-SOURCE.conf in the CONFDIR specified."
          , ""
          , "The --name and --est-names switches are intended to be used for gathering historical data as opposed to 'dailies' of the latest inspections in a date range."
@@ -97,7 +84,7 @@ usageText = (usageInfo header options) ++ "\n" ++ footer
          , ""
          , "DESTDIR is the directory for downloaded inspection JSON files."
          , ""
-         , "For computing values for 'two days ago', this software will use the time zone set in the ks-download-SOURCE.conf file."
+         , "For computing values for 'today' and 'two days ago', this software will use the time zone set in the ks-download-SOURCE.conf file."
          , ""
          , "Logging is written to stdout."
          , ""

@@ -51,6 +51,7 @@ executable ks-dlinsp-cdp
         ks-library >=1.10,
         lens >=4.13.2.1 && <4.14,
         lens-aeson >=1.0.0.5 && <1.1,
+        mongoDB <=2.0.8,
         mtl >=2.2.1 && <2.3,
         regex-compat >=0.95.1 && <0.96,
         tagsoup >=0.13.8 && <0.14,
@@ -65,6 +66,7 @@ executable ks-dlinsp-cdp
         KS.DLInsp.CDP.Downloader
         KS.DLInsp.CDP.Opts
         KS.DLInsp.CDP.Types
+        KS.DLInsp.Util
         KS.SourceConfig
         KS.Util
     ghc-options: -Wall
@@ -80,6 +82,7 @@ executable ks-dlinsp-dhd
         filepath >=1.4.0.0 && <1.5,
         HTTP >=4000.2.23 && <4000.3,
         ks-library >=1.10,
+        mongoDB <=2.0.8,
         mtl >=2.2.1 && <2.3,
         regex-compat >=0.95.1 && <0.96,
         tagsoup >=0.13.8 && <0.14,

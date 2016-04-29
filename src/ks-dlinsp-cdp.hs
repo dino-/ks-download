@@ -1,6 +1,8 @@
 -- License: BSD3 (see LICENSE)
 -- Author: Dino Morelli <dino@ui3.info>
 
+{-# LANGUAGE OverloadedStrings #-}
+
 import Control.Monad ( when )
 import Data.Maybe ( fromJust )
 import Data.Version ( showVersion )
@@ -15,7 +17,8 @@ import Text.Printf ( printf )
 
 import KS.DLInsp.CDP.Downloader ( download )
 import KS.DLInsp.CDP.Opts ( Options (optEndDate, optHelp, optStartDate)
-   , parseOpts, setDates, usageText )
+   , parseOpts, usageText )
+import KS.DLInsp.Util ( setDates )
 import KS.SourceConfig ( SourceConfig (timeZone), loadConfig )
 
 
@@ -35,7 +38,9 @@ main = do
    -- supply proper values for optStartDate and optEndDate
    sourceConfig <- loadConfig confDir source
    setEnv "TZ" $ timeZone sourceConfig
-   fixedOptions <- setDates options
+   (newStartDate, newEndDate) <- setDates (confDir, source)
+      (optStartDate options) (optEndDate options)
+   let fixedOptions = options { optStartDate = newStartDate, optEndDate = newEndDate }
 
    printf "Downloading inspections between dates %s and %s\n"
       (show . fromJust . optStartDate $ fixedOptions)

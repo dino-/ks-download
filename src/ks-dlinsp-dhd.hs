@@ -14,8 +14,9 @@ import System.IO
 import Text.Printf ( printf )
 
 import KS.DLInsp.NCWake.Opts ( Options (optEndDate, optHelp, optStartDate)
-   , parseOpts, setDates, usageText )
+   , parseOpts, usageText )
 import KS.DLInsp.NCWake.Downloader ( download )
+import KS.DLInsp.Util ( setDates )
 import KS.SourceConfig ( SourceConfig (timeZone), loadConfig )
 
 
@@ -35,7 +36,9 @@ main = do
    -- supply proper values for optStartDate and optEndDate
    sourceConfig <- loadConfig confDir source
    setEnv "TZ" $ timeZone sourceConfig
-   fixedOptions <- setDates options
+   (newStartDate, newEndDate) <- setDates (confDir, source)
+      (optStartDate options) (optEndDate options)
+   let fixedOptions = options { optStartDate = newStartDate, optEndDate = newEndDate }
 
    printf "Downloading inspections between dates %s and %s\n"
       (show . fromJust . optStartDate $ fixedOptions)
