@@ -17,7 +17,7 @@ workDirParent=/data/ksnitch/download/$ksSource
 export TZ="America/New_York"
 
 
-workDir=${workDirParent}/${ksSource}_$(date +"%Y-%m-%d" --date='2 days ago')
+workDir=${workDirParent}/${ksSource}_$(date +"%Y-%m-%d")
 
 
 mkdir -p $workDir/{insp,succ,fail}
