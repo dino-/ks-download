@@ -61,7 +61,7 @@ usageText = (usageInfo header options) ++ "\n" ++ footer
       footer = init $ unlines
          [ "Looks up places in inspections_recent that are older the date above. Reports on whether or not Google is reporting that the place is permanently closed."
          , ""
-         , "Can optionally scrub these records from inspections_all and move the record from inspections_recent to establishments_closed"
+         , "The optional --delete switch above will move records for this establishment from inspections_all to inspections_archived and delete the record from inspections_recent"
          , ""
          , "Expects to find a ks-download.conf file at the CONFDIR specified."
          , "Logging is written to stdout."
