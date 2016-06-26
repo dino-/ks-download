@@ -138,9 +138,11 @@ isClosed locateConf doc = do
       placeLookupSucceeded r = do
          let s = r ^. responseBody
          case s of
-            PlaceOpen -> return False
+            PlaceOpen -> do
+               noticeM lname $ printf "OPEN:   %s" $ formatForLog doc
+               return False
             PlaceClosed -> do
-               noticeM lname $ printf "%s is CLOSED" $ formatForLog doc
+               noticeM lname $ printf "CLOSED: %s" $ formatForLog doc
                return True
             BadData -> do
                errorM lname "Got back unexpected JSON"
