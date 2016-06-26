@@ -4,15 +4,18 @@
 {-# LANGUAGE OverloadedStrings #-}
 
 module KS.Database.Mongo.Util
-   ( coll_inspections_all, coll_inspections_recent
-   , coll_stats_recent
+   ( coll_inspections_all, coll_inspections_archived
+   , coll_inspections_recent, coll_stats_recent
    )
    where
 
 import Database.MongoDB ( Collection )
 
 
-coll_inspections_all, coll_inspections_recent, coll_stats_recent :: Collection
-coll_inspections_all    = "inspections_all"
-coll_inspections_recent = "inspections_recent"
-coll_stats_recent       = "stats_recent"
+coll_inspections_all, coll_inspections_archived, coll_inspections_recent,
+   coll_stats_recent :: Collection
+
+coll_inspections_all       = "inspections_all"
+coll_inspections_archived  = "inspections_archived"
+coll_inspections_recent    = "inspections_recent"
+coll_stats_recent          = "stats_recent"

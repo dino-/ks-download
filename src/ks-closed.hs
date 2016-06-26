@@ -1,38 +1,43 @@
 -- License: BSD3 (see LICENSE)
 -- Author: Dino Morelli <dino@ui3.info>
 
-{-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE FlexibleContexts, OverloadedStrings #-}
 
---import Data.Aeson.Encode.Pretty hiding ( Config )
+import Control.Lens ( (^.), (&), (.~) )
+import Control.Monad ( filterM )
+import Control.Monad.Trans ( MonadIO )
+import Data.Aeson ( FromJSON, Value (Object), (.:), (.:?), (.!=), parseJSON )
 import Data.Bson.Generic ( fromBSON )
---import qualified Data.ByteString.Lazy.Char8 as BL
-import Data.Maybe ( fromJust, mapMaybe )
+import Data.Maybe ( mapMaybe )
+import qualified Data.Text as T
+import Data.Time ( getCurrentTimeZone )
 import Data.Version ( showVersion )
-import Database.MongoDB ( Host (..), Pipe, PortID (PortNumber),
-   (=:), access, auth, connect, find, rest, select, slaveOk, sort )
+import Database.Mongo.Util ( lastStatus )
+import Database.MongoDB ( Host (..), Pipe, PortID (PortNumber), (=:),
+   access, auth, connect, delete, deleteOne, find, insertMany_, rest,
+   select, slaveOk, sort )
+import Network.Wreq ( Response, asJSON, defaults, getWith, param, responseBody )
 import Paths_ks_download ( version )
-import System.Environment ( getArgs )
+import System.Environment ( getArgs, setEnv )
 import System.Exit ( exitFailure, exitSuccess )
---import System.FilePath
 import System.IO
    ( BufferMode ( NoBuffering )
    , hSetBuffering, stdout, stderr
    )
---import System.IO.Error
 import Text.Printf ( printf )
 
 import KS.Closed.Opts
 import KS.Data.Document ( Document (..) )
---import KS.Data.Inspection
+import KS.Data.Inspection ( date )
+import KS.Data.Place ( Place (name, place_id) )
 import qualified KS.Database.Mongo.Config as MC
-import KS.Database.Mongo.Util ( coll_inspections_recent )
-import KS.Locate.Config ( Config (logPriority), loadConfig )
+import KS.Database.Mongo.Util ( coll_inspections_all, coll_inspections_archived,
+   coll_inspections_recent )
+import KS.Locate.Config ( Config (googleApiKey, logPriority),
+   keyString, loadConfig )
 import KS.Locate.Locate
---import KS.Locate.Places.Geocoding ( forwardLookup )
---import KS.Locate.Places.Match ( Match, match )
---import KS.Locate.Places.Places ( coordsToPlaces )
---import qualified KS.SourceConfig as SC
 import KS.Log
+import KS.Util ( dayToDateInt, nDaysAgo, withRetry )
 
 
 main :: IO ()
@@ -40,18 +45,21 @@ main = do
    -- No buffering, it messes with the order of output
    mapM_ (flip hSetBuffering NoBuffering) [ stdout, stderr ]
 
+   -- Evaluate the command-line arguments
    (options, args) <- getArgs >>= parseOpts
    when (optHelp options) $ putStrLn usageText >> exitSuccess
    when (length args < 1) $ putStrLn usageText >> exitFailure
    let (confDir : _) = args
 
    -- Load the config file
-   config <- loadConfig confDir
+   locateConf <- loadConfig confDir
 
-   initLogging $ logPriority config
+   -- Start the log
+   initLogging $ logPriority locateConf
    noticeM lname $
       printf "ks-closed version %s started" (showVersion version)
    logStartMsg lname
+   noticeM lname line
 
    mongoConf <- MC.loadMongoConfig confDir
 
@@ -59,18 +67,28 @@ main = do
    pipe <- connect $ Host (MC.ip mongoConf)
       (PortNumber . fromIntegral . MC.port $ mongoConf)
 
-   -- Authenticate with mongo, show the auth state on stdout
+   -- Authenticate with mongo, log the auth state
    (access pipe slaveOk (MC.database mongoConf)
       $ auth (MC.username mongoConf) (MC.password mongoConf)) >>=
-      \tf -> putStrLn $ "Authenticated with Mongo: " ++ (show tf)
+      \tf -> noticeM lname $ "Authenticated with Mongo: " ++ (show tf)
 
-   -- FIXME fromJust
-   oldEsts <- getOldEstablishments mongoConf pipe (fromJust . optBeforeDate $ options)
-   mapM_ print $ take 10 oldEsts
-   print $ length oldEsts
+   -- Figure out the real date to work with for examining places
+   setEnv "TZ" "America/New_York"  -- FIXME This is really not cool to do
+   nineMonthsAgo <- dayToDateInt <$> (nDaysAgo 270 =<< getCurrentTimeZone)
+   let beforeDate = maybe nineMonthsAgo id $ optBeforeDate options
+   noticeM lname $ printf "Checking inspections on or before %d" beforeDate
 
-   --noticeM lname line
+   oldEsts <- getOldEstablishments mongoConf pipe beforeDate
+   --oldEsts <- reverse . take 50 . reverse <$> getOldEstablishments mongoConf pipe (fromJust . optBeforeDate $ options)
+   --oldEsts <- take 10 <$> getOldEstablishments mongoConf pipe beforeDate
+   noticeM lname $ printf "Number of old establishments found: %d" (length oldEsts)
+   closedEsts <- filterM (isClosed locateConf) oldEsts
+   noticeM lname $ printf "Number closed: %d" (length closedEsts)
+   if (optDelete options)
+      then mapM_ (archiveEstablishment mongoConf pipe) closedEsts
+      else noticeM lname $ "Database was NOT modified"
 
+   noticeM lname line
    logStopMsg lname
 
 
@@ -84,52 +102,92 @@ getOldEstablishments mongoConf pipe day =
          )
 
 
-{-
-lookupInspection :: Config -> Options -> FilePath -> FilePath -> IO ()
-lookupInspection config options confDir srcPath = do
-   r <- runKSDL (Env config SC.nullSourceConfig nullInspection) $ do
-      liftIO $ noticeM lname line
+data ClosedStatus = PlaceOpen | PlaceClosed | BadData
 
-      insp <- loadInspection' srcPath
-      sc <- liftIO $ SC.loadConfig confDir $ inspection_source insp
-      local (\r -> r { getSourceConfig = sc, getInspection = insp }) $ do
-         geo <- forwardLookup
-         places <- coordsToPlaces geo
-         match places
+instance FromJSON ClosedStatus where
+   parseJSON (Object o) = do
+      mbStatus <- o .:? "status"
+      closed <- case (mbStatus :: Maybe T.Text) of
+         -- Super-duper old ones appear to be NOT_FOUND, we believe. So closed, yes, True
+         Just "NOT_FOUND" -> return True
+         _ -> (o .: "result") >>= (\o' -> o' .:? "permanently_closed" .!= False)
+      if closed then return PlaceClosed else return PlaceOpen
+   parseJSON _ = return BadData
 
-   either (handleFailure) (outputDoc options srcPath . mkDoc) r
+
+isClosed :: Config -> Document -> IO Bool
+isClosed locateConf doc = do
+   let key = T.pack . keyString . googleApiKey $ locateConf
+   let placeID = place_id . place $ doc
+   let url = "https://maps.googleapis.com/maps/api/place/details/json"
+
+   let wopts = defaults & param "key" .~ [key] & param "placeid" .~ [placeID]
+
+   er <- withRetry 3 2 (getWith wopts url >>= asJSON) (warningM lname)
+
+   either placeLookupFailed placeLookupSucceeded er
 
    where
-      handleFailure (ErrMsg prio msg) = do
-         -- Copy to FAILDIR if we have one
-         maybe (return ()) (\failDir ->
-            copyFile srcPath $ failDir </> takeFileName srcPath)
-            $ optFailDir options
-
-         -- Delete the original if we've been instructed to do so
-         when (optDelete options) $ removeFile srcPath
-
-         -- Log what happened
-         logM lname prio msg
-
-      mkDoc :: Match -> Document
-      mkDoc (inspection', place') =
-         Document "inspection" inspection' place'
--}
+      placeLookupFailed :: String -> IO Bool
+      placeLookupFailed msg = do
+         errorM lname $ printf "ERROR: %s\n  Looking up %s" (msg :: String) (formatForLog doc)
+         return False
 
 
-{-
-outputDoc :: Options -> FilePath -> Document -> IO ()
-outputDoc options srcPath doc = do
-   r <- tryIOError $ case (optSuccessDir options) of
-      Just successDir -> saveDocument successDir doc
-      Nothing -> do
-         BL.putStrLn $ encodePretty doc
-         return ""
-   
-   case r of
-      Left ex -> print ex
-      Right destPath -> do
-         when (optDelete options) $ removeFile srcPath
-         printf "%s -> %s\n" srcPath destPath
--}
+      placeLookupSucceeded :: Response ClosedStatus -> IO Bool
+      placeLookupSucceeded r = do
+         let s = r ^. responseBody
+         case s of
+            PlaceOpen -> return False
+            PlaceClosed -> do
+               noticeM lname $ printf "%s is CLOSED" $ formatForLog doc
+               return True
+            BadData -> do
+               errorM lname "Got back unexpected JSON"
+               return False
+
+
+archiveEstablishment :: MC.MongoConfig -> Pipe -> Document -> IO Bool
+archiveEstablishment mongoConf pipe doc =
+   access pipe slaveOk (MC.database mongoConf) $ do
+      liftIO $ noticeM lname $ printf "%s\nEditing data for %s" line (formatForLog doc)
+
+      -- Find all in inspections_all with the target Places ID
+      ds <- rest =<< find (select
+         [ "place.place_id" =: (place_id . place $ doc) ]
+         coll_inspections_all)
+
+      -- Insert those records into inspections_archive
+      insertMany_ coll_inspections_archived ds
+      insertionStatus <- lastStatus
+
+      case insertionStatus of
+         Left msg -> do
+            liftIO $ criticalM lname $ printf "ERROR Something went wrong with the insertion, aborting without removing anything!\n%s" msg
+            return False
+         Right _ -> do
+            liftIO $ noticeM lname $ printf "Inspection documents successfully inserted into %s" $ T.unpack coll_inspections_archived
+
+            -- Remove from inspections_all with the target Places ID
+            delete (select
+               [ "place.place_id" =: (place_id . place $ doc) ]
+               coll_inspections_all)
+            lastStatus >>= displayStatus ("Removed documents from " ++ T.unpack coll_inspections_all)
+
+            -- Remove from inspections_recent with the target Places ID
+            deleteOne (select
+               [ "place.place_id" =: (place_id . place $ doc) ]
+               coll_inspections_recent)
+            lastStatus >>= displayStatus ("Removed document from " ++ T.unpack coll_inspections_recent)
+
+            return True
+
+
+formatForLog :: Document -> String
+formatForLog doc = printf "%s %d %s" (T.unpack . place_id . place $ doc)
+   (date . inspection $ doc) (T.unpack . name . place $ doc)
+
+
+displayStatus :: (MonadIO m) => String -> Either String String -> m ()
+displayStatus prefix e = either displayMsg displayMsg e
+   where displayMsg msg = liftIO $ noticeM lname $ printf "%s: %s" prefix msg

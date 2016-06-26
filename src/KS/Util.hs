@@ -2,10 +2,12 @@
 -- Author: Dino Morelli <dino@ui3.info>
 
 module KS.Util
-   ( withRetry
+   ( dateIntToDay
+   , dayToDateInt
+   , nDaysAgo
    , today
    , twoDaysAgo
-   , dateIntToDay
+   , withRetry
    )
    where
 
@@ -13,7 +15,8 @@ import Control.Concurrent ( threadDelay )
 import Control.Monad.Catch ( catchAll )
 import Data.Time ( Day, TimeZone,
          addDays, getCurrentTime, localDay, utcToLocalTime )
-import Data.Time.Calendar ( fromGregorian )
+import Data.Time.Calendar ( fromGregorian, toGregorian )
+import Text.Printf ( printf )
 
 
 withRetry :: Int -> Int -> IO a -> (String -> IO ()) -> IO (Either String a)
@@ -52,3 +55,8 @@ dateIntToDay dateInt = fromGregorian year month day
       year = read . take 4 $ dateStr
       month = read . take 2 . drop 4 $ dateStr
       day = read . drop 6 $ dateStr
+
+
+dayToDateInt :: Day -> Int
+dayToDateInt dayS = read $ printf "%4d%02d%02d" year month day
+   where (year, month, day) = toGregorian dayS
