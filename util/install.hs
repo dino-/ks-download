@@ -74,11 +74,9 @@ main = do
    unless (ok installExitCode) $ die "Can't continue because stack install failed"
 
    -- Copy additional scripts
-   {-
    putStrLn "Copying additional scripts"
    mapM_ (\f -> copyFile ("util" </> f) (binDir dirs </> f))
-      [ "script1.sh", "script2.hs" ]
-   -}
+      [ "ks-dl-nightly-cdp.sh", "ks-dl-nightly-dhd.sh" ]
 
    -- Copy the license
    putStrLn "\nCopying LICENSE"
