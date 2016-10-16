@@ -26,7 +26,7 @@ extra-source-files:
     README.md
     util/gentags.sh
     util/inspconv.coffee
-    util/install.sh
+    util/install.hs
     util/ks-dl-nightly-cdp.sh
     util/ks-dl-nightly-dhd.sh
     util/resources/geocode.json
