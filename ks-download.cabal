@@ -1,7 +1,7 @@
 name: ks-download
 version: 1.24
 cabal-version: >=1.10
-build-type: Custom
+build-type: Simple
 license: BSD3
 license-file: LICENSE
 copyright: 2014-2016 Dino Morelli
