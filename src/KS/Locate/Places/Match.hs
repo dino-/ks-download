@@ -96,12 +96,14 @@ isMatch iaddr pvic =
 
 
 {- We get these ridiculous addresses from Google Places where they've
-   clearly mistakenly put the zip code up front. They look like this:
+   clearly mistakenly put the zip code up front or list a building 
+   first. They look like this:
 
       "27603, 7900 Fayetteville Road, Raleigh"
+      "Wells Fargo Capital Center, 150 Fayetteville St, Raleigh"
 
-   This parser returns the address string with that zip code,
-   comma and space removed.
+   This parser returns the address string with this garbage removed, up 
+   to the street address number.
 -}
 removePrefixZip :: T.Text -> T.Text
 removePrefixZip =
@@ -113,5 +115,5 @@ removePrefixZip =
 
       prefixZip :: Parser T.Text
       prefixZip = do
-         try $ manyTill digit $ string ", "
+         try $ manyTill anyChar $ string ", "
          everythingElse
