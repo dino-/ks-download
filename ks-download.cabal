@@ -262,7 +262,7 @@ test-suite test-Locate
         exceptions,
         filepath,
         hslogger,
-        HUnit,
+        hspec,
         ks-library >=1.10,
         mtl,
         regex-compat,

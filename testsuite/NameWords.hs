@@ -7,8 +7,8 @@ module NameWords
    ( tests )
    where
 
-import Data.Text hiding ( map )
-import Test.HUnit
+import Data.Text hiding ( foldl, map )
+import Test.Hspec
 import Text.Printf ( printf )
 
 import KS.Data.Inspection
@@ -18,23 +18,24 @@ import KS.Locate.Places.NameWords ( toList )
 import qualified KS.SourceConfig as SC
 
 
-tests :: Test
-tests = TestList $ map testNameWords testData
+tests :: SpecWith ()
+tests = describe "NameWords" $ foldl (>>) (return ()) . map testNameWords $ testData
 
 
-testNameWords :: (Text, [Text]) -> Test
-testNameWords (input, output) = TestCase $ do
+testNameWords :: (Text, [Text]) -> SpecWith ()
+testNameWords (input, output) = do
    let confDir = "resources"
 
    -- Loading the default config template file, inspection and
    -- config for this inspection source
-   conf <- loadConfig confDir
+   conf <- runIO $ loadConfig confDir
    let insp = fakeInspection input
-   sourceConf <- SC.loadConfig confDir $ inspection_source insp
+   sourceConf <- runIO $ SC.loadConfig confDir $ inspection_source insp
 
-   actual <- runKSDL (Env conf sourceConf insp) toList
-   let label = printf "name words for \"%s\"" (unpack input)
-   assertEqual label (Right output) actual
+   actual <- runIO $ runKSDL (Env conf sourceConf insp) toList
+
+   it (printf "words extracted for \"%s\"" (unpack input)) $
+      (Right output) `shouldBe` actual
 
 
 testData :: [(Text, [Text])]
