@@ -117,13 +117,13 @@ mkPlacesUrl :: GeoLatLng -> KSDL String
 mkPlacesUrl (GeoLatLng lat' lng') = do
    key <- asks (keyString . googleApiKey . getConfig)
 
-   nameWords <- toList
+   nameList <- toList
    liftIO $ noticeM lname $ "Places name words list: "
-      ++ (show nameWords)
+      ++ (show nameList)
 
-   let nameList = urlEncode $ unpack $ intercalate " " $ nameWords
+   let nameWordsParam = urlEncode $ unpack $ intercalate " " $ nameList
 
    searchTypes <-
       L.intercalate "|" `fmap` asks (placesTypes . getSourceConfig)
 
-   return $ printf "https://maps.googleapis.com/maps/api/place/nearbysearch/json?key=%s&location=%f,%f&rankby=distance&name=%s&types=%s" key lat' lng' nameList searchTypes
+   return $ printf "https://maps.googleapis.com/maps/api/place/nearbysearch/json?key=%s&location=%f,%f&rankby=distance&keyword=%s&types=%s" key lat' lng' nameWordsParam searchTypes

@@ -35,25 +35,25 @@ testNameWords (input, output) = do
    actual <- runIO $ runKSDL (Env conf sourceConf insp) toList
 
    it (printf "words extracted for \"%s\"" (unpack input)) $
-      (Right output) `shouldBe` actual
+      actual `shouldBe` (Right output)
 
 
 testData :: [(Text, [Text])]
 testData =
-   [ ("Belle at The Jones House", ["belle"])
+   [ ("Belle at The Jones House", ["belle", "jones"])
    , ("BOJANGLES #15", ["bojangles"])
-   , ("Cafe Tiramisu/North Ridge Pub", ["tiramisu"])
-   , ("Flights Restaurant-Raleigh Renaissance", ["flights"])
+   , ("Cafe Tiramisu/North Ridge Pub", ["cafe", "tiramisu"])
+   , ("Flights Restaurant-Raleigh Renaissance", ["flights", "restaurant"])
    , ("INTER-FAITH FOOD SHUTTLE @ INTERACT", ["interact"])
-   , ("K&W CAFETERIA", ["k&w"])
-   , ("Kadhai-The Indian Wok", ["kadhai"])
-   , ("NC Farm Bureau Cafeteria", ["farm"])
-   , ("New Wangs Kitchen", ["wangs"])
+   , ("K&W CAFETERIA", ["k&w", "cafeteria"])
+   , ("Kadhai-The Indian Wok", ["kadhai", "indian"])
+   , ("NC Farm Bureau Cafeteria", ["nc", "farm"])
+   , ("New Wangs Kitchen", ["new", "wangs"])
    , ("Piccola Italia", ["piccola"])
-   , ("Quiznos Sub", ["quiznos"])
-   , ("R.J.`S PLACE", ["rjs"])
-   , ("SAMI'S SUBS, PIZZA & MORE", ["samis"])
-   , ("Tonys Bourbon Street Oyster Bar", ["tonys"])
+   , ("Quiznos Sub", ["quiznos", "sub"])
+   , ("R.J.`S PLACE", ["rjs", "place"])
+   , ("SAMI'S SUBS, PIZZA & MORE", ["samis", "subs"])
+   , ("Tonys Bourbon Street Oyster Bar", ["tonys", "bourbon"])
    ]
 
 
