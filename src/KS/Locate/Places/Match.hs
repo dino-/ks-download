@@ -14,8 +14,6 @@ import Data.Attoparsec.Text hiding ( match )
 import Data.Char ( isDigit )
 import Data.Maybe ( catMaybes )
 import qualified Data.Text as T
-import qualified Data.Text.Lazy as TL
-import qualified Data.Text.Format as TF
 import Prelude hiding ( takeWhile )
 import Test.Hspec
 
@@ -63,8 +61,8 @@ match ps = do
                isMatch (I.addr insp) (P.vicinity pl)
 
       fmtMatched :: MatchInternal -> Maybe String
-      fmtMatched (True , (_, pl)) = Just . T.unpack . TL.toStrict $
-         TF.format "{} | {}" ((P.name pl), (P.vicinity pl))
+      fmtMatched (True , (_, pl)) = Just . T.unpack . T.concat
+         $ [ P.name pl, T.pack " | ", P.vicinity pl ]
       fmtMatched (False, (_, _ )) = Nothing
 
       positiveMatch :: MatchInternal -> Maybe Match
