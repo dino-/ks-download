@@ -10,7 +10,7 @@ module KS.Locate.Places.Match
    )
    where
 
-import Data.Attoparsec.Text hiding ( count, match )
+import Data.Attoparsec.Text hiding ( match )
 import Data.Char ( isDigit )
 import Data.Maybe ( catMaybes )
 import qualified Data.Text as T
@@ -34,16 +34,16 @@ match :: [P.Place] -> KSDL Match
 match ps = do
    insp <- asks getInspection
    let mis = map (combine insp) ps
-   let count = (sum . map bToI $ mis) :: Int
+   let matchCount = length . filter fst $ mis
 
-   when (count == 0) $ do
+   when (matchCount == 0) $ do
       throwError $ ErrMsg ERROR "ERROR Match: No Places result matches"
 
    liftIO $ do
       noticeM lname "Matches:"
       mapM_ (noticeM lname) $ catMaybes $ map fmtMatched mis
 
-   when (count > 1) $ liftIO $ do
+   when (matchCount > 1) $ liftIO $ do
       warningM lname "WARNING Match: More than one Places result matched"
 
    return . head . catMaybes . map positiveMatch $ mis
@@ -61,10 +61,6 @@ match ps = do
          where
             (matched, newPvic) =
                isMatch (I.addr insp) (P.vicinity pl)
-
-      bToI :: MatchInternal -> Int
-      bToI (True,  (_, _)) = 1
-      bToI (False, (_, _)) = 0
 
       fmtMatched :: MatchInternal -> Maybe String
       fmtMatched (True , (_, pl)) = Just . T.unpack . TL.toStrict $
