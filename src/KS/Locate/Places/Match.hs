@@ -77,7 +77,7 @@ match ps = do
    gets us the rest of the way to disambiguate the hits.
 
    In addition to a True/False match status, we return the cleaned-up
-   address that was computed below with removePrefixZip. This is
+   address that was computed below with cleanAddress. This is
    so we can show our users the true address.
 -}
 isMatch :: T.Text -> T.Text -> (Bool, T.Text)
@@ -92,8 +92,6 @@ isMatch iaddr pvic =
       pNewPvic = prefix newPvic
       newPvic = cleanAddress pvic
       prefix = T.takeWhile isDigit
-
-
 
 
 {- We get these ridiculous addresses from Google Places where they've
