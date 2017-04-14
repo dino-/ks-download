@@ -10,13 +10,13 @@ module KS.Locate.Places.NameWords
 
 import qualified Data.List as L
 import qualified Data.Map as Map
-import           Data.Text
-import           Prelude hiding ( filter, map )
+import Data.Text ( Text, filter, isPrefixOf, map, split, strip, toLower )
+import Prelude hiding ( filter, map )
 
-import           KS.Data.Inspection
-import           KS.Locate.Locate
-import           KS.SourceConfig ( SourceConfig
-                  (namewordsSpecialCases, namewordsStopwords) )
+import KS.Data.Inspection ( Inspection (name) )
+import KS.Locate.Locate ( KSDL, asks, getInspection, getSourceConfig )
+import KS.SourceConfig
+   ( SourceConfig (namewordsSpecialCases, namewordsStopwords) )
 
 
 toList :: KSDL [Text]
