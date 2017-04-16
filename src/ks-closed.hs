@@ -3,6 +3,7 @@
 
 {-# LANGUAGE FlexibleContexts, OverloadedStrings #-}
 
+import Control.Concurrent ( threadDelay )
 import Control.Lens ( (^.), (&), (.~) )
 import Control.Monad ( filterM )
 import Control.Monad.Trans ( MonadIO )
@@ -124,6 +125,9 @@ isClosed locateConf doc = do
    let wopts = defaults & param "key" .~ [key] & param "placeid" .~ [placeID]
 
    er <- withRetry 3 2 (getWith wopts url >>= asJSON) (warningM lname)
+
+   -- Slow down hits to Google
+   threadDelay 250000  -- 0.25s
 
    either placeLookupFailed placeLookupSucceeded er
 
