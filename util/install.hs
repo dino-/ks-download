@@ -77,7 +77,9 @@ main = do
    -- Copy additional scripts
    putStrLn "Copying additional scripts"
    mapM_ (\f -> copyFile ("util" </> f) (binDir dirs </> f))
-      [ "ks-dl-nightly-cdp.sh", "ks-dl-nightly-dhd.sh" ]
+      [ "ks-dl-nightly-cdp.sh"
+      , "ks-dl-nightly-dhd.sh"
+      ]
 
    -- Copy the license
    putStrLn "\nCopying LICENSE"
