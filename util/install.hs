@@ -79,6 +79,7 @@ main = do
    mapM_ (\f -> copyFile ("util" </> f) (binDir dirs </> f))
       [ "ks-dl-nightly-cdp.sh"
       , "ks-dl-nightly-dhd.sh"
+      , "ks-dl-report.sh"
       ]
 
    -- Copy the license
