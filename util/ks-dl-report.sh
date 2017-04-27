@@ -26,8 +26,9 @@ function report {
    echo "$rate% match success rate. $succeeded succeeded, $failed failed."
 
    echo
-   echo "Matches:"
-   grep -- '->' ks-locate.log
+   echo "Matches (inspection name -> Places name):"
+   echo
+   grep -- '->' ks-locate.log | sed 's/\.json//g' | sed -r 's/.*_([^_]+ -> .*)/\1/' | sed -r 's/(.*-> ).*_([^_]+)$/\1\2/'
 }
 
 
