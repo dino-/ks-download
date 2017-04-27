@@ -1,7 +1,10 @@
 #! /bin/bash
 
 # To send output via email:
-#   ks-dl-report.sh | mail -s SUBJECT ADDRESS1,ADDRESS2,...
+#   ks-dl-report.sh | sed 's/^/  /' | mail -s "ks report $(date +'%Y-%m-%d')" ADDRESS1,ADDRESS2,...
+#
+# Sample for crontab (note the escaped %s!)
+#   45 11 * * *  /opt/ksnitch/ks-download/bin/ks-dl-report.sh | sed 's/^/  /' | mail -s "ks report $(date +'\%Y-\%m-\%d')" ADDRESS1,ADDRESS2,...
 
 
 export TZ="America/New_York"
