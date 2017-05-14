@@ -1,5 +1,5 @@
 name: ks-download
-version: 1.25
+version: 1.26
 cabal-version: >=1.10
 build-type: Simple
 license: BSD3
