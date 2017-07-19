@@ -1,7 +1,7 @@
 -- License: BSD3 (see LICENSE)
 -- Author: Dino Morelli <dino@ui3.info>
 
-module KS.Closed.Opts
+module KS.Clean.Opts
    ( Options (..)
    , parseOpts, usageText
    )
@@ -53,7 +53,7 @@ usageText :: String
 usageText = (usageInfo header options) ++ "\n" ++ footer
    where
       header = init $ unlines
-         [ "Usage: ks-closed [OPTIONS] CONFDIR"
+         [ "Usage: ks-clean [OPTIONS] CONFDIR"
          , "Report on and possibly delete closed establishments"
          , ""
          , "Options:"

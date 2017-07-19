@@ -27,7 +27,7 @@ import System.IO
    )
 import Text.Printf ( printf )
 
-import KS.Closed.Opts
+import KS.Clean.Opts
 import KS.Data.Document ( Document (..) )
 import KS.Data.Inspection ( date )
 import KS.Data.Place ( Place (name, place_id) )
@@ -58,7 +58,7 @@ main = do
    -- Start the log
    initLogging $ logPriority locateConf
    noticeM lname $
-      printf "ks-closed version %s started" (showVersion version)
+      printf "ks-clean version %s started" (showVersion version)
    logStartMsg lname
    noticeM lname line
 
