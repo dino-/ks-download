@@ -228,6 +228,7 @@ executable ks-clean
         mtl,
         old-locale,
         regex-compat,
+        string-conv,
         tce-conf,
         text,
         time,

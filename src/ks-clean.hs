@@ -10,7 +10,8 @@ import Control.Monad.Trans ( MonadIO )
 import Data.Aeson ( FromJSON, Value (Object), (.:), (.:?), (.!=), parseJSON )
 import Data.Bson.Generic ( fromBSON )
 import Data.Maybe ( mapMaybe )
-import qualified Data.Text as T
+import Data.String.Conv ( toS )
+import Data.Text ( Text )
 import Data.Time ( getCurrentTimeZone )
 import Data.Version ( showVersion )
 import Database.Mongo.Util ( lastStatus )
@@ -108,7 +109,7 @@ data ClosedStatus = PlaceOpen | PlaceClosed | BadData
 instance FromJSON ClosedStatus where
    parseJSON (Object o) = do
       mbStatus <- o .:? "status"
-      closed <- case (mbStatus :: Maybe T.Text) of
+      closed <- case (mbStatus :: Maybe Text) of
          -- Super-duper old ones appear to be NOT_FOUND, we believe. So closed, yes, True
          Just "NOT_FOUND" -> return True
          _ -> (o .: "result") >>= (\o' -> o' .:? "permanently_closed" .!= False)
@@ -118,7 +119,7 @@ instance FromJSON ClosedStatus where
 
 isClosed :: Config -> Document -> IO Bool
 isClosed locateConf doc = do
-   let key = T.pack . keyString . googleApiKey $ locateConf
+   let key = toS . keyString . googleApiKey $ locateConf
    let placeID = place_id . place $ doc
    let url = "https://maps.googleapis.com/maps/api/place/details/json"
 
@@ -172,26 +173,26 @@ archiveEstablishment mongoConf pipe doc =
             liftIO $ criticalM lname $ printf "ERROR Something went wrong with the insertion, aborting without removing anything!\n%s" msg
             return False
          Right _ -> do
-            liftIO $ noticeM lname $ printf "Inspection documents successfully inserted into %s" $ T.unpack coll_inspections_archived
+            liftIO $ noticeM lname $ printf "Inspection documents successfully inserted into %s" (toS coll_inspections_archived :: String)
 
             -- Remove from inspections_all with the target Places ID
             delete (select
                [ "place.place_id" =: (place_id . place $ doc) ]
                coll_inspections_all)
-            lastStatus >>= displayStatus ("Removed documents from " ++ T.unpack coll_inspections_all)
+            lastStatus >>= displayStatus ("Removed documents from " ++ (toS coll_inspections_all :: String))
 
             -- Remove from inspections_recent with the target Places ID
             deleteOne (select
                [ "place.place_id" =: (place_id . place $ doc) ]
                coll_inspections_recent)
-            lastStatus >>= displayStatus ("Removed document from " ++ T.unpack coll_inspections_recent)
+            lastStatus >>= displayStatus ("Removed document from " ++ (toS coll_inspections_recent :: String))
 
             return True
 
 
 formatForLog :: Document -> String
-formatForLog doc = printf "%s %d %s" (T.unpack . place_id . place $ doc)
-   (date . inspection $ doc) (T.unpack . name . place $ doc)
+formatForLog doc = printf "%s %d %s" ((toS . place_id . place $ doc) :: String)
+   (date . inspection $ doc) ((toS . name . place $ doc) :: String)
 
 
 displayStatus :: (MonadIO m) => String -> Either String String -> m ()
