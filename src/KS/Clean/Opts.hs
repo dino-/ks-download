@@ -14,14 +14,14 @@ import System.Console.GetOpt
 
 data Options = Options
    { optBeforeDate :: Maybe Int
-   , optDelete :: Bool
+   , optArchive :: Bool
    , optHelp :: Bool
    }
 
 defaultOptions :: Options
 defaultOptions = Options
    { optBeforeDate = Nothing
-   , optDelete = False
+   , optArchive = False
    , optHelp = False
    }
 
@@ -31,9 +31,9 @@ options =
    [ Option ['b'] ["before-date"]
       (ReqArg (\s opts -> opts { optBeforeDate = Just . read $ s } ) "YYYYMMDD")
       "Check on places that were inspection on or before this data. Default: 9 months ago"
-   , Option []    ["delete"]
-      (NoArg (\opts -> opts { optDelete = True } ))
-      "Perfom the deletions/move from the inspections_* collections. Default: false, just show what would be done."
+   , Option []    ["archive"]
+      (NoArg (\opts -> opts { optArchive = True } ))
+      "Archive closed places. See ARCHIVING below. Default: false, just show what would be done."
    , Option ['h'] ["help"]
       (NoArg (\opts -> opts { optHelp = True } ))
       "This help text"
@@ -61,10 +61,18 @@ usageText = (usageInfo header options) ++ "\n" ++ footer
       footer = init $ unlines
          [ "Looks up places in inspections_recent that are older the date above. Reports on whether or not Google is reporting that the place is permanently closed."
          , ""
-         , "The optional --delete switch above will move records for this establishment from inspections_all to inspections_archived and delete the record from inspections_recent"
-         , ""
          , "Expects to find a ks-download.conf file at the CONFDIR specified."
          , "Logging is written to stdout."
+         , ""
+         , "ARCHIVING"
+         , ""
+         , "Archiving (--archive switch) means, for each Places ID of a closed establishment, this will be done:"
+         , ""
+         , "  - All inspections for that Places ID will be inserted into the inspections_archived collection"
+         , "  - All inspections for that Places ID will be deleted from the inspections_all collection"
+         , "  - The one inspection for that Places ID will be deleted from the inspections_recent collection"
+         , ""
+         , "A place is determined to be closed by looking it up via the Google Places API."
          , ""
          , "Version " ++ (showVersion version) ++ "  Dino Morelli <dino@ui3.info>"
          ]

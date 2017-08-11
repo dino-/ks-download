@@ -86,7 +86,7 @@ main = do
    noticeM lname $ printf "Number of old establishments found: %d" (length oldEsts)
    closedEsts <- filterM (isClosed locateConf) oldEsts
    noticeM lname $ printf "Number closed: %d" (length closedEsts)
-   if (optDelete options)
+   if (optArchive options)
       then mapM_ (archiveEstablishment mongoConf pipe) closedEsts
       else noticeM lname $ "Database was NOT modified"
 
