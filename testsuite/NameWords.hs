@@ -48,7 +48,6 @@ testData =
    , ("K&W CAFETERIA", ["k&w", "cafeteria"])
    , ("Kadhai-The Indian Wok", ["kadhai", "indian"])
    , ("NC Farm Bureau Cafeteria", ["nc", "farm"])
-   , ("New Wangs Kitchen", ["new", "wangs"])
    , ("Piccola Italia", ["piccola"])
    , ("Quiznos Sub", ["quiznos", "sub"])
    , ("R.J.`S PLACE", ["rjs", "place"])
