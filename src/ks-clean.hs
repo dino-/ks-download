@@ -19,16 +19,16 @@ import Database.MongoDB ( Host (..), Pipe, PortID (PortNumber), (=:),
    access, auth, connect, delete, deleteOne, find, insertMany_, rest,
    select, slaveOk, sort )
 import Network.Wreq ( Response, asJSON, defaults, getWith, param, responseBody )
+import Options.Applicative ( execParser )
 import Paths_ks_download ( version )
-import System.Environment ( getArgs, setEnv )
-import System.Exit ( exitFailure, exitSuccess )
+import System.Environment ( setEnv )
 import System.IO
    ( BufferMode ( NoBuffering )
    , hSetBuffering, stdout, stderr
    )
 import Text.Printf ( printf )
 
-import KS.Clean.Opts
+import KS.Clean.OptsOld ( Options (optArchive, optBeforeDate, optConfDir), optsOld )
 import KS.Data.Document ( Document (..) )
 import KS.Data.Inspection ( date )
 import KS.Data.Place ( Place (name, place_id) )
@@ -47,14 +47,10 @@ main = do
    -- No buffering, it messes with the order of output
    mapM_ (flip hSetBuffering NoBuffering) [ stdout, stderr ]
 
-   -- Evaluate the command-line arguments
-   (options, args) <- getArgs >>= parseOpts
-   when (optHelp options) $ putStrLn usageText >> exitSuccess
-   when (length args < 1) $ putStrLn usageText >> exitFailure
-   let (confDir : _) = args
+   options <- execParser optsOld
 
    -- Load the config file
-   locateConf <- loadConfig confDir
+   locateConf <- loadConfig . optConfDir $ options
 
    -- Start the log
    initLogging $ logPriority locateConf
@@ -63,7 +59,7 @@ main = do
    logStartMsg lname
    noticeM lname line
 
-   mongoConf <- MC.loadMongoConfig confDir
+   mongoConf <- MC.loadMongoConfig . optConfDir $ options
 
    -- Get a connection to Mongo, they call it a 'pipe'
    pipe <- connect $ Host (MC.ip mongoConf)
