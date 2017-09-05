@@ -10,7 +10,7 @@ module KS.Clean.OptsOld
 import Data.Version ( showVersion )
 import Options.Applicative ( Parser, ParserInfo, (<>), (<**>), argument,
    auto, footerDoc, fullDesc, header, help, helper, info, long, metavar,
-   option, optional, showDefault, short, str, switch )
+   option, optional, short, str, switch )
 import Options.Applicative.Builder ( InfoMod )
 import Paths_ks_download ( version )
 import Text.PrettyPrint.ANSI.Leijen ( string )
@@ -25,19 +25,25 @@ data Options = Options
 
 
 oldParser :: Parser Options
-oldParser = Options
-   <$> optional (option auto
-       ( long "before-date"
-      <> short 'b'
-      <> help "Check places inspected on or before this date. Default: 9 months ago"
-      <> metavar "YYYYMMDD" ))
-   <*> switch
-       ( long "archive"
-      <> help "Archive closed places. See ARCHIVING below."
-      <> showDefault )
-   <*> argument str
-       ( metavar "CONFDIR"
-      <> help "Directory containing ks-download.conf file" )
+oldParser = Options <$> parseBeforeDate <*> parseArchive <*> parseConfDir
+
+
+parseBeforeDate :: Parser (Maybe Int)
+parseBeforeDate = optional . option auto $
+   short 'b' <> long "before-date" <> metavar "YYYYMMDD" <>
+   help "Check places inspected on or before this date. Default: 9 months ago"
+
+
+parseArchive :: Parser Bool
+parseArchive = switch $
+   long "archive" <>
+   help "Archive closed places. See ARCHIVING below."
+
+
+parseConfDir :: Parser FilePath
+parseConfDir = argument str $
+   metavar "CONFDIR" <>
+   help "Directory containing ks-download.conf file"
 
 
 optsOld :: ParserInfo Options
