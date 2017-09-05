@@ -19,7 +19,6 @@ import Database.MongoDB ( Host (..), Pipe, PortID (PortNumber), (=:),
    access, auth, connect, delete, deleteOne, find, insertMany_, rest,
    select, slaveOk, sort )
 import Network.Wreq ( Response, asJSON, defaults, getWith, param, responseBody )
-import Options.Applicative ( execParser )
 import Paths_ks_download ( version )
 import System.Environment ( setEnv )
 import System.IO
@@ -28,7 +27,7 @@ import System.IO
    )
 import Text.Printf ( printf )
 
-import KS.Clean.OptsOld ( Options (optArchive, optBeforeDate, optConfDir), optsOld )
+import KS.Clean.Opts ( Options (optArchive, optBeforeDate, optConfDir), parseOpts )
 import KS.Data.Document ( Document (..) )
 import KS.Data.Inspection ( date )
 import KS.Data.Place ( Place (name, place_id) )
@@ -47,7 +46,7 @@ main = do
    -- No buffering, it messes with the order of output
    mapM_ (flip hSetBuffering NoBuffering) [ stdout, stderr ]
 
-   options <- execParser optsOld
+   options <- parseOpts
 
    -- Load the config file
    locateConf <- loadConfig . optConfDir $ options

@@ -1,16 +1,16 @@
 -- License: BSD3 (see LICENSE)
 -- Author: Dino Morelli <dino@ui3.info>
 
-module KS.Clean.OptsOld
+module KS.Clean.Opts
    ( Options (..)
-   , optsOld
+   , parseOpts
    )
    where
 
 import Data.Version ( showVersion )
-import Options.Applicative ( Parser, ParserInfo, (<>), (<**>), argument,
-   auto, footerDoc, fullDesc, header, help, helper, info, long, metavar,
-   option, optional, short, str, switch )
+import Options.Applicative ( Parser, (<>), (<**>), argument, auto,
+   execParser, footerDoc, fullDesc, header, help, helper, info, long,
+   metavar, option, optional, short, str, switch )
 import Options.Applicative.Builder ( InfoMod )
 import Paths_ks_download ( version )
 import Text.PrettyPrint.ANSI.Leijen ( string )
@@ -46,8 +46,7 @@ parseConfDir = argument str $
    help "Directory containing ks-download.conf file"
 
 
-optsOld :: ParserInfo Options
-optsOld = info (oldParser <**> helper) $
+parseOpts = execParser $ info (oldParser <**> helper) $
       header "ks-clean - Tool for cleaning the Kitchen Snitch data"
    <> fullDesc
    <> usageText
