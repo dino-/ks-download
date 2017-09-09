@@ -58,7 +58,7 @@ parseOpts = execParser $ parseCommand `withInfo`
    where
       parseCommand = subparser $
          command "closed" (parseClosed `withInfo`
-            "Process new feedback on closed places" $ footerString commonFooter) <>
+            "Process new feedback on closed places" $ footerString usageClosed) <>
          command "old" (parseOld `withInfo`
             "Batch check old inspections against Places" $ footerString usageOld)
 
@@ -71,6 +71,13 @@ withInfo opts desc usage = info (helper <*> opts) $ progDesc desc <> fullDesc <>
 -- Helper function to construct usage strings
 footerString :: [String] -> InfoMod a
 footerString = footerDoc . Just . string . init . unlines
+
+
+usageClosed :: [String]
+usageClosed =
+   [ "Go through New, Closed Feedback records, checking them for actual closure"
+   , ""
+   ] ++ usageArchiving ++ commonFooter
 
 
 usageOld :: [String]

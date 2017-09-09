@@ -6,8 +6,9 @@ import System.IO
    , hSetBuffering, stdout, stderr
    )
 
+import qualified KS.Clean.Closed.Command as Closed
 import qualified KS.Clean.Old.Command as Old
-import KS.Clean.Options ( Options (Old), parseOpts )
+import KS.Clean.Options ( Options (Closed, Old), parseOpts )
 
 
 main :: IO ()
@@ -17,6 +18,5 @@ main = do
 
    command <- parseOpts
    case command of
-      --Closed closedOpts -> Closed.run closedOpts
+      Closed closedOpts -> Closed.run closedOpts
       Old oldOpts -> Old.run oldOpts
-      _ -> undefined
