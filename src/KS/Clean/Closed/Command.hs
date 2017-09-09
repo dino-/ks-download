@@ -10,9 +10,11 @@ module KS.Clean.Closed.Command
 
 import Control.Arrow ( (***) )
 import Control.Lens ( (^.), (&), (.~) )
-import Control.Monad.Reader
-import Control.Monad.Trans ( MonadIO )
-import Data.Aeson ( FromJSON, Value (Object), (.:), (.:?), (.!=), parseJSON )
+import Control.Monad ( when )
+import Control.Monad.Reader ( ReaderT, runReaderT, asks )
+import Control.Monad.Trans ( MonadIO, liftIO )
+import Data.Aeson ( FromJSON, Value (Object), (.:), (.:?), (.!=),
+   parseJSON )
 import qualified Data.Bson as Bson
 import Data.Bson.Generic ( fromBSON, toBSON )
 import Data.Maybe ( fromJust, isJust, listToMaybe, mapMaybe )
@@ -20,30 +22,29 @@ import Data.String.Conv ( toS )
 import Data.Text ( Text )
 import Data.Version ( showVersion )
 import Database.Mongo.Util ( lastStatus )
-import Database.MongoDB hiding ( Document, isClosed, options ) -- FIXME
-{-
-import Database.MongoDB ( Pipe, (=:), access, count, delete, deleteOne, find,
-   findAndModify, insertMany_, rest, select, slaveOk, sort )
--}
+import Database.MongoDB ( Pipe, (=:), access, count, delete,
+   deleteOne, find, findAndModify, insertMany_, rest, select, slaveOk,
+   sort )
 import KS.Data.BSON ( combineId, separateId )
-import Network.Wreq ( Response, asJSON, defaults, getWith, param, responseBody )
+import Network.Wreq ( Response, asJSON, defaults, getWith, param,
+   responseBody )
 import Paths_ks_download ( version )
 import Text.Printf ( printf )
 
-import KS.Clean.Closed.Options
+import KS.Clean.Closed.Options ( ClosedOptions (optArchive, optConfDir) )
 import KS.Data.Document ( Document (..) )
 import qualified KS.Data.Feedback as F
 import KS.Data.Inspection ( date )
 import KS.Data.Place ( Place (name, place_id) )
-import KS.Database.Mongo.Util ( coll_feedback, coll_inspections_all, coll_inspections_archived,
-   coll_inspections_recent, mongoConnect )
+import KS.Database.Mongo.Util ( coll_feedback, coll_inspections_all,
+   coll_inspections_archived, coll_inspections_recent, mongoConnect )
 import KS.Locate.Config ( Config (googleApiKey, logPriority),
    keyString, loadConfig )
-import KS.Log
+import KS.Log ( criticalM, errorM, initLogging, line, lname,
+   logStartMsg, logStopMsg, noticeM, warningM )
 import KS.Util ( withRetry )
 
 
-{-
 data AppConfig = AppConfig
    { acPipe :: Pipe
    , acDatabase :: Text
@@ -53,9 +54,8 @@ data AppConfig = AppConfig
 
 type ClosedApp = ReaderT AppConfig IO
 
-runClosedApp :: AppConfig -> ClosedApp a -> IO (Either String a)
-runClosedApp conf act = runReaderT act conf
--}
+runClosedApp :: AppConfig -> ClosedApp a -> IO a
+runClosedApp env act = runReaderT act env
 
 
 run :: ClosedOptions -> IO ()
@@ -68,21 +68,22 @@ run options = do
    noticeM lname $
       printf "ks-clean version %s started, command: closed" (showVersion version)
    logStartMsg lname
-   --noticeM lname line
 
-   conn <- mongoConnect . optConfDir $ options
-
-   idFPairS <- getNewClosedFeedback conn
-   --mapM_ (resolveFeedback conn options locateConf) $ take 1 idFPairS
-   mapM_ (resolveFeedback conn options locateConf) idFPairS
+   (pipe, database) <- mongoConnect . optConfDir $ options
+   runClosedApp (AppConfig pipe database options locateConf) $ do
+      idFPairS <- getNewClosedFeedback
+      --mapM_ resolveFeedback $ take 1 idFPairS
+      mapM_ resolveFeedback idFPairS
 
    noticeM lname line
    logStopMsg lname
 
 
-getNewClosedFeedback :: (Pipe, Text) -> IO [(Bson.Document, F.Feedback)]
-getNewClosedFeedback (pipe, database) =
-   access pipe slaveOk database $ do
+getNewClosedFeedback :: ClosedApp [(Bson.Document, F.Feedback)]
+getNewClosedFeedback = do
+   pipe <- asks acPipe
+   database <- asks acDatabase
+   liftIO $ access pipe slaveOk database $ do
       wholeDocs <- (rest =<< find (select
          (toBSON F.New ++ toBSON F.Closed)
          coll_feedback)
@@ -91,37 +92,41 @@ getNewClosedFeedback (pipe, database) =
       return $ map ((id *** (fromJust . fromBSON)) . separateId) wholeDocs
 
 
-resolveFeedback :: (Pipe, Text) -> ClosedOptions -> Config -> (Bson.Document, F.Feedback) -> IO ()
-resolveFeedback (pipe, database) options locateConf (idDoc, fb) = do
-   noticeM lname line
-   noticeM lname "Checking feedback record:"
-   noticeM lname . show $ fb
+resolveFeedback :: (Bson.Document, F.Feedback) -> ClosedApp ()
+resolveFeedback (idDoc, fb) = do
+   liftIO $ do
+      noticeM lname line
+      noticeM lname "Checking feedback record:"
+      noticeM lname . show $ fb
 
+   options <- asks acOptions
    let mpid = F.place_id fb
    newStatus <- case mpid of
       Nothing -> do
-         warningM lname "This Closed feedback record has NO PLACES ID, this is BAD DATA"
-         warningM lname "It will be marked as Resolved, but something wrong happened somewhere"
+         liftIO $ warningM lname "This Closed feedback record has NO PLACES ID, this is BAD DATA"
+         liftIO $ warningM lname "It will be marked as Resolved, but something wrong happened somewhere"
          return F.Resolved
       Just placeId -> do
-         mdoc <- retrievePlace (pipe, database) placeId
+         mdoc <- retrievePlace placeId
          case mdoc of
             Just doc -> do
-               isClosed' <- isClosed locateConf doc
+               isClosed' <- isClosed doc
                if isClosed'
                   then if (optArchive options)
                      then do
-                        _ <- archiveEstablishment (pipe, database) doc
+                        _ <- archiveEstablishment doc
                         return ()
-                     else noticeM lname $ "Inspection record was NOT modified"
-                  else warningM lname "Place is not closed, bad feedback"
+                     else liftIO $ noticeM lname $ "Inspection record was NOT modified"
+                  else liftIO $ warningM lname "Place is not closed, bad feedback"
                return F.Resolved
             Nothing -> do
-               noticeM lname "Place is not in our database, duplicate feedback"
+               liftIO $ noticeM lname "Place is not in our database, duplicate feedback"
                return F.Duplicate
 
    -- Set feedback status to Resolved/Duplicate
-   if optArchive options
+   pipe <- asks acPipe
+   database <- asks acDatabase
+   liftIO $ if optArchive options
       then do
          result <- access pipe slaveOk database $ findAndModify (select idDoc coll_feedback)
             (combineId (idDoc, toBSON (fb { F.status = newStatus })))
@@ -132,16 +137,18 @@ resolveFeedback (pipe, database) options locateConf (idDoc, fb) = do
          noticeM lname $ printf "Archive was not was specified in the args, no change to the Feedback record"
 
 
-retrievePlace :: (Pipe, Text) -> Text -> IO (Maybe Document)
-retrievePlace (pipe, database) placeId = do
-   (countAll, mdoc) <- access pipe slaveOk database $ do
+retrievePlace :: Text -> ClosedApp (Maybe Document)
+retrievePlace placeId = do
+   pipe <- asks acPipe
+   database <- asks acDatabase
+   (countAll, mdoc) <- liftIO $ access pipe slaveOk database $ do
       let query = [ "place.place_id" =: placeId ]
       (,) <$> (count (select query coll_inspections_all))
          <*> (listToMaybe . mapMaybe fromBSON <$>
             (rest =<< find (select query coll_inspections_recent)))
 
    when ((isJust mdoc) && (countAll < 1)) $ do
-      warningM lname $ printf "Record exists in recent but none in all for:\n%s\n" (formatForLog (fromJust mdoc))
+      liftIO $ warningM lname $ printf "Record exists in recent but none in all for:\n%s\n" (formatForLog (fromJust mdoc))
    return mdoc
 
 
@@ -158,20 +165,17 @@ instance FromJSON ClosedStatus where
    parseJSON _ = return BadData
 
 
-isClosed :: Config -> Document -> IO Bool
-isClosed locateConf doc = do
-   let key = toS . keyString . googleApiKey $ locateConf
+isClosed :: Document -> ClosedApp Bool
+isClosed doc = do
+   key <- asks $ toS . keyString . googleApiKey . acLocateConf
    let placeID = place_id . place $ doc
    let url = "https://maps.googleapis.com/maps/api/place/details/json"
 
    let wopts = defaults & param "key" .~ [key] & param "placeid" .~ [placeID]
 
-   er <- withRetry 3 2 (getWith wopts url >>= asJSON) (warningM lname)
+   er <- liftIO $ withRetry 3 2 (getWith wopts url >>= asJSON) (warningM lname)
 
-   -- Slow down hits to Google
-   --threadDelay 250000  -- 0.25s
-
-   either placeLookupFailed placeLookupSucceeded er
+   liftIO $ either placeLookupFailed placeLookupSucceeded er
 
    where
       placeLookupFailed :: String -> IO Bool
@@ -195,9 +199,11 @@ isClosed locateConf doc = do
                return False
 
 
-archiveEstablishment :: (Pipe, Text) -> Document -> IO Bool
-archiveEstablishment (pipe, database) doc =
-   access pipe slaveOk database $ do
+archiveEstablishment :: Document -> ClosedApp Bool
+archiveEstablishment doc = do
+   pipe <- asks acPipe
+   database <- asks acDatabase
+   liftIO $ access pipe slaveOk database $ do
       liftIO $ noticeM lname $ printf "%s\nEditing data for %s" line (formatForLog doc)
 
       -- Find all in inspections_all with the target Places ID
