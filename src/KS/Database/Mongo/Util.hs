@@ -16,7 +16,6 @@ import Database.MongoDB ( Collection, Host (..), Pipe,
    PortID (PortNumber), access, auth, connect, slaveOk )
 
 import qualified KS.Database.Mongo.Config as MC
-import KS.Log ( lname, noticeM )
 
 
 coll_feedback, coll_inspections_all, coll_inspections_archived,
@@ -29,8 +28,8 @@ coll_inspections_recent    = "inspections_recent"
 coll_stats_recent          = "stats_recent"
 
 
-mongoConnect :: FilePath -> IO (Pipe, Text)
-mongoConnect confDir = do
+mongoConnect :: (String -> IO ()) -> FilePath -> IO (Pipe, Text)
+mongoConnect logF confDir = do
    mongoConf <- MC.loadMongoConfig confDir
 
    -- Get a connection to Mongo, they call it a 'pipe'
@@ -40,6 +39,6 @@ mongoConnect confDir = do
    -- Authenticate with mongo, log the auth state
    (access pipe slaveOk (MC.database mongoConf)
       $ auth (MC.username mongoConf) (MC.password mongoConf)) >>=
-      \tf -> noticeM lname $ "Authenticated with Mongo: " ++ (show tf)
+      \tf -> logF $ "Authenticated with Mongo: " ++ (show tf)
 
    return (pipe, MC.database mongoConf)

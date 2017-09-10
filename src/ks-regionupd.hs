@@ -30,9 +30,8 @@ import System.IO
 import Text.Printf ( printf )
 import Text.Regex ( matchRegex, mkRegex )
 
-import qualified KS.Database.Mongo.Config as MC
 import KS.Database.Mongo.Util
-   ( coll_inspections_recent, coll_stats_recent )
+   ( coll_inspections_recent, coll_stats_recent, mongoConnect )
 import KS.Log
 import KS.RegionUpd.Opts
 import KS.SourceConfig
@@ -55,17 +54,9 @@ main = do
       printf "ks-regionupd version %s started" (showVersion version)
    logStartMsg lname
 
-   mongoConf <- MC.loadMongoConfig confDir
+   conn@(pipe, _) <- mongoConnect (noticeM lname) confDir
 
-   -- Get a connection to Mongo, they call it a 'pipe'
-   pipe <- connect $ Host (MC.ip mongoConf)
-      (PortNumber . fromIntegral . MC.port $ mongoConf)
-
-   -- Authenticate with mongo, show the auth state on stdout
-   (access pipe slaveOk (MC.database mongoConf)
-      $ auth (MC.username mongoConf) (MC.password mongoConf)) >>=
-      \tf -> noticeM lname $ "Authenticated with Mongo: " ++ (show tf)
-   result <- updateRegions confDir mongoConf pipe
+   result <- updateRegions confDir conn
 
    close pipe
 
@@ -74,10 +65,10 @@ main = do
    exitWith . toExitCode $ result
 
 
-updateRegions :: FilePath -> MC.MongoConfig -> Pipe -> IO Bool
-updateRegions confDir mc pipe = do
+updateRegions :: FilePath -> (Pipe, T.Text) -> IO Bool
+updateRegions confDir conn@(pipe, database) = do
    -- Get the stats for all regions
-   computedStats <- access pipe slaveOk (MC.database mc) $ aggregate
+   computedStats <- access pipe slaveOk database $ aggregate
       coll_inspections_recent [mkStatsQuery]
 
    -- Construct the regional_stats documents
@@ -89,7 +80,7 @@ updateRegions confDir mc pipe = do
    mapM_ (infoM lname . show) newDocs
 
    -- Upsert them into the regional_data collection
-   statsResults <- liftIO $ mapM (updateStatsDocument mc pipe) newDocs
+   statsResults <- liftIO $ mapM (updateStatsDocument conn) newDocs
 
    -- If this is the first of the month,
    -- insert the documents into regional_data_history as well
@@ -98,9 +89,9 @@ updateRegions confDir mc pipe = do
    return $ all (== True) statsResults
 
 
-updateStatsDocument :: MC.MongoConfig -> Pipe -> Document -> IO Bool
-updateStatsDocument mc pipe doc = do
-   result <- access pipe slaveOk (MC.database mc) $ do
+updateStatsDocument :: (Pipe, T.Text) -> Document -> IO Bool
+updateStatsDocument (pipe, database) doc = do
+   result <- access pipe slaveOk database $ do
       upsert (select [ "source" =: (("source" `at` doc) :: T.Text) ]
          coll_stats_recent) doc
       lastStatus

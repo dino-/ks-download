@@ -20,9 +20,8 @@ import Data.Text ( Text )
 import Data.Time ( getCurrentTimeZone )
 import Data.Version ( showVersion )
 import Database.Mongo.Util ( lastStatus )
-import Database.MongoDB ( Host (..), Pipe, PortID (PortNumber), (=:),
-   access, auth, connect, delete, deleteOne, find, insertMany_, rest,
-   select, slaveOk, sort )
+import Database.MongoDB ( Pipe, (=:), access, delete, deleteOne,
+   find, insertMany_, rest, select, slaveOk, sort )
 import Network.Wreq ( Response, asJSON, defaults, getWith, param, responseBody )
 import Paths_ks_download ( version )
 import System.Environment ( setEnv )
@@ -32,9 +31,8 @@ import KS.Clean.Old.Options ( OldOptions (optArchive, optBeforeDate, optConfDir)
 import KS.Data.Document ( Document (..) )
 import KS.Data.Inspection ( date )
 import KS.Data.Place ( Place (name, place_id) )
-import qualified KS.Database.Mongo.Config as MC
 import KS.Database.Mongo.Util ( coll_inspections_all, coll_inspections_archived,
-   coll_inspections_recent )
+   coll_inspections_recent, mongoConnect )
 import KS.Locate.Config ( Config (googleApiKey, logPriority),
    keyString, loadConfig )
 import KS.Locate.Locate
@@ -54,16 +52,7 @@ run options = do
    logStartMsg lname
    noticeM lname line
 
-   mongoConf <- MC.loadMongoConfig . optConfDir $ options
-
-   -- Get a connection to Mongo, they call it a 'pipe'
-   pipe <- connect $ Host (MC.ip mongoConf)
-      (PortNumber . fromIntegral . MC.port $ mongoConf)
-
-   -- Authenticate with mongo, log the auth state
-   (access pipe slaveOk (MC.database mongoConf)
-      $ auth (MC.username mongoConf) (MC.password mongoConf)) >>=
-      \tf -> noticeM lname $ "Authenticated with Mongo: " ++ (show tf)
+   conn <- mongoConnect (noticeM lname) . optConfDir $ options
 
    -- Figure out the real date to work with for examining places
    setEnv "TZ" "America/New_York"  -- FIXME This is really not cool to do
@@ -71,23 +60,23 @@ run options = do
    let beforeDate = maybe nineMonthsAgo id $ optBeforeDate options
    noticeM lname $ printf "Checking inspections on or before %d" beforeDate
 
-   oldEsts <- getOldEstablishments mongoConf pipe beforeDate
-   --oldEsts <- reverse . take 50 . reverse <$> getOldEstablishments mongoConf pipe (fromJust . optBeforeDate $ options)
-   --oldEsts <- take 10 <$> getOldEstablishments mongoConf pipe beforeDate
+   oldEsts <- getOldEstablishments conn beforeDate
+   --oldEsts <- reverse . take 50 . reverse <$> getOldEstablishments conn (fromJust . optBeforeDate $ options)
+   --oldEsts <- take 10 <$> getOldEstablishments conn beforeDate
    noticeM lname $ printf "Number of old establishments found: %d" (length oldEsts)
    closedEsts <- filterM (isClosed locateConf) oldEsts
    noticeM lname $ printf "Number closed: %d" (length closedEsts)
    if (optArchive options)
-      then mapM_ (archiveEstablishment mongoConf pipe) closedEsts
+      then mapM_ (archiveEstablishment conn) closedEsts
       else noticeM lname $ "Database was NOT modified"
 
    noticeM lname line
    logStopMsg lname
 
 
-getOldEstablishments :: MC.MongoConfig -> Pipe -> Int -> IO [Document]
-getOldEstablishments mongoConf pipe day =
-   access pipe slaveOk (MC.database mongoConf) $
+getOldEstablishments :: (Pipe, Text) -> Int -> IO [Document]
+getOldEstablishments (pipe, database) day =
+   access pipe slaveOk database $
       mapMaybe fromBSON <$> (rest =<< find (select
          [ "inspection.date" =: [ "$lte" =: day ] ]
          coll_inspections_recent)
@@ -145,9 +134,9 @@ isClosed locateConf doc = do
                return False
 
 
-archiveEstablishment :: MC.MongoConfig -> Pipe -> Document -> IO Bool
-archiveEstablishment mongoConf pipe doc =
-   access pipe slaveOk (MC.database mongoConf) $ do
+archiveEstablishment :: (Pipe, Text) -> Document -> IO Bool
+archiveEstablishment (pipe, database) doc =
+   access pipe slaveOk database $ do
       liftIO $ noticeM lname $ printf "%s\nEditing data for %s" line (formatForLog doc)
 
       -- Find all in inspections_all with the target Places ID

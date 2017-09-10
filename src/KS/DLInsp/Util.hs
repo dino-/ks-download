@@ -6,14 +6,12 @@
 module KS.DLInsp.Util ( setDates ) where
 
 import Control.Monad ( liftM2, mplus )
-import Control.Monad.Trans ( liftIO )
 import Data.Maybe ( listToMaybe )
 import Data.Time ( Day, getCurrentTimeZone )
-import Database.MongoDB ( Host (..), Limit, PortID (PortNumber), (=:),
-   access, at, auth, connect, find, limit, rest, select, slaveOk, sort )
+import Database.MongoDB ( Limit, (=:), access, at, find, limit,
+   rest, select, slaveOk, sort )
 
-import KS.Database.Mongo.Config as MC
-import KS.Database.Mongo.Util ( coll_inspections_recent )
+import KS.Database.Mongo.Util ( coll_inspections_recent, mongoConnect )
 import KS.Util ( dateIntToDay, today, twoDaysAgo )
 
 
@@ -35,15 +33,9 @@ setDates confDirSrc oldStartDate oldEndDate = do
 
 lastDateFromDB :: (FilePath, String) -> IO (Maybe Day)
 lastDateFromDB (confDir, source) = do
-   mongoConf <- MC.loadMongoConfig confDir
+   (pipe, database) <- mongoConnect putStrLn confDir
 
-   pipe <- connect $ Host (MC.ip mongoConf)
-      (PortNumber . fromIntegral . MC.port $ mongoConf)
-
-   access pipe slaveOk (MC.database mongoConf) $ do
-      auth (MC.username mongoConf) (MC.password mongoConf) >>=
-         \tf -> liftIO $ putStrLn $ "Authenticated with Mongo: " ++ (show tf)
-
+   access pipe slaveOk database $ do
       matchingDocuments <- rest =<< find (select
          [ "inspection.inspection_source" =: source] coll_inspections_recent)
          { sort = [ "inspection.date" =: (-1 :: Int) ]

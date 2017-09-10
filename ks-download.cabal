@@ -46,7 +46,6 @@ executable ks-dlinsp-cdp
         containers,
         exceptions,
         filepath,
-        hslogger,
         HTTP,
         ks-library >=1.13,
         lens,
@@ -69,7 +68,6 @@ executable ks-dlinsp-cdp
         KS.DLInsp.CDP.Opts
         KS.DLInsp.CDP.Types
         KS.DLInsp.Util
-        KS.Log
         KS.SourceConfig
         KS.Util
     ghc-options: -Wall
@@ -83,7 +81,6 @@ executable ks-dlinsp-dhd
         containers,
         exceptions,
         filepath,
-        hslogger,
         HTTP,
         ks-library >=1.13,
         mongoDB,
@@ -103,7 +100,6 @@ executable ks-dlinsp-dhd
         KS.DLInsp.DHD.Opts
         KS.DLInsp.DHD.Types
         KS.DLInsp.Util
-        KS.Log
         KS.SourceConfig
         KS.Util
     ghc-options: -Wall
@@ -161,7 +157,6 @@ executable ks-dbinsert
         containers,
         directory,
         filepath,
-        hslogger,
         HTTP,
         http-conduit,
         ks-library >=1.13,
@@ -179,7 +174,6 @@ executable ks-dbinsert
         KS.Database.Mongo.Config
         KS.Database.Mongo.Util
         KS.DBInsert.Opts
-        KS.Log
     ghc-options: -Wall
 
 executable ks-regionupd

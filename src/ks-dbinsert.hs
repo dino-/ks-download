@@ -30,9 +30,8 @@ import Text.Printf ( printf )
 import qualified KS.Data.Document as D
 import qualified KS.Data.Inspection as I
 import qualified KS.Data.Place as P
-import qualified KS.Database.Mongo.Config as MC
 import KS.Database.Mongo.Util
-   ( coll_inspections_all, coll_inspections_recent )
+   ( coll_inspections_all, coll_inspections_recent, mongoConnect )
 import KS.DBInsert.Opts
 
 
@@ -48,22 +47,13 @@ main = do
 
    putStrLn $ "ks-dbinsert version " ++ (showVersion version) ++ " started"
 
-   mongoConf <- MC.loadMongoConfig confDir
-
    -- Paths to all files we'll be processing
    files <- concat <$> (sequence $ map buildFileList srcDirsOrFiles)
 
-   -- Get a connection to Mongo, they call it a 'pipe'
-   pipe <- connect $ Host (MC.ip mongoConf)
-      (PortNumber . fromIntegral . MC.port $ mongoConf)
-
-   -- Authenticate with mongo, show the auth state on stdout
-   (access pipe UnconfirmedWrites (MC.database mongoConf)
-      $ auth (MC.username mongoConf) (MC.password mongoConf)) >>=
-      \tf -> putStrLn $ "Authenticated with Mongo: " ++ (show tf)
+   conn@(pipe, _) <- mongoConnect putStrLn confDir
 
    exitCode <- do
-      failures <- mapM (loadAndInsert mongoConf pipe) files
+      failures <- mapM (loadAndInsert conn) files
       if any (== True) failures
          then return $ ExitFailure 1
          else return ExitSuccess
@@ -73,14 +63,14 @@ main = do
    exitWith exitCode
 
 
-loadAndInsert :: MC.MongoConfig -> Pipe -> FilePath -> IO Bool
-loadAndInsert mongoConf pipe path = do
+loadAndInsert :: (Pipe, T.Text) -> FilePath -> IO Bool
+loadAndInsert (pipe, database) path = do
    edoc <- tryIOError $ D.loadDocument path
 
    result <- case edoc of
       Left ex   -> return . Left $ show ex
       Right doc ->
-         access pipe UnconfirmedWrites (MC.database mongoConf) $ do
+         access pipe UnconfirmedWrites database $ do
             -- Convert our inspection data structure to BSON
             let bson = toBSON doc
 

@@ -31,8 +31,7 @@ import System.IO
 import Text.Printf ( printf )
 import Text.Regex ( mkRegex, subRegex )
 
-import qualified KS.Database.Mongo.Config as MC
-import KS.Database.Mongo.Util ( coll_inspections_all, coll_inspections_recent )
+import KS.Database.Mongo.Util ( coll_inspections_all, coll_inspections_recent, mongoConnect )
 
 
 coll_inspections :: Collection
@@ -51,18 +50,10 @@ main = do
 
    (confDir : _) <- getArgs
 
-   mongoConf <- MC.loadMongoConfig confDir
+   conn@(pipe, _) <- mongoConnect putStrLn confDir
 
-   -- Get a connection to Mongo, they call it a 'pipe'
-   pipe <- connect $ Host (MC.ip mongoConf)
-      (PortNumber . fromIntegral . MC.port $ mongoConf)
-
-   -- Authenticate with mongo, show the auth state on stdout
-   (access pipe slaveOk (MC.database mongoConf)
-      $ auth (MC.username mongoConf) (MC.password mongoConf)) >>=
-      \tf -> putStrLn $ "Authenticated with Mongo: " ++ (show tf)
-   --result <- updateRecords mongoConf pipe
-   mapM_ (fixRecents mongoConf pipe) dates
+   --result <- updateRecords conn
+   mapM_ (fixRecents conn) dates
 
    close pipe
 
@@ -78,22 +69,22 @@ dates =
    , 20151202
    ]
 
-fixRecents :: MC.MongoConfig -> Pipe -> Int -> IO ()
-fixRecents mc pipe date = do
+fixRecents :: (Pipe, T.Text) -> Int -> IO ()
+fixRecents conn@(pipe, database) date = do
    -- Find place_idS in inspections_recent for the date
-   recentDocs <- access pipe slaveOk (MC.database mc) $ rest =<<
+   recentDocs <- access pipe slaveOk database $ rest =<<
       find (select ["inspection.date" =: date] coll_inspections_recent)
 
    forM_ recentDocs $ \d -> do
       putStrLn $ "-----\nFixing: " ++ (displayBrief d)
       let place_id = "place_id" `at` ("place" `at` d)
-      fixRecent mc pipe place_id
+      fixRecent conn pipe place_id
 
 
-fixRecent :: MC.MongoConfig -> Pipe -> T.Text -> IO ()
-fixRecent mc pipe place_id = do
+fixRecent :: (Pipe, T.Text) -> T.Text -> IO ()
+fixRecent (pipe, database) place_id = do
    -- Get the most recent doc for that place_id from inspections_all
-   latest <- head <$> (access pipe slaveOk (MC.database mc) $ rest =<<
+   latest <- head <$> (access pipe slaveOk database $ rest =<<
       find (select ["place.place_id" =: place_id] coll_inspections_all)
          { sort = ["inspection.date" =: (-1 :: Int)]
          , limit = (1 :: Limit)
@@ -101,11 +92,11 @@ fixRecent mc pipe place_id = do
    putStrLn $ "Most recent: " ++ (displayBrief latest)
 
    putStrLn "Deleting the bad document from inspections_recent"
-   _ <- access pipe slaveOk (MC.database mc) $
+   _ <- access pipe slaveOk database $
       deleteOne (select ["place.place_id" =: place_id] coll_inspections_recent)
 
    putStrLn "Inserting the good document"
-   _ <- access pipe slaveOk (MC.database mc) $
+   _ <- access pipe slaveOk database $
       insert_ coll_inspections_recent latest
 
    return ()
@@ -125,9 +116,9 @@ runFix :: (BSON.Document, D.Document) -> Fix (BSON.Document, D.Document)
 runFix st ev = execStateT ev st
 
 
-updateRecords :: MC.MongoConfig -> Pipe -> IO Bool
-updateRecords mc pipe = do
-   rs <- access pipe slaveOk (MC.database mc) $ rest =<<
+updateRecords :: (Pipe, T.Text) -> IO Bool
+updateRecords (pipe, database) = do
+   rs <- access pipe slaveOk database $ rest =<<
       find (select [] coll_inspections)
          { sort = [ "inspection.date" =: (1 :: Int) ]
          -- , limit = (50 :: Limit)
@@ -143,7 +134,7 @@ updateRecords mc pipe = do
 
             -- write to mongo now
             let newBSON = combineId (_id, toBSON newDoc)
-            access pipe slaveOk (MC.database mc) $
+            access pipe slaveOk database $
                save coll_inspections newBSON
       )
 

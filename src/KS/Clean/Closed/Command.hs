@@ -70,7 +70,7 @@ run options = do
       printf "ks-clean version %s started, command: closed" (showVersion version)
    logStartMsg lname
 
-   (pipe, database) <- mongoConnect . optConfDir $ options
+   (pipe, database) <- mongoConnect (noticeM lname) . optConfDir $ options
    runClosedApp (AppConfig pipe database options locateConf) $ do
       idFPairS <- getNewClosedFeedback
       when (null idFPairS) $ liftIO $ do
