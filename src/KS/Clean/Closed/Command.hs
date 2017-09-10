@@ -10,9 +10,10 @@ module KS.Clean.Closed.Command
 
 import Control.Arrow ( (***) )
 import Control.Lens ( (^.), (&), (.~) )
-import Control.Monad ( when )
+import Control.Monad ( unless, when )
+import Control.Monad.Except ( runExceptT, throwError )
 import Control.Monad.Reader ( ReaderT, runReaderT, asks )
-import Control.Monad.Trans ( MonadIO, liftIO )
+import Control.Monad.Trans ( MonadIO, lift, liftIO )
 import Data.Aeson ( FromJSON, Value (Object), (.:), (.:?), (.!=),
    parseJSON )
 import qualified Data.Bson as Bson
@@ -40,8 +41,8 @@ import KS.Database.Mongo.Util ( coll_feedback, coll_inspections_all,
    coll_inspections_archived, coll_inspections_recent, mongoConnect )
 import KS.Locate.Config ( Config (googleApiKey, logPriority),
    keyString, loadConfig )
-import KS.Log ( criticalM, errorM, initLogging, line, lname,
-   logStartMsg, logStopMsg, noticeM, warningM )
+import KS.Log ( Priority (NOTICE, WARNING), criticalM, errorM, initLogging, line, lname,
+   logM, logStartMsg, logStopMsg, noticeM, warningM )
 import KS.Util ( withRetry )
 
 
@@ -72,8 +73,13 @@ run options = do
    (pipe, database) <- mongoConnect . optConfDir $ options
    runClosedApp (AppConfig pipe database options locateConf) $ do
       idFPairS <- getNewClosedFeedback
-      --mapM_ resolveFeedback $ take 1 idFPairS
+      when (null idFPairS) $ liftIO $ do
+         noticeM lname line
+         noticeM lname "No New, Closed Feedback records to process at this time"
+
       mapM_ resolveFeedback idFPairS
+      -- For debugging, only let one through per run
+      --mapM_ resolveFeedback $ take 1 idFPairS
 
    noticeM lname line
    logStopMsg lname
@@ -92,6 +98,8 @@ getNewClosedFeedback = do
       return $ map ((id *** (fromJust . fromBSON)) . separateId) wholeDocs
 
 
+type ResolveFailure = (Priority, String, F.Status)
+
 resolveFeedback :: (Bson.Document, F.Feedback) -> ClosedApp ()
 resolveFeedback (idDoc, fb) = do
    liftIO $ do
@@ -100,30 +108,25 @@ resolveFeedback (idDoc, fb) = do
       noticeM lname . show $ fb
 
    options <- asks acOptions
-   let mpid = F.place_id fb
-   newStatus <- case mpid of
-      Nothing -> do
-         liftIO $ warningM lname "This Closed feedback record has NO PLACES ID, this is BAD DATA"
-         liftIO $ warningM lname "It will be marked as Resolved, but something wrong happened somewhere"
-         return F.Resolved
-      Just placeId -> do
-         mdoc <- retrievePlace placeId
-         case mdoc of
-            Just doc -> do
-               isClosed' <- isClosed doc
-               if isClosed'
-                  then if (optArchive options)
-                     then do
-                        _ <- archiveEstablishment doc
-                        return ()
-                     else liftIO $ noticeM lname $ "Inspection record was NOT modified"
-                  else liftIO $ warningM lname "Place is not closed, bad feedback"
-               return F.Resolved
-            Nothing -> do
-               liftIO $ noticeM lname "Place is not in our database, duplicate feedback"
-               return F.Duplicate
 
-   -- Set feedback status to Resolved/Duplicate
+   -- resolutionResult :: Either ResolveFailure F.Feedback
+   resolutionResult <- runExceptT $ do
+      placeId <- maybe (throwError (WARNING, "This Closed feedback record has NO PLACES ID, this is BAD DATA\nIt will be marked as Resolved, but something wrong happened somewhere", F.Resolved))
+         return $ F.place_id fb
+      doc <- maybe
+         (throwError (NOTICE, "Place is not in our database, duplicate feedback", F.Duplicate))
+         return =<< (lift $ retrievePlace placeId)
+      isClosed' <- lift $ isClosed doc
+      unless isClosed' (throwError (WARNING, "Place is not closed, bad feedback", F.Resolved))
+      unless (optArchive options)
+         (throwError (WARNING, "Inspection record was NOT modified", F.Resolved))
+      _ <- lift $ archiveEstablishment doc
+      return F.Resolved
+
+   -- Log errors if necessary and extract the new status for the Feedback record
+   newStatus <- either handleResolutionFailure return resolutionResult
+
+   -- Set feedback status to Resolved/Duplicate, whatever was determined above
    pipe <- asks acPipe
    database <- asks acDatabase
    liftIO $ if optArchive options
@@ -135,6 +138,12 @@ resolveFeedback (idDoc, fb) = do
          noticeM lname . show $ result
       else do
          noticeM lname $ printf "Archive was not was specified in the args, no change to the Feedback record"
+
+   where
+      handleResolutionFailure :: ResolveFailure -> ClosedApp F.Status
+      handleResolutionFailure (prio, msg, newStatus) = do
+         liftIO $ logM lname prio msg
+         return newStatus
 
 
 retrievePlace :: Text -> ClosedApp (Maybe Document)
