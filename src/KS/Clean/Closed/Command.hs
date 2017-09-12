@@ -183,7 +183,7 @@ isClosed doc = do
 
    let wopts = defaults & param "key" .~ [key] & param "placeid" .~ [placeID]
 
-   er <- liftIO $ withRetry 3 2 (getWith wopts url >>= asJSON) (warningM lname)
+   er <- liftIO $ withRetry 5 3 (getWith wopts url >>= asJSON) (warningM lname)
 
    liftIO $ either placeLookupFailed placeLookupSucceeded er
 

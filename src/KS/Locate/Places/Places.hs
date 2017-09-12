@@ -88,7 +88,7 @@ coordsToPlaces coords = do
    url <- mkPlacesUrl coords
    liftIO $ noticeM lname $ "Places URL: " ++ url
 
-   plJSON <- eitherThrowCritical $ withRetry 3 2 (simpleHttp url) (errorM lname)
+   plJSON <- eitherThrowCritical $ withRetry 5 3 (simpleHttp url) (errorM lname)
 
    liftIO $ debugM lname $ "Places result JSON: "
       ++ (BL.unpack plJSON)

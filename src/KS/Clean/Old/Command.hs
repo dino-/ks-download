@@ -105,7 +105,7 @@ isClosed locateConf doc = do
 
    let wopts = defaults & param "key" .~ [key] & param "placeid" .~ [placeID]
 
-   er <- withRetry 3 2 (getWith wopts url >>= asJSON) (warningM lname)
+   er <- withRetry 5 3 (getWith wopts url >>= asJSON) (warningM lname)
 
    -- Slow down hits to Google
    threadDelay 250000  -- 0.25s

@@ -53,7 +53,7 @@ getFacilities :: String -> IO [I.Inspection]
 getFacilities url = do
    printf "Retrieving %s\n" url
 
-   tags <- either error return =<< withRetry 3 1
+   tags <- either error return =<< withRetry 5 2
       (parseTags `fmap` (openURL . getRequest $ urlPrefix ++ url)) putStrLn
 
    let itags = isolateInspTags tags
@@ -143,7 +143,7 @@ getPageUrls :: DL [String]
 getPageUrls = do
    liftIO $ putStrLn "Retrieving all page URLs"
    post <- mkPost
-   dlResult <- liftIO $ withRetry 3 1 (parseTags `fmap` openURL post) putStrLn
+   dlResult <- liftIO $ withRetry 5 2 (parseTags `fmap` openURL post) putStrLn
    tags <- either error return dlResult
    return $ map (fromAttrib "href" . head) .
       sections (~== "<a class=teaser>") $ tags

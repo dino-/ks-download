@@ -53,7 +53,7 @@ forwardLookup = do
 
    asks (geocodingApiDelay . getConfig) >>= (liftIO . threadDelay)
 
-   gcJSON <- eitherThrowCritical $ withRetry 3 2 (simpleHttp url) (errorM lname)
+   gcJSON <- eitherThrowCritical $ withRetry 5 3 (simpleHttp url) (errorM lname)
 
    liftIO $ debugM lname $ "Geocoding result JSON: "
       ++ (BL.unpack gcJSON)
