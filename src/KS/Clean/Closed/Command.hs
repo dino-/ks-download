@@ -66,6 +66,7 @@ run options = do
 
    -- Start the log
    initLogging $ logPriority locateConf
+   noticeM lname line
    noticeM lname $
       printf "ks-clean version %s started, command: closed" (showVersion version)
    logStartMsg lname
