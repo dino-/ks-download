@@ -7,8 +7,9 @@ module KS.Clean.Options
    )
    where
 
+import Data.Monoid ( (<>) )
 import Data.Version ( showVersion )
-import Options.Applicative ( Parser, ParserInfo, (<>), argument, auto,
+import Options.Applicative ( Parser, ParserInfo, argument, auto,
    command, execParser, footerDoc, fullDesc, help, helper, info, long,
    metavar, option, optional, progDesc, short, str, subparser, switch )
 import Options.Applicative.Builder ( InfoMod )
