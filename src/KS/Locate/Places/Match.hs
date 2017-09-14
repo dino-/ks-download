@@ -12,7 +12,7 @@ module KS.Locate.Places.Match
 
 import Data.Attoparsec.Text hiding ( match )
 import Data.Char ( isDigit )
---import Data.Maybe ( catMaybes )
+import Data.Maybe ( catMaybes )
 import qualified Data.Text as T
 import Prelude hiding ( takeWhile )
 import Test.Hspec
@@ -25,16 +25,9 @@ import KS.Log
 
 type Match = (I.Inspection, P.Place)
 
---type MatchInternal = (Bool, Match)
+type MatchInternal = (Bool, Match)
 
 
-match :: [P.Place] -> KSDL Match
-match []      = throwError $ ErrMsg ERROR "ERROR Match: No Places result matches"
-match (p : _) = do
-   i <- asks getInspection
-   let cleanedVicinity = cleanAddress . P.vicinity $ p
-   return ( i, p { P.vicinity = cleanedVicinity } )
-{-
 match :: [P.Place] -> KSDL Match
 match ps = do
    insp <- asks getInspection
@@ -75,7 +68,6 @@ match ps = do
       positiveMatch :: MatchInternal -> Maybe Match
       positiveMatch (True , m) = Just m
       positiveMatch (False, _) = Nothing
--}
 
 
 {- Determine if two addresses are a "match" based on the beginning
@@ -86,7 +78,6 @@ match ps = do
    address that was computed below with cleanAddress. This is
    so we can show our users the true address.
 -}
-{-
 isMatch :: T.Text -> T.Text -> (Bool, T.Text)
 isMatch iaddr pvic =
    if (not . T.null $ pIaddr) && (not . T.null $ pNewPvic)
@@ -99,7 +90,6 @@ isMatch iaddr pvic =
       pNewPvic = prefix newPvic
       newPvic = cleanAddress pvic
       prefix = T.takeWhile isDigit
--}
 
 
 {- We get these ridiculous addresses from Google Places where they've
