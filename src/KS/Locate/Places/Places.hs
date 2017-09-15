@@ -25,7 +25,7 @@ import qualified Data.ByteString.Lazy.Char8 as BL
 import qualified Data.List as L
 import Data.Maybe ( catMaybes )
 import Data.Text ( Text, intercalate, unpack )
-import Datum ( nad27EasternUSDatum )
+import Datum ( etrf89Datum )
 import GHC.Generics ( Generic )
 import LatLng ( LatLng (..), distance )
 import Network.HTTP ( urlEncode )
@@ -125,8 +125,8 @@ convert (RawPlace n v l t pid _   ) = Just $ Place n v l t pid
 
 computeDistance :: GeoLatLng -> Place -> (Distance, Place)
 computeDistance (GeoLatLng inspLat inspLng) pl =
-   let inspectionLoc = LatLng inspLat inspLng 0.0 nad27EasternUSDatum
-       restaurantLoc = LatLng (lat . P.location $ pl) (lng . P.location $ pl) 0.0 nad27EasternUSDatum
+   let inspectionLoc = LatLng inspLat inspLng 0.0 etrf89Datum
+       restaurantLoc = LatLng (lat . P.location $ pl) (lng . P.location $ pl) 0.0 etrf89Datum
        dist = Distance $ distance inspectionLoc restaurantLoc
    in (dist, pl)
 
