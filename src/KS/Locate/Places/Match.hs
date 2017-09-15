@@ -11,17 +11,19 @@ module KS.Locate.Places.Match
    where
 
 import Control.Arrow ( second )
+import Control.Monad ( when )
 import Data.Attoparsec.Text hiding ( match )
 import Data.Char ( isDigit )
 import qualified Data.Text as T
 import Prelude hiding ( takeWhile )
-import Test.Hspec
+import Test.Hspec ( SpecWith, describe, it, shouldBe )
 
-import KS.Locate.Locate
+import KS.Locate.Locate ( ErrMsg (..), KSDL, asks, getInspection,
+   liftIO, throwError )
 import KS.Locate.Places.Places ( Distance (..) )
 import qualified KS.Data.Inspection as I
 import qualified KS.Data.Place as P
-import KS.Log
+import KS.Log ( Priority (ERROR), lname, noticeM, warningM )
 
 
 type Match = (I.Inspection, P.Place)
