@@ -12,12 +12,12 @@ module KS.Locate.Places.Match
 
 import Data.Attoparsec.Text hiding ( match )
 import Data.Char ( isDigit )
-import Data.Maybe ( catMaybes )
 import qualified Data.Text as T
 import Prelude hiding ( takeWhile )
 import Test.Hspec
 
 import KS.Locate.Locate
+import KS.Locate.Places.Places ( Distance )
 import qualified KS.Data.Inspection as I
 import qualified KS.Data.Place as P
 import KS.Log
@@ -25,71 +25,49 @@ import KS.Log
 
 type Match = (I.Inspection, P.Place)
 
-type MatchInternal = (Bool, Match)
 
-
-match :: [P.Place] -> KSDL Match
-match ps = do
+match :: [(Distance, P.Place)] -> KSDL Match
+match dps = do
+   let ps = map snd dps  -- FIXME
    insp <- asks getInspection
-   let mis = map (combine insp) ps
-   let matchCount = length . filter fst $ mis
+   let cleanedPs = map cleanPlaceAddress ps
+   let matchedByAddr = filter (isAddrMatch insp) cleanedPs
 
-   when (matchCount == 0) $ do
+   when (null matchedByAddr) $ do
       throwError $ ErrMsg ERROR "ERROR Match: No Places result matches"
 
    liftIO $ do
       noticeM lname "Matches:"
-      mapM_ (noticeM lname) $ catMaybes $ map fmtMatched mis
+      mapM_ (noticeM lname) $ map fmtMatched matchedByAddr
 
-   when (matchCount > 1) $ liftIO $ do
+   when (length matchedByAddr > 1) $ liftIO $ do
       warningM lname "WARNING Match: More than one Places result matched"
 
-   return . head . catMaybes . map positiveMatch $ mis
+   return (insp, head matchedByAddr)
 
    where
-      {- Combine the inspection, places result and a boolean
-         indicating whether or not we think they refer to the
-         same place.
+      cleanPlaceAddress :: P.Place -> P.Place
+      cleanPlaceAddress oldPlace = oldPlace { P.vicinity = newPvic }
+         where newPvic = cleanAddress . P.vicinity $ oldPlace
 
-         The cleaned-up Places address is returned back to us by
-         isMatch and substituted into the Place data type here.
+
+      {- Determine if two addresses are a "match" based on the
+         beginning digits. Given how close we get with Google Place
+         search, this gets us the rest of the way to disambiguate
+         the hits.
       -}
-      combine :: I.Inspection -> P.Place -> MatchInternal
-      combine insp pl = (matched, (insp, pl { P.vicinity = newPvic }))
-         where
-            (matched, newPvic) =
-               isMatch (I.addr insp) (P.vicinity pl)
+      isAddrMatch :: I.Inspection -> P.Place -> Bool
+      isAddrMatch insp pl =
+         (not . T.null . I.addr $ insp) &&
+         (not . T.null . P.vicinity $ pl) &&
+         ((prefix . I.addr $ insp) == (prefix . P.vicinity $ pl))
 
-      fmtMatched :: MatchInternal -> Maybe String
-      fmtMatched (True , (_, pl)) = Just . T.unpack . T.concat
+         where prefix = T.takeWhile isDigit
+
+
+      fmtMatched :: P.Place -> String
+      fmtMatched pl = T.unpack . T.concat
          $ [ P.name pl, T.pack " | ", P.vicinity pl ]
-      fmtMatched (False, (_, _ )) = Nothing
-
-      positiveMatch :: MatchInternal -> Maybe Match
-      positiveMatch (True , m) = Just m
-      positiveMatch (False, _) = Nothing
-
-
-{- Determine if two addresses are a "match" based on the beginning
-   digits. Given how close we get with Google Place search, this
-   gets us the rest of the way to disambiguate the hits.
-
-   In addition to a True/False match status, we return the cleaned-up
-   address that was computed below with cleanAddress. This is
-   so we can show our users the true address.
--}
-isMatch :: T.Text -> T.Text -> (Bool, T.Text)
-isMatch iaddr pvic =
-   if (not . T.null $ pIaddr) && (not . T.null $ pNewPvic)
-         && (prefix iaddr == prefix newPvic)
-      then (True, newPvic)
-      else (False, newPvic)
-
-   where
-      pIaddr = prefix iaddr
-      pNewPvic = prefix newPvic
-      newPvic = cleanAddress pvic
-      prefix = T.takeWhile isDigit
 
 
 {- We get these ridiculous addresses from Google Places where they've

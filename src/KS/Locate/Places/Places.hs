@@ -15,7 +15,8 @@
 -}
 
 module KS.Locate.Places.Places
-   ( coordsToPlaces )
+   ( Distance (..)
+   , coordsToPlaces )
    where
 
 import Data.Aeson ( FromJSON, Value (Object)
@@ -24,12 +25,15 @@ import qualified Data.ByteString.Lazy.Char8 as BL
 import qualified Data.List as L
 import Data.Maybe ( catMaybes )
 import Data.Text ( Text, intercalate, unpack )
+import Datum ( nad27EasternUSDatum )
 import GHC.Generics ( Generic )
+import LatLng ( LatLng (..), distance )
 import Network.HTTP ( urlEncode )
 import Network.HTTP.Conduit ( simpleHttp )
 import Text.Printf ( printf )
 
 import KS.Data.Place ( GeoPoint (..), Place (..) )
+import qualified KS.Data.Place as P
 import KS.Locate.Config ( Config (googleApiKey), keyString )
 import KS.Locate.Locate
    ( Env (getConfig, getSourceConfig)
@@ -83,7 +87,13 @@ instance FromJSON Places where
    parseJSON o = fail . show $ o
 
 
-coordsToPlaces :: GeoLatLng -> KSDL [Place]
+newtype Distance = Distance Double
+
+instance Show Distance where
+   show (Distance distanceInKm) = (show distanceInKm) ++ " km"
+
+
+coordsToPlaces :: GeoLatLng -> KSDL [(Distance, Place)]
 coordsToPlaces coords = do
    url <- mkPlacesUrl coords
    liftIO $ noticeM lname $ "Places URL: " ++ url
@@ -98,19 +108,27 @@ coordsToPlaces coords = do
       (\status -> throwError $ ErrMsg ERROR $ "ERROR Places API: " ++ status)
       displayAndReturn parseResult
 
+   where
+      displayAndReturn :: Places -> KSDL [(Distance, Place)]
+      displayAndReturn (Places rps) = do
+         let ps = L.map (computeDistance coords) . catMaybes . L.map convert $ rps
+         liftIO $ do
+            noticeM lname "Places returned:"
+            mapM_ (noticeM lname . show) ps
+         return ps
+
 
 convert :: RawPlace -> Maybe Place
 convert (RawPlace _ _ _ _ _   True) = Nothing
 convert (RawPlace n v l t pid _   ) = Just $ Place n v l t pid
 
 
-displayAndReturn :: Places -> KSDL [Place]
-displayAndReturn (Places rps) = do
-   let ps = catMaybes . L.map convert $ rps
-   liftIO $ do
-      noticeM lname "Places returned:"
-      mapM_ (noticeM lname . show) ps
-   return ps
+computeDistance :: GeoLatLng -> Place -> (Distance, Place)
+computeDistance (GeoLatLng inspLat inspLng) pl =
+   let inspectionLoc = LatLng inspLat inspLng 0.0 nad27EasternUSDatum
+       restaurantLoc = LatLng (lat . P.location $ pl) (lng . P.location $ pl) 0.0 nad27EasternUSDatum
+       dist = Distance $ distance inspectionLoc restaurantLoc
+   in (dist, pl)
 
 
 mkPlacesUrl :: GeoLatLng -> KSDL String
@@ -121,7 +139,7 @@ mkPlacesUrl (GeoLatLng lat' lng') = do
    liftIO $ noticeM lname $ "Places name words list: "
       ++ (show nameList)
 
-   let nameWordsParam = urlEncode $ unpack $ intercalate " " $ nameList
+   let nameWordsParam = urlEncode . unpack . intercalate " " $ nameList
 
    searchTypes <-
       L.intercalate "|" `fmap` asks (placesTypes . getSourceConfig)

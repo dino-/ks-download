@@ -10,4 +10,5 @@ packages:
   extra-dep: True
 
 extra-deps:
+- hcoord-1.0.0.0
 - tce-conf-1.3
