@@ -10,6 +10,7 @@ module KS.Locate.Places.Match
    )
    where
 
+import Control.Arrow ( second )
 import Data.Attoparsec.Text hiding ( match )
 import Data.Char ( isDigit )
 import qualified Data.Text as T
@@ -17,7 +18,7 @@ import Prelude hiding ( takeWhile )
 import Test.Hspec
 
 import KS.Locate.Locate
-import KS.Locate.Places.Places ( Distance )
+import KS.Locate.Places.Places ( Distance (..) )
 import qualified KS.Data.Inspection as I
 import qualified KS.Data.Place as P
 import KS.Log
@@ -28,22 +29,36 @@ type Match = (I.Inspection, P.Place)
 
 match :: [(Distance, P.Place)] -> KSDL Match
 match dps = do
-   let ps = map snd dps  -- FIXME
    insp <- asks getInspection
-   let cleanedPs = map cleanPlaceAddress ps
-   let matchedByAddr = filter (isAddrMatch insp) cleanedPs
+   let cleanedDps = map (second cleanPlaceAddress) dps
 
-   when (null matchedByAddr) $ do
+   finalMatches <- do
+      -- First, let's try by address
+      let matchedByAddress = filter (isAddrMatch insp . snd) cleanedDps
+
+      when (null matchedByAddress) $ liftIO $
+         noticeM lname "No matches found by address, continuing..."
+
+      -- Next, let's try using distance
+      let matchedByDistance = filter (isVeryClose . fst) cleanedDps
+
+      when (null matchedByDistance) $ liftIO $
+         noticeM lname "No matches found by distance either."
+
+      -- Evaluate to whichever of these was successful first
+      return $ matchedByAddress <++ matchedByDistance
+
+   when (null finalMatches) $ do
       throwError $ ErrMsg ERROR "ERROR Match: No Places result matches"
 
    liftIO $ do
       noticeM lname "Matches:"
-      mapM_ (noticeM lname) $ map fmtMatched matchedByAddr
+      mapM_ (noticeM lname) $ map (fmtMatched . snd) finalMatches
 
-   when (length matchedByAddr > 1) $ liftIO $ do
+   when (length finalMatches > 1) $ liftIO $
       warningM lname "WARNING Match: More than one Places result matched"
 
-   return (insp, head matchedByAddr)
+   return (insp, (snd . head $ finalMatches))
 
    where
       cleanPlaceAddress :: P.Place -> P.Place
@@ -65,9 +80,17 @@ match dps = do
          where prefix = T.takeWhile isDigit
 
 
+      isVeryClose :: Distance -> Bool
+      isVeryClose dist = dist <= (Distance 0.6)
+
+
       fmtMatched :: P.Place -> String
       fmtMatched pl = T.unpack . T.concat
          $ [ P.name pl, T.pack " | ", P.vicinity pl ]
+
+
+      [] <++ xs = xs
+      xs <++ _  = xs
 
 
 {- We get these ridiculous addresses from Google Places where they've

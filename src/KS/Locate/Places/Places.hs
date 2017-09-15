@@ -88,6 +88,7 @@ instance FromJSON Places where
 
 
 newtype Distance = Distance Double
+   deriving (Eq, Ord)
 
 instance Show Distance where
    show (Distance distanceInKm) = (show distanceInKm) ++ " km"
