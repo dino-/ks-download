@@ -83,7 +83,7 @@ match dps = do
 
 
       isVeryClose :: Distance -> Bool
-      isVeryClose dist = dist <= (Distance 0.194)
+      isVeryClose dist = dist <= (Distance 0.1372)
 
 
       fmtMatched :: P.Place -> String
