@@ -91,7 +91,7 @@ newtype Distance = Distance Double
    deriving (Eq, Ord)
 
 instance Show Distance where
-   show (Distance distanceInKm) = (show distanceInKm) ++ " km"
+   show (Distance distanceInKm) = printf "%5.4f km" distanceInKm
 
 
 coordsToPlaces :: GeoLatLng -> KSDL [(Distance, Place)]
