@@ -39,13 +39,13 @@ match dps = do
       let matchedByAddress = filter (isAddrMatch insp . snd) cleanedDps
 
       when (null matchedByAddress) $ liftIO $
-         noticeM lname "No matches found by address, continuing..."
+         noticeM lname "No matches found by address"
 
       -- Next, let's try using distance
       let matchedByDistance = filter (isVeryClose . fst) cleanedDps
 
       when (null matchedByDistance) $ liftIO $
-         noticeM lname "No matches found by distance either."
+         noticeM lname "No matches found by distance"
 
       -- Evaluate to whichever of these was successful first
       return $ matchedByAddress <++ matchedByDistance
