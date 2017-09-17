@@ -267,8 +267,11 @@ test-suite test-Locate
         directory,
         exceptions,
         filepath,
+        hcoord,
         hslogger,
         hspec,
+        HTTP,
+        http-conduit,
         ks-library >=1.13,
         mtl,
         regex-compat,
@@ -281,9 +284,12 @@ test-suite test-Locate
     other-modules:
         KS.Locate.Config
         KS.Locate.Locate
+        KS.Locate.Places.Geocoding
         KS.Locate.Places.Match
         KS.Locate.Places.NameWords
+        KS.Locate.Places.Places
         KS.Log
         KS.SourceConfig
+        KS.Util
         NameWords
     ghc-options: -Wall
