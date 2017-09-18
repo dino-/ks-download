@@ -5,6 +5,7 @@ module KS.DLInsp.DHD.Downloader
    ( download )
    where
 
+import Control.Monad ( (>=>) )
 import           Data.Either ( partitionEithers )
 import           Data.List ( intercalate, isInfixOf, isPrefixOf )
 import           Data.Maybe ( fromJust, fromMaybe )
@@ -45,7 +46,8 @@ download options destDir = runDL options $ do
    let pageUrls = maybe allPageUrls (\n -> take n allPageUrls) pageLimit
 
    let getters = map getFacilities pageUrls  -- [IO [Inspection]]
-   liftIO $ mapM_ (\ml -> ml >>= mapM_ (I.saveInspection destDir)) getters
+   liftIO $ mapM_ (\ml -> ml >>=
+      mapM_ (I.saveInspection destDir >=> printf "Saved inspection file %s\n")) getters
 
 
 -- Get all (4) facilities from a page at the supplied URL
@@ -141,7 +143,7 @@ extractViolation tags = (crit, text)
 -- Get the URLs of all search result pages
 getPageUrls :: DL [String]
 getPageUrls = do
-   liftIO $ putStrLn "Retrieving all page URLs"
+   liftIO $ putStrLn "\nRetrieving all page URLs"
    post <- mkPost
    dlResult <- liftIO $ withRetry 5 2 (parseTags `fmap` openURL post) putStrLn
    tags <- either error return dlResult
