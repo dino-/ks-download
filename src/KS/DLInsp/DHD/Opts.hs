@@ -23,6 +23,7 @@ defaultOptions = Options
    , optEndDate = Nothing
    , optPageLimit = Nothing
    , optHelp = False
+   , optEstType = ""
    }
 
 

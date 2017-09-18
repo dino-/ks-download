@@ -21,6 +21,7 @@ data Options = Options
    , optEndDate :: Maybe Day
    , optPageLimit :: Maybe Int
    , optHelp :: Bool
+   , optEstType :: String
    }
 
 

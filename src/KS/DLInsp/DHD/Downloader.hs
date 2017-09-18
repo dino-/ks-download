@@ -15,15 +15,15 @@ import           Data.Time.Calendar ( toGregorian )
 import qualified KS.Data.Inspection as I
 import           Network.HTTP ( HStream, Request, Request_String,
                   getResponseBody, getRequest, postRequestWithBody,
-                  simpleHTTP )
+                  simpleHTTP, urlEncode )
 import           Text.HTML.TagSoup ( Tag (TagText), (~==), (~/=), fromAttrib,
                   fromTagText, innerText, isTagClose, parseTags, partitions,
                   sections )
 import           Text.Printf ( printf )
+import Text.Regex ( subRegex, mkRegex )
 
-import           KS.DLInsp.DHD.Types ( DL, Downloader,
-                  Options ( optEndDate, optPageLimit, optStartDate ),
-                  asks, liftIO, runDL )
+import KS.DLInsp.DHD.Types ( DL, Downloader, Options ( optEndDate,
+   optEstType, optPageLimit, optStartDate ), asks, liftIO, runDL )
 import           KS.Util ( withRetry )
 
 
@@ -147,7 +147,7 @@ getPageUrls = do
    post <- mkPost
    dlResult <- liftIO $ withRetry 5 2 (parseTags `fmap` openURL post) putStrLn
    tags <- either error return dlResult
-   return $ map (fromAttrib "href" . head) .
+   return $ map (\i -> subRegex (mkRegex " ") i "%20") . map (fromAttrib "href" . head) .
       sections (~== "<a class=teaser>") $ tags
 
 
@@ -183,6 +183,9 @@ searchParams = do
    (sy, sm, sd) <- toGregorian . fromJust <$> asks optStartDate
    (ey, em, ed) <- toGregorian . fromJust <$> asks optEndDate
 
+   estType <- asks optEstType
+   liftIO $ printf "Retrieving inspections for establishment type: %s" estType
+
    return $
       [ "f=search"
       , "strSearch1="
@@ -193,7 +196,7 @@ searchParams = do
       , "relevance3=fName"
       , "lscore="
       , "hscore="
-      , "ftype=Restaurant"
+      , "ftype=" ++ (urlEncode estType)
       , "fzipcode=Any"
       , "rcritical=Any"
       , "sMonth=" ++ (show sm)

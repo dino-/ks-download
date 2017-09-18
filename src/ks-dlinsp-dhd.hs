@@ -13,8 +13,8 @@ import System.IO
    )
 import Text.Printf ( printf )
 
-import KS.DLInsp.DHD.Opts ( Options (optEndDate, optHelp, optStartDate)
-   , parseOpts, usageText )
+import KS.DLInsp.DHD.Opts ( Options (optEndDate, optEstType, optHelp,
+   optStartDate) , parseOpts, usageText )
 import KS.DLInsp.DHD.Downloader ( download )
 import KS.DLInsp.Util ( setDates )
 import KS.SourceConfig ( SourceConfig (timeZone), loadConfig )
@@ -44,4 +44,5 @@ main = do
       (show . fromJust . optStartDate $ fixedOptions)
       (show . fromJust . optEndDate $ fixedOptions)
 
-   download fixedOptions destDir
+   download (fixedOptions { optEstType = "Restaurant" }) destDir
+   download (fixedOptions { optEstType = "Food Stand" }) destDir
