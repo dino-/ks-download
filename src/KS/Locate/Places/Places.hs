@@ -106,35 +106,32 @@ coordsToPlaces coords = do
    liftIO $ debugM lname $ "Places result JSON: "
       ++ (BL.unpack plJSON)
 
-   let parseResult = eitherDecode plJSON
-   either
+   places <- either
       (\status -> throwError $ ErrMsg ERROR $ "ERROR Places API: " ++ status)
-      displayAndReturn parseResult
+      (\(Places ps) -> return . catMaybes . L.map rawToMbPlace $ ps)
+      $ eitherDecode plJSON
+
+   let distsPlaces = zip (L.map (computeDistance coords . P.location) places) places
+
+   liftIO $ noticeM lname "Places returned:" >> mapM_ (noticeM lname . show) distsPlaces
+
+   return distsPlaces
 
    where
-      displayAndReturn :: Places -> KSDL [(Distance, Place)]
-      displayAndReturn (Places rps) = do
-         let ps = L.map (computeDistance coords) . catMaybes . L.map convert $ rps
-         liftIO $ do
-            noticeM lname "Places returned:"
-            mapM_ (noticeM lname . show) ps
-         return ps
+      rawToMbPlace :: RawPlace -> Maybe Place
+      rawToMbPlace (RawPlace _ _ _ _ _   True) = Nothing
+      rawToMbPlace (RawPlace n v l t pid _   ) = Just $ Place n v l t pid
 
 
-convert :: RawPlace -> Maybe Place
-convert (RawPlace _ _ _ _ _   True) = Nothing
-convert (RawPlace n v l t pid _   ) = Just $ Place n v l t pid
-
-
-computeDistance :: GeoLatLng -> Place -> (Distance, Place)
-computeDistance (GeoLatLng inspLat inspLng) pl =
+computeDistance :: GeoLatLng -> GeoPoint -> Distance
+computeDistance (GeoLatLng inspLat inspLng) (GeoPoint placeLat placeLng) =
    let inspectionLoc = LatLng inspLat inspLng 0.0 etrf89Datum
-       restaurantLoc = LatLng (lat . P.location $ pl) (lng . P.location $ pl) 0.0 etrf89Datum
+       restaurantLoc = LatLng placeLat placeLng 0.0 etrf89Datum
        dist' = distance inspectionLoc restaurantLoc
        dist = if isNaN dist'
          then Distance 0.0
          else Distance dist'
-   in (dist, pl)
+   in dist
 
 
 mkPlacesUrl :: GeoLatLng -> KSDL String
