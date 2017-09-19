@@ -292,4 +292,5 @@ test-suite test-Locate
         KS.SourceConfig
         KS.Util
         NameWords
+        Places
     ghc-options: -Wall

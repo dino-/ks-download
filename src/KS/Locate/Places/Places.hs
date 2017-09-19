@@ -16,7 +16,9 @@
 
 module KS.Locate.Places.Places
    ( Distance (..)
-   , coordsToPlaces )
+   , coordsToPlaces
+   , computeDistance
+   )
    where
 
 import Data.Aeson ( FromJSON, Value (Object)
@@ -128,7 +130,10 @@ computeDistance :: GeoLatLng -> Place -> (Distance, Place)
 computeDistance (GeoLatLng inspLat inspLng) pl =
    let inspectionLoc = LatLng inspLat inspLng 0.0 etrf89Datum
        restaurantLoc = LatLng (lat . P.location $ pl) (lng . P.location $ pl) 0.0 etrf89Datum
-       dist = Distance $ distance inspectionLoc restaurantLoc
+       dist' = distance inspectionLoc restaurantLoc
+       dist = if isNaN dist'
+         then Distance 0.0
+         else Distance dist'
    in (dist, pl)
 
 
