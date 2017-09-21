@@ -184,7 +184,7 @@ searchParams = do
    (ey, em, ed) <- toGregorian . fromJust <$> asks optEndDate
 
    estType <- asks optEstType
-   liftIO $ printf "Retrieving inspections for establishment type: %s" estType
+   liftIO $ printf "Retrieving inspections for establishment type: %s\n" estType
 
    return $
       [ "f=search"
