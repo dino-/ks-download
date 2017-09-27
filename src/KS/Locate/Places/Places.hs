@@ -16,6 +16,7 @@
 
 module KS.Locate.Places.Places
    ( Distance (..)
+   , PlacesResults (..)
    , coordsToPlaces
    , computeDistance
    )
@@ -44,9 +45,9 @@ import KS.Locate.Locate
    throwError, when
    )
 import KS.Locate.Places.Geocoding ( GeoLatLng (..) )
-import KS.Locate.Places.NameWords ( toList )
+import KS.Locate.Places.NameWords ( matchRuleFromInsp )
 import KS.Log ( Priority (ERROR), debugM, errorM, lname, noticeM )
-import KS.SourceConfig ( SourceConfig (placesTypes) )
+import KS.SourceConfig ( MatchRule (KW, RJ), SourceConfig (placesTypes) )
 import KS.Util ( withRetry )
 
 
@@ -96,26 +97,41 @@ instance Show Distance where
    show (Distance distanceInKm) = printf "%5.4f km" distanceInKm
 
 
-coordsToPlaces :: GeoLatLng -> KSDL [(Distance, Place)]
+data PlacesResults
+   = PossiblePlaces [(Distance, Place)]
+   | Rejected
+   deriving Show
+
+
+coordsToPlaces :: GeoLatLng -> KSDL PlacesResults
 coordsToPlaces coords = do
-   url <- mkPlacesUrl coords
-   liftIO $ noticeM lname $ "Places URL: " ++ url
+   applicableRule <- matchRuleFromInsp
+   liftIO $ noticeM lname $ show applicableRule
 
-   plJSON <- eitherThrowCritical $ withRetry 5 3 (simpleHttp url) (errorM lname)
+   case applicableRule of
+      KW _ nameWords -> do
+         url <- mkPlacesUrl coords nameWords
+         liftIO $ noticeM lname $ "Places URL: " ++ url
 
-   liftIO $ debugM lname $ "Places result JSON: "
-      ++ (BL.unpack plJSON)
+         plJSON <- eitherThrowCritical $ withRetry 5 3 (simpleHttp url) (errorM lname)
 
-   places <- either
-      (\status -> throwError $ ErrMsg ERROR $ "ERROR Places API: " ++ status)
-      (\(Places ps) -> return . catMaybes . L.map rawToMbPlace $ ps)
-      $ eitherDecode plJSON
+         liftIO $ debugM lname $ "Places result JSON: "
+            ++ (BL.unpack plJSON)
 
-   let distsPlaces = zip (L.map (computeDistance coords . P.location) places) places
+         places <- either
+            (\status -> throwError $ ErrMsg ERROR $ "ERROR Places API: " ++ status)
+            (\(Places ps) -> return . catMaybes . L.map rawToMbPlace $ ps)
+            $ eitherDecode plJSON
 
-   liftIO $ noticeM lname "Places returned:" >> mapM_ (noticeM lname . show) distsPlaces
+         let distsPlaces = zip (L.map (computeDistance coords . P.location) places) places
 
-   return distsPlaces
+         liftIO $ noticeM lname "Places returned:" >> mapM_ (noticeM lname . show) distsPlaces
+
+         return . PossiblePlaces $ distsPlaces
+
+      RJ _ -> do
+         liftIO $ noticeM lname "Rejected"
+         return Rejected
 
    where
       rawToMbPlace :: RawPlace -> Maybe Place
@@ -134,13 +150,9 @@ computeDistance (GeoLatLng inspLat inspLng) (GeoPoint placeLat placeLng) =
    in dist
 
 
-mkPlacesUrl :: GeoLatLng -> KSDL String
-mkPlacesUrl (GeoLatLng lat' lng') = do
+mkPlacesUrl :: GeoLatLng -> [Text] -> KSDL String
+mkPlacesUrl (GeoLatLng lat' lng') nameList = do
    key <- asks (keyString . googleApiKey . getConfig)
-
-   nameList <- toList
-   liftIO $ noticeM lname $ "Places name words list: "
-      ++ (show nameList)
 
    let nameWordsParam = urlEncode . unpack . intercalate " " $ nameList
 

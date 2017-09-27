@@ -4,31 +4,36 @@
 {-# LANGUAGE OverloadedStrings #-}
 
 module KS.Locate.Places.NameWords
-   ( toList
+   ( matchRuleFromInsp
    )
    where
 
 import qualified Data.List as L
-import qualified Data.Map as Map
+import Data.String.Conv ( toS )
 import Data.Text ( Text, filter, isPrefixOf, map, split, strip, toLower )
 import Prelude hiding ( filter, map )
+import Text.Regex.Posix ( (=~) )
 
 import KS.Data.Inspection ( Inspection (name) )
 import KS.Locate.Locate ( KSDL, asks, getInspection, getSourceConfig )
 import KS.SourceConfig
-   ( SourceConfig (namewordsSpecialCases, namewordsStopwords) )
+   ( MatchRule (KW, RJ), SourceConfig (matchRules, namewordsStopwords) )
 
 
-toList :: KSDL [Text]
-toList = do
-   specialCases <- asks (namewordsSpecialCases . getSourceConfig)
-   list <- mkList
-
+matchRuleFromInsp :: KSDL MatchRule
+matchRuleFromInsp = do
+   matchRules' <- asks (matchRules . getSourceConfig)
    iname <- strip <$> asks (name . getInspection)
-   return $ Map.findWithDefault
-      list           -- Or make a list for a normal name
-      iname          -- Find this name..
-      specialCases   -- ..in these special cases
+   checkRule iname matchRules'
+
+   where
+      checkRule iname' []                          = KW iname' <$> mkList
+      checkRule iname' (mr@(KW name' _) : rules)
+         | iname' == name'                         = return mr
+         | otherwise                               = checkRule iname' rules
+      checkRule iname' (mr@(RJ regexp)  : rules)
+         | (toS iname' :: String) =~ regexp        = return mr
+         | otherwise                               = checkRule iname' rules
 
 
 mkList :: KSDL [Text]

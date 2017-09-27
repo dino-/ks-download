@@ -25,7 +25,8 @@ import KS.Locate.Locate
 import KS.Locate.Opts
 import KS.Locate.Places.Geocoding ( forwardLookup )
 import KS.Locate.Places.Match ( Match, match )
-import KS.Locate.Places.Places ( coordsToPlaces )
+import KS.Locate.Places.Places ( PlacesResults (PossiblePlaces, Rejected),
+   coordsToPlaces )
 import qualified KS.SourceConfig as SC
 import KS.Log
 
@@ -78,11 +79,12 @@ lookupInspection config options confDir srcPath = do
       insp <- loadInspection' srcPath
       sc <- liftIO $ SC.loadConfig confDir $ inspection_source insp
       local (\r -> r { getSourceConfig = sc, getInspection = insp }) $ do
-         geo <- forwardLookup
-         places <- coordsToPlaces geo
-         match places
+         placesResults <- coordsToPlaces =<< forwardLookup
+         case placesResults of
+            PossiblePlaces pps -> Just <$> match pps
+            Rejected -> return Nothing
 
-   either (handleFailure) (outputDoc options srcPath . mkDoc) r
+   either (handleFailure) (outputDoc options srcPath . (fmap mkDoc)) r
 
    where
       handleFailure (ErrMsg prio msg) = do
@@ -102,8 +104,11 @@ lookupInspection config options confDir srcPath = do
          Document "inspection" inspection' place'
 
 
-outputDoc :: Options -> FilePath -> Document -> IO ()
-outputDoc options srcPath doc = do
+outputDoc :: Options -> FilePath -> Maybe Document -> IO ()
+
+outputDoc _       _       Nothing    = return ()
+
+outputDoc options srcPath (Just doc) = do
    r <- tryIOError $ case (optSuccessDir options) of
       Just successDir -> saveDocument successDir doc
       Nothing -> do
