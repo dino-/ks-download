@@ -17,7 +17,7 @@
 module KS.Locate.Places.Places
    ( Distance (..)
    , PlacesResults (..)
-   , coordsToPlaces
+   , getPossiblePlaces
    , computeDistance
    )
    where
@@ -44,7 +44,7 @@ import KS.Locate.Locate
    , asks, eitherThrowCritical, liftIO,
    throwError, when
    )
-import KS.Locate.Places.Geocoding ( GeoLatLng (..) )
+import KS.Locate.Places.Geocoding ( GeoLatLng (..), forwardLookup )
 import KS.Locate.Places.NameWords ( matchRuleFromInsp )
 import KS.Log ( Priority (ERROR), debugM, errorM, lname, noticeM )
 import KS.SourceConfig ( MatchRule (KW, RJ), SourceConfig (placesTypes) )
@@ -103,13 +103,14 @@ data PlacesResults
    deriving Show
 
 
-coordsToPlaces :: GeoLatLng -> KSDL PlacesResults
-coordsToPlaces coords = do
+getPossiblePlaces :: KSDL PlacesResults
+getPossiblePlaces = do
    applicableRule <- matchRuleFromInsp
    liftIO $ noticeM lname $ printf "MatchRule: %s" (show applicableRule)
 
    case applicableRule of
       KW _ nameWords -> do
+         coords <- forwardLookup
          url <- mkPlacesUrl coords nameWords
          liftIO $ noticeM lname $ "Places URL: " ++ url
 

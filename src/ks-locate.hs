@@ -23,10 +23,9 @@ import KS.Data.Inspection
 import KS.Locate.Config
 import KS.Locate.Locate
 import KS.Locate.Opts
-import KS.Locate.Places.Geocoding ( forwardLookup )
 import KS.Locate.Places.Match ( Match, match )
 import KS.Locate.Places.Places ( PlacesResults (PossiblePlaces, Rejected),
-   coordsToPlaces )
+   getPossiblePlaces )
 import qualified KS.SourceConfig as SC
 import KS.Log
 
@@ -79,7 +78,7 @@ lookupInspection config options confDir srcPath = do
       insp <- loadInspection' srcPath
       sc <- liftIO $ SC.loadConfig confDir $ inspection_source insp
       local (\r -> r { getSourceConfig = sc, getInspection = insp }) $ do
-         placesResults <- coordsToPlaces =<< forwardLookup
+         placesResults <- getPossiblePlaces
          case placesResults of
             PossiblePlaces pps -> Just <$> match pps
             Rejected -> return Nothing
