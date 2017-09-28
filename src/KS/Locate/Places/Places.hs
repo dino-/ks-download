@@ -106,7 +106,7 @@ data PlacesResults
 coordsToPlaces :: GeoLatLng -> KSDL PlacesResults
 coordsToPlaces coords = do
    applicableRule <- matchRuleFromInsp
-   liftIO $ noticeM lname $ show applicableRule
+   liftIO $ noticeM lname $ printf "MatchRule: %s" (show applicableRule)
 
    case applicableRule of
       KW _ nameWords -> do
