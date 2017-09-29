@@ -24,7 +24,7 @@ data MatchRule
       [T.Text] -- List of keywords for the Places query string
    | RJ        -- Reject
       String   -- Regular expression to match against inspection restaurant name
-   deriving (Read, Show)
+   deriving (Eq, Read, Show)
 
 
 deriving instance Read GeoPoint
