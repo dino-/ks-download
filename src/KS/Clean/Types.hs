@@ -3,7 +3,10 @@
 
 module KS.Clean.Types where
 
+import Data.Text ( Text )
+
 
 type Date = Int
 type ShouldArchive = Bool
 type ConfDir = FilePath
+type PlaceId = Text

@@ -7,8 +7,9 @@ import System.IO
    )
 
 import qualified KS.Clean.Closed.Command as Closed
+import qualified KS.Clean.Remove.Command as Remove
 import qualified KS.Clean.Old.Command as Old
-import KS.Clean.Options ( Options (Closed, Old), parseOpts )
+import KS.Clean.Options ( Options (Closed, Old, Remove), parseOpts )
 
 
 main :: IO ()
@@ -20,3 +21,4 @@ main = do
    case command of
       Closed closedOpts -> Closed.run closedOpts
       Old oldOpts -> Old.run oldOpts
+      Remove removeOpts -> Remove.run removeOpts

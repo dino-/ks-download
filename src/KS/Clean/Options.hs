@@ -1,3 +1,5 @@
+{- # LANGUAGE OverloadedStrings #-}
+
 -- License: BSD3 (see LICENSE)
 -- Author: Dino Morelli <dino@ui3.info>
 
@@ -8,22 +10,26 @@ module KS.Clean.Options
    where
 
 import Data.Monoid ( (<>) )
+import Data.String.Conv ( toS )
 import Data.Version ( showVersion )
 import Options.Applicative ( Parser, ParserInfo, argument, auto,
    command, execParser, footerDoc, fullDesc, help, helper, info, long,
    metavar, option, optional, progDesc, short, str, subparser, switch )
 import Options.Applicative.Builder ( InfoMod )
+import Options.Applicative.Types ( readerAsk )
 import Paths_ks_download ( version )
 import Text.PrettyPrint.ANSI.Leijen ( string )
 
-import KS.Clean.Closed.Options ( ClosedOptions (ClosedOptions) )
-import KS.Clean.Old.Options ( OldOptions (OldOptions) )
-import KS.Clean.Types ( ConfDir, Date, ShouldArchive )
+import KS.Clean.Closed.Options ( ClosedOptions (..) )
+import KS.Clean.Old.Options ( OldOptions (..) )
+import KS.Clean.Remove.Options ( RemoveOptions (..) )
+import KS.Clean.Types ( ConfDir, Date, PlaceId, ShouldArchive )
 
 
 data Options
    = Closed ClosedOptions
    | Old OldOptions
+   | Remove RemoveOptions
 
 
 parseBeforeDate :: Parser (Maybe Date)
@@ -41,7 +47,13 @@ parseArchive = switch $
 parseConfDir :: Parser ConfDir
 parseConfDir = argument str $
    metavar "CONFDIR" <>
-   help "Directory containing ks-download.conf file"
+   help "Directory containing Kitchen Snitch config files"
+
+
+parsePlaceId :: Parser PlaceId
+parsePlaceId = argument (toS <$> readerAsk) $
+   metavar "PLACES_ID" <>
+   help "Google Places ID"
 
 
 parseClosed :: Parser Options
@@ -50,6 +62,10 @@ parseClosed = Closed <$> (ClosedOptions <$> parseArchive <*> parseConfDir)
 
 parseOld :: Parser Options
 parseOld = Old <$> (OldOptions <$> parseBeforeDate <*> parseArchive <*> parseConfDir)
+
+
+parseRemove :: Parser Options
+parseRemove = Remove <$> (RemoveOptions <$> parseConfDir <*> parsePlaceId)
 
 
 parseOpts :: IO Options
@@ -61,7 +77,9 @@ parseOpts = execParser $ parseCommand `withInfo`
          command "closed" (parseClosed `withInfo`
             "Process new feedback on closed places" $ footerString usageClosed) <>
          command "old" (parseOld `withInfo`
-            "Batch check old inspections against Places" $ footerString usageOld)
+            "Batch check old inspections against Places" $ footerString usageOld) <>
+         command "remove" (parseRemove `withInfo`
+            "Archive and delete database data" $ footerString usageRemove)
 
 
 -- Convenience function to add --help support to anything
@@ -86,6 +104,13 @@ usageOld =
    [ "Looks up records in inspections_recent that are older the date above in Google Places. Reports the permanently closed status and optionally archives the closed places."
    , ""
    ] ++ usageArchiving ++ commonFooter
+
+
+usageRemove :: [String]
+usageRemove =
+   [ "Remove records for a specific Places ID from the database"
+   , ""
+   ] ++ commonFooter
 
 
 usageArchiving :: [String]

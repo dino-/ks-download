@@ -244,6 +244,8 @@ executable ks-clean
         KS.Clean.Closed.Options
         KS.Clean.Old.Options
         KS.Clean.Old.Command
+        KS.Clean.Remove.Command
+        KS.Clean.Remove.Options
         KS.Clean.Options
         KS.Clean.Types
         KS.Database.Mongo.Config
