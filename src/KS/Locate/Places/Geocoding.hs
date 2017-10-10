@@ -7,22 +7,22 @@ module KS.Locate.Places.Geocoding
    ( GeoPoint (..), forwardLookup )
    where
 
-import           Control.Concurrent ( threadDelay )
-import           Data.Aeson ( FromJSON, Value (Object), (.:), eitherDecode,
-                  parseJSON )
+import Control.Concurrent ( threadDelay )
+import Data.Aeson ( FromJSON, Value (Object), (.:), eitherDecode,
+   parseJSON )
 import Data.String.Conv ( toS )
-import           Network.HTTP ( urlEncode )
-import           Network.HTTP.Conduit ( simpleHttp )
-import           Text.Printf ( printf )
+import Network.HTTP ( urlEncode )
+import Network.HTTP.Conduit ( simpleHttp )
+import Text.Printf ( printf )
 
-import           KS.Data.Inspection ( addr )
-import           KS.Data.Place ( GeoPoint (GeoPoint), lat, lng )
-import           KS.Locate.Locate ( Env (..), ErrMsg (..), KSDL, asks,
-                  eitherThrowCritical, liftIO, throwError, when )
-import           KS.Locate.Config ( Config (geocodingApiDelay, googleApiKey),
-                  keyString )
-import           KS.Log ( Priority (ERROR), debugM, errorM, lname, noticeM )
-import           KS.Util ( withRetry )
+import KS.Data.Inspection ( addr )
+import KS.Data.Place ( GeoPoint (GeoPoint), lat, lng )
+import KS.Locate.Locate ( Env (..), ErrMsg (..), KSDL, asks,
+   eitherThrowCritical, liftIO, throwError, when )
+import KS.Locate.Config ( Config (geocodingApiDelay, googleApiKey),
+   keyString )
+import KS.Log ( Priority (ERROR), debugM, errorM, lname, noticeM )
+import KS.Util ( withRetry )
 
 
 newtype GCPoint = GCPoint { getGCPoint :: GeoPoint }
