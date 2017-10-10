@@ -4,7 +4,7 @@
 {-# LANGUAGE KindSignatures, OverloadedStrings, RankNTypes #-}
 
 module KS.Locate.Places.Geocoding
-   ( GeoLatLng (..), forwardLookup )
+   ( GeoPoint (..), forwardLookup )
    where
 
 import           Control.Concurrent ( threadDelay )
@@ -16,6 +16,7 @@ import           Network.HTTP.Conduit ( simpleHttp )
 import           Text.Printf ( printf )
 
 import           KS.Data.Inspection ( addr )
+import           KS.Data.Place ( GeoPoint (GeoPoint), lat, lng )
 import           KS.Locate.Locate ( Env (..), ErrMsg (..), KSDL, asks,
                   eitherThrowCritical, liftIO, throwError, when )
 import           KS.Locate.Config ( Config (geocodingApiDelay, googleApiKey),
@@ -24,10 +25,10 @@ import           KS.Log ( Priority (ERROR), debugM, errorM, lname, noticeM )
 import           KS.Util ( withRetry )
 
 
-data GeoLatLng = GeoLatLng Double Double
+newtype GCPoint = GCPoint { getGCPoint :: GeoPoint }
    deriving Show
 
-instance FromJSON GeoLatLng where
+instance FromJSON GCPoint where
    parseJSON (Object v) = do
       status <- v .: "status"
       when (status /= "OK") $ fail status
@@ -35,7 +36,7 @@ instance FromJSON GeoLatLng where
       firstResult <- (v .: "results") >>= headE v
       loc <- (firstResult .: "geometry") >>= (.: "location")
 
-      GeoLatLng <$> (loc .: "lat") <*> (loc .: "lng")
+      GCPoint <$> ( GeoPoint <$> (loc .: "lat") <*> (loc .: "lng") )
    parseJSON o = fail . show $ o
 
 
@@ -45,7 +46,7 @@ headE _ (x : _) = return x
 headE v []      = fail . show $ v
 
 
-forwardLookup :: KSDL GeoLatLng
+forwardLookup :: KSDL GeoPoint
 forwardLookup = do
    url <- mkGeocodeUrl
    liftIO $ noticeM lname $ "Geocoding URL: " ++ url
@@ -59,10 +60,10 @@ forwardLookup = do
    let parseResult = eitherDecode gcJSON
    either
       (\status -> throwError $ ErrMsg ERROR $ "ERROR Geocoding: " ++ status)
-      displayAndReturn parseResult
+      (displayAndReturn . getGCPoint) parseResult
 
 
-displayAndReturn :: GeoLatLng -> KSDL GeoLatLng
+displayAndReturn :: GeoPoint -> KSDL GeoPoint
 displayAndReturn location = do
    liftIO $ noticeM lname $ show location
    return location

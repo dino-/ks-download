@@ -35,7 +35,7 @@ import Network.HTTP ( urlEncode )
 import Network.HTTP.Conduit ( simpleHttp )
 import Text.Printf ( printf )
 
-import KS.Data.Place ( GeoPoint (..), Place (..) )
+import KS.Data.Place ( GeoPoint (GeoPoint), Place (..) )
 import qualified KS.Data.Place as P
 import KS.Locate.Config ( Config (googleApiKey), keyString )
 import KS.Locate.Locate
@@ -44,7 +44,7 @@ import KS.Locate.Locate
    , asks, eitherThrowCritical, liftIO,
    throwError, when
    )
-import KS.Locate.Places.Geocoding ( GeoLatLng (..), forwardLookup )
+import KS.Locate.Places.Geocoding ( forwardLookup )
 import KS.Locate.Places.NameWords ( matchRuleFromInsp )
 import KS.Log ( Priority (ERROR), debugM, errorM, lname, noticeM )
 import KS.SourceConfig ( MatchRule (KW, RJ), SourceConfig (placesTypes) )
@@ -140,8 +140,8 @@ getPossiblePlaces = do
       rawToMbPlace (RawPlace n v l t pid _   ) = Just $ Place n v l t pid
 
 
-computeDistance :: GeoLatLng -> GeoPoint -> Distance
-computeDistance (GeoLatLng inspLat inspLng) (GeoPoint placeLat placeLng) =
+computeDistance :: GeoPoint -> GeoPoint -> Distance
+computeDistance (GeoPoint inspLat inspLng) (GeoPoint placeLat placeLng) =
    let inspectionLoc = LatLng inspLat inspLng 0.0 etrf89Datum
        restaurantLoc = LatLng placeLat placeLng 0.0 etrf89Datum
        dist' = distance inspectionLoc restaurantLoc
@@ -151,8 +151,8 @@ computeDistance (GeoLatLng inspLat inspLng) (GeoPoint placeLat placeLng) =
    in dist
 
 
-mkPlacesUrl :: GeoLatLng -> [Text] -> KSDL String
-mkPlacesUrl (GeoLatLng lat' lng') nameList = do
+mkPlacesUrl :: GeoPoint -> [Text] -> KSDL String
+mkPlacesUrl (GeoPoint lat' lng') nameList = do
    key <- asks (keyString . googleApiKey . getConfig)
 
    let nameWordsParam = urlEncode . unpack . intercalate " " $ nameList

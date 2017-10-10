@@ -9,21 +9,15 @@ module Places
 
 import Test.Hspec
 
-import KS.Data.Place ( GeoPoint (..) )
-import KS.Locate.Places.Geocoding ( GeoLatLng (..) )
+import KS.Data.Place ( GeoPoint (GeoPoint), lat, lng )
 import KS.Locate.Places.Places ( Distance (..), computeDistance )
+
+
+coords1 :: GeoPoint
+coords1 = GeoPoint { lat = 35.9096536 , lng = (-78.9851382) }
 
 
 test_computeDistance :: SpecWith ()
 test_computeDistance = describe "computeDistance" $ do
    it "identical locations are 0.0 distance apart, not NaN" $
-      computeDistance inspCoords placeCoords
-      `shouldBe` Distance 0.0
-
-
-inspCoords :: GeoLatLng
-inspCoords = GeoLatLng 35.9096536 (-78.9851382)
-
-
-placeCoords :: GeoPoint
-placeCoords = GeoPoint { lat = 35.9096536 , lng = (-78.9851382) }
+      computeDistance coords1 coords1 `shouldBe` Distance 0.0
