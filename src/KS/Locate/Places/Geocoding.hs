@@ -10,8 +10,7 @@ module KS.Locate.Places.Geocoding
 import           Control.Concurrent ( threadDelay )
 import           Data.Aeson ( FromJSON, Value (Object), (.:), eitherDecode,
                   parseJSON )
-import qualified Data.ByteString.Lazy.Char8 as BL
-import           Data.Text ( unpack )
+import Data.String.Conv ( toS )
 import           Network.HTTP ( urlEncode )
 import           Network.HTTP.Conduit ( simpleHttp )
 import           Text.Printf ( printf )
@@ -55,8 +54,7 @@ forwardLookup = do
 
    gcJSON <- eitherThrowCritical $ withRetry 5 3 (simpleHttp url) (errorM lname)
 
-   liftIO $ debugM lname $ "Geocoding result JSON: "
-      ++ (BL.unpack gcJSON)
+   liftIO $ debugM lname $ "Geocoding result JSON: " ++ (toS gcJSON)
 
    let parseResult = eitherDecode gcJSON
    either
@@ -75,4 +73,4 @@ mkGeocodeUrl = do
    addr' <- asks (addr . getInspection)
    key <- asks (keyString . googleApiKey . getConfig)
 
-   return $ printf "https://maps.googleapis.com/maps/api/geocode/json?address=%s&key=%s" (urlEncode $ unpack addr') key
+   return $ printf "https://maps.googleapis.com/maps/api/geocode/json?address=%s&key=%s" (urlEncode $ toS addr') key
