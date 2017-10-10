@@ -6,8 +6,6 @@ module KS.Clean.Remove.Options
    )
    where
 
-import Data.Text ( Text )
-
 import KS.Clean.Types
 
 
