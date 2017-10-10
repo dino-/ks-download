@@ -57,10 +57,10 @@ forwardLookup = do
 
    liftIO $ debugM lname $ "Geocoding result JSON: " ++ (toS gcJSON)
 
-   let parseResult = eitherDecode gcJSON
+   let parseResult = getGCPoint <$> eitherDecode gcJSON
    either
       (\status -> throwError $ ErrMsg ERROR $ "ERROR Geocoding: " ++ status)
-      (displayAndReturn . getGCPoint) parseResult
+      displayAndReturn parseResult
 
 
 displayAndReturn :: GeoPoint -> KSDL GeoPoint
