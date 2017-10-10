@@ -25,7 +25,7 @@ import KS.Log ( Priority (ERROR), debugM, errorM, lname, noticeM )
 import KS.Util ( withRetry )
 
 
-newtype GCPoint = GCPoint { getGCPoint :: GeoPoint }
+newtype GCPoint = GCPoint { unwrapGCPoint :: GeoPoint }
 
 instance FromJSON GCPoint where
    parseJSON (Object v) = do
@@ -56,7 +56,7 @@ forwardLookup = do
 
    liftIO $ debugM lname $ "Geocoding result JSON: " ++ (toS gcJSON)
 
-   let parseResult = getGCPoint <$> eitherDecode gcJSON
+   let parseResult = unwrapGCPoint <$> eitherDecode gcJSON
    either
       (\status -> throwError $ ErrMsg ERROR $ "ERROR Geocoding: " ++ status)
       displayAndReturn parseResult
