@@ -26,7 +26,6 @@ import KS.Util ( withRetry )
 
 
 newtype GCPoint = GCPoint { getGCPoint :: GeoPoint }
-   deriving Show
 
 instance FromJSON GCPoint where
    parseJSON (Object v) = do
