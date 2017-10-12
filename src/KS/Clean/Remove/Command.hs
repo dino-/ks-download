@@ -124,7 +124,7 @@ displayFeedback fs = liftIO $ do
    return . not . null $ fs
 
    where
-      formatFeedback fb = printf "%s\nFeedback\n   %s | %s\n   %d %s %s\n   %s"
+      formatFeedback fb = printf "%s\nFeedback\n   %s | %s\n   %d %s %s\n   %s\n"
          line
          (show . F.name $ fb) (show . F.place_id $ fb)
          (F.date fb) (show . F.issue_type $ fb) (F.device_id fb)
