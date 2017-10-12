@@ -8,7 +8,6 @@ module KS.Clean.Remove.Command
    )
    where
 
-import Control.Monad ( when )
 import Control.Monad.Reader ( ReaderT, runReaderT, asks )
 import Control.Monad.Trans ( MonadIO, liftIO )
 import Data.Bson.Generic ( fromBSON, toBSON )
@@ -60,8 +59,9 @@ run options = do
                putStrLn ""
                return $ if reply == "yes" then True else False
 
-            -- Remove it all
-            when deleting $ archiveEstablishment >> resolveFeedback
+            if deleting  -- Remove it all
+               then archiveEstablishment >> resolveFeedback
+               else liftIO $ putStrLn "Aborted"
          else
             liftIO $ putStrLn "Nothing to do, exiting"
 
