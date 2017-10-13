@@ -1,4 +1,4 @@
-# kitchensnitch-dl
+# ks-download
 
 
 ## Synopsis
