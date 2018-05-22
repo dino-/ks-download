@@ -12,7 +12,7 @@ import qualified Data.List as L
 import Data.String.Conv ( toS )
 import Data.Text ( Text, filter, isPrefixOf, map, split, strip, toLower )
 import Prelude hiding ( filter, map )
-import Text.Regex.Posix ( (=~) )
+import Text.Regex.PCRE ( (=~) )
 
 import KS.Data.Inspection ( Inspection (name) )
 import KS.Locate.Locate ( KSDL, asks, getInspection, getSourceConfig )
