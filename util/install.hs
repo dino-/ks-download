@@ -6,7 +6,7 @@
 import Control.Exception
 import Control.Monad
 import Data.List
-import Data.Version
+import Data.Version hiding ( showVersion )
 import Distribution.Package
 import Distribution.PackageDescription hiding ( error, options )
 import Distribution.PackageDescription.Parse
@@ -55,7 +55,7 @@ main = do
    -- then pass a pile of what we know to a function to create the
    -- installation dirs
    dirs <- constructDirs opts . package . packageDescription
-      <$> readPackageDescription normal (head cabalFiles)
+      <$> readGenericPackageDescription normal (head cabalFiles)
 
 
    -- Perform the installation
