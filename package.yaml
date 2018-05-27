@@ -10,7 +10,6 @@ extra-source-files:
 - changelog.md
 - README.md
 - stack.yaml
-- util/gentags.sh
 - util/inspconv.coffee
 - util/install.hs
 - util/ks-dl-nightly-cdp.sh
