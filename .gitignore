@@ -3,3 +3,6 @@
 
 # stack build artifacts
 .stack-work/
+
+# Using hpack, cabal files is generated
+/*.cabal

@@ -42,8 +42,9 @@ main = do
 
    (options, args) <- getArgs >>= parseOpts
    when (optHelp options) $ do putStrLn usageText >> exitSuccess
-   when (length args < 2) $ do putStrLn usageText >> exitFailure
-   let (confDir : srcDirsOrFiles) = args
+   (confDir, srcDirsOrFiles) <- case args of
+      (c : ss) -> return (c, ss)
+      _        -> putStrLn usageText >> exitFailure
 
    putStrLn $ "ks-dbinsert version " ++ (showVersion version) ++ " started"
 

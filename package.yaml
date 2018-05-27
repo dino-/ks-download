@@ -1,0 +1,176 @@
+name: ks-download
+version: '1.30'
+synopsis: Data downloader and parser for the KitchenSnitch project
+description: Bar Baz
+license: BSD3
+author: Dino Morelli
+maintainer: Dino Morelli <dino@ui3.info>
+category: Unknown
+extra-source-files:
+- changelog.md
+- README.md
+- stack.yaml
+- util/gentags.sh
+- util/inspconv.coffee
+- util/install.hs
+- util/ks-dl-nightly-cdp.sh
+- util/ks-dl-nightly-dhd.sh
+- util/resources/geocode.json
+- util/resources/nc-wake/searchResultPage.html
+- util/resources/places.json
+
+data-files:
+- resources/ks-download.conf
+- resources/ks-download-nc_chatham.conf
+- resources/ks-download-nc_durham.conf
+- resources/ks-download-nc_orange.conf
+- resources/ks-download-nc_wake.conf
+- resources/mongodb.conf
+
+github: dino-/ks-download
+
+ghc-options:
+- -fwarn-tabs
+- -Wall
+- -Wcompat
+- -Wincomplete-record-updates
+- -Wincomplete-uni-patterns
+- -Wredundant-constraints
+
+default-extensions:
+- BangPatterns
+- DeriveFoldable
+- DeriveFunctor
+- DeriveGeneric
+- DeriveLift
+- DeriveTraversable
+- EmptyCase
+- FlexibleContexts
+- FlexibleInstances
+- GeneralizedNewtypeDeriving
+- InstanceSigs
+- KindSignatures
+- LambdaCase
+- MultiParamTypeClasses
+- MultiWayIf
+- NamedFieldPuns
+#- OverloadedStrings
+- ScopedTypeVariables
+- StandaloneDeriving
+- TupleSections
+- TypeFamilies
+
+
+dependencies:
+
+- base >=3 && <5
+
+
+library:
+  source-dirs: src/lib
+  dependencies:
+  - aeson
+  - aeson-pretty
+  - ansi-wl-pprint
+  - attoparsec
+  - bson
+  - bson-generic
+  - bytestring
+  - containers
+  - exceptions
+  - filepath
+  - hcoord
+  - hslogger
+  - hspec
+  - HTTP
+  - http-conduit
+  - ks-library >=1.13
+  - lens
+  - mongoDB
+  - mtl
+  - optparse-applicative
+  - regex-compat
+  - regex-pcre
+  - string-conv
+  - tagsoup
+  - tce-conf
+  - text
+  - time
+  - utf8-string
+  - wreq
+
+
+executables:
+
+  ks-dlinsp-cdp:
+    main: ks-dlinsp-cdp.hs
+    source-dirs: src/app
+    dependencies:
+    - ks-download
+
+  ks-dlinsp-dhd:
+    main: ks-dlinsp-dhd.hs
+    source-dirs: src/app
+    dependencies:
+    - ks-download
+
+  ks-locate:
+    main: ks-locate.hs
+    source-dirs: src/app
+    dependencies:
+    - aeson-pretty
+    - bytestring
+    - directory
+    - filepath
+    - ks-download
+    - ks-library
+
+  ks-dbinsert:
+    main: ks-dbinsert.hs
+    source-dirs: src/app
+    dependencies:
+    - bson-generic
+    - directory
+    - filepath
+    - ks-download
+    - ks-library
+    - mongoDB
+    - mtl
+    - text
+
+  ks-regionupd:
+    main: ks-regionupd.hs
+    source-dirs: src/app
+    dependencies:
+    - aeson
+    - bson
+    - bytestring
+    - ks-download
+    - ks-library
+    - mongoDB
+    - mtl
+    - regex-compat
+    - safe-exceptions
+    - text
+    - time
+
+  ks-clean:
+    main: ks-clean.hs
+    source-dirs: src/app
+    dependencies:
+    - ks-download
+
+
+tests:
+
+  test-Locate:
+    main: test-Locate.hs
+    source-dirs:
+    - src
+    - testsuite
+    dependencies:
+    - hspec
+    - ks-download
+    - ks-library
+    - text
+    - time

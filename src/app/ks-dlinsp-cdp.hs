@@ -1,6 +1,8 @@
 -- License: BSD3 (see LICENSE)
 -- Author: Dino Morelli <dino@ui3.info>
 
+{-# LANGUAGE OverloadedStrings #-}
+
 import Control.Monad ( when )
 import Data.Maybe ( fromJust )
 import Data.Version ( showVersion )
@@ -13,9 +15,9 @@ import System.IO
    )
 import Text.Printf ( printf )
 
-import KS.DLInsp.DHD.Opts ( Options (optEndDate, optEstType, optHelp,
-   optStartDate) , parseOpts, usageText )
-import KS.DLInsp.DHD.Downloader ( download )
+import KS.DLInsp.CDP.Downloader ( download )
+import KS.DLInsp.CDP.Opts ( Options (optEndDate, optHelp, optStartDate)
+   , parseOpts, usageText )
 import KS.DLInsp.Util ( setDates )
 import KS.SourceConfig ( SourceConfig (timeZone), loadConfig )
 
@@ -27,10 +29,11 @@ main = do
 
    (options, args) <- getArgs >>= parseOpts
    when (optHelp options) $ putStrLn usageText >> exitSuccess
-   when (length args < 3) $ putStrLn usageText >> exitFailure
-   let (confDir : source : destDir : _) = args
+   (confDir, source, destDir) <- case args of
+      (c : s : d : _) -> return (c, s, d)
+      _               -> putStrLn usageText >> exitFailure
 
-   putStrLn $ "ks-dlinsp-dhd version " ++ (showVersion version) ++ " started"
+   putStrLn $ "ks-dlinsp-cdp version " ++ (showVersion version) ++ " started"
 
    -- We need to get the source config to see its time zone to
    -- supply proper values for optStartDate and optEndDate
@@ -44,5 +47,4 @@ main = do
       (show . fromJust . optStartDate $ fixedOptions)
       (show . fromJust . optEndDate $ fixedOptions)
 
-   download (fixedOptions { optEstType = "Restaurant" }) destDir
-   download (fixedOptions { optEstType = "Food Stand" }) destDir
+   download source fixedOptions destDir

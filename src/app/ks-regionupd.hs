@@ -7,6 +7,7 @@
    for KitchenSnitch into MongoDB
 -}
 
+import Control.Exception.Safe (Exception, throwM)
 import Control.Monad ( when )
 import Control.Monad.Trans ( liftIO )
 import Data.Aeson ( decodeStrict )
@@ -17,6 +18,7 @@ import qualified Data.Text as T
 import Data.Time ( getCurrentTime, utcToLocalZonedTime, zonedTimeToLocalTime )
 import Data.Time.Calendar ( toGregorian )
 import Data.Time.LocalTime ( LocalTime (localDay) )
+import Data.Typeable ( Typeable )
 import Data.Version ( showVersion )
 import Database.Mongo.Util ( lastStatus )
 import Database.MongoDB hiding ( options )
@@ -45,8 +47,9 @@ main = do
 
    (options, args) <- getArgs >>= parseOpts
    when (optHelp options) $ putStrLn usageText >> exitSuccess
-   when (null args) $ putStrLn usageText >> exitFailure
-   let (confDir : _) = args
+   confDir <- case args of
+      (c : _) -> return c
+      _       -> putStrLn usageText >> exitFailure
 
    initLogging $ optLogPriority options
    noticeM lname line
@@ -102,6 +105,13 @@ updateStatsDocument (pipe, database) doc = do
       result
 
 
+data CountyParseE = CountyParseE
+  deriving Typeable
+instance Show CountyParseE where
+  show CountyParseE = "Error parsing county and state"
+instance Exception CountyParseE
+
+
 mkRegionalStats :: FilePath -> Document -> IO Document
 mkRegionalStats confDir stats = do
    let source = "_id" `at` stats
@@ -113,11 +123,10 @@ mkRegionalStats confDir stats = do
       <$> (utcToLocalZonedTime =<< getCurrentTime)
    let today = read $ printf "%d%02d%02d" y m d
 
-   let (county : state : _) =
-         fromJust
-         . matchRegex (mkRegex "^(.+) County, (.+)$")
-         . T.unpack
-         $ displayName sourceConfig
+   let displayName' = T.unpack . displayName $ sourceConfig
+   (county, state) <- case (matchRegex (mkRegex "^(.+) County, (.+)$") displayName') of
+      Just (c : s : _) -> return (c, s)
+      _                -> throwM CountyParseE
 
    return $
       [ "source" =: source

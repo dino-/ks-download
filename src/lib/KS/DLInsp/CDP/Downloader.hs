@@ -11,7 +11,6 @@ import Control.Monad.Reader
 import qualified Data.ByteString.Lazy.Char8 as BL
 import Data.Either ( partitionEithers )
 import Data.List ( isPrefixOf, sort, tails )
-import Data.Maybe ( isJust )
 import qualified Data.Text as T
 import Data.Time.Calendar ( Day, toGregorian )
 --import Debug.Trace ( trace )
@@ -126,28 +125,27 @@ download source options destDir' = do
    if (optEstNames options == True)
       then do
          putStrLn "Downloading establishment list"
-         S.withSession $ \sess -> do
-            ests <- sort . concat <$> mapM (\et -> do
-               putStrLn $ "Processing establishment type " ++ (T.unpack et)
-               let env = ScrapeEnv source url' destDir' Latest (optStartDate options)
-                     (optEndDate options) et fvAny sess ""
-               runScrape env downloadEstList
-               ) allEstTypes
-            writeFile "establishments" $ unlines ests
-            putStrLn "Wrote list into file './establishments'"
+         sess <- S.newSession
+         ests <- sort . concat <$> mapM (\et -> do
+            putStrLn $ "Processing establishment type " ++ (T.unpack et)
+            let env = ScrapeEnv source url' destDir' Latest (optStartDate options)
+                  (optEndDate options) et fvAny sess ""
+            runScrape env downloadEstList
+            ) allEstTypes
+         writeFile "establishments" $ unlines ests
+         putStrLn "Wrote list into file './establishments'"
 
-      else if (isJust $ optName options)
-         then do
-            let (Just name) = optName options
+      else case (optName options) of
+        Just name -> do
             putStrLn $ "Downloading inspections for " ++ name
-            S.withSession $ \sess -> do
-               let env = ScrapeEnv source url' destDir' FirstPage (optStartDate options)
-                     (optEndDate options) et01Restaurant (T.pack name) sess ""
-               runScrape env downloadInspections
-
-         else do
+            sess <- S.newSession
+            let env = ScrapeEnv source url' destDir' FirstPage (optStartDate options)
+                  (optEndDate options) et01Restaurant (T.pack name) sess ""
+            runScrape env downloadInspections
+        Nothing -> do
             putStrLn "Downloading latest inspections"
-            S.withSession $ \sess -> mapM_ (\et -> do
+            sess <- S.newSession
+            mapM_ (\et -> do
                putStrLn $ "Processing establishment type " ++ (T.unpack et)
                let env = ScrapeEnv source url' destDir' Latest (optStartDate options)
                      (optEndDate options) et fvAny sess ""

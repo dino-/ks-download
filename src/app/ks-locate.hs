@@ -37,8 +37,9 @@ main = do
 
    (options, args) <- getArgs >>= parseOpts
    when (optHelp options) $ putStrLn usageText >> exitSuccess
-   when (length args < 2) $ putStrLn usageText >> exitFailure
-   let (confDir : srcDirsOrFiles) = args
+   (confDir, srcDirsOrFiles) <- case args of
+      (c : ss) -> return (c, ss)
+      _        -> putStrLn usageText >> exitFailure
 
    -- Load the config file
    config <- loadConfig confDir
