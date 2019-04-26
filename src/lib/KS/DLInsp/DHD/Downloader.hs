@@ -7,13 +7,14 @@ module KS.DLInsp.DHD.Downloader
    ( download )
    where
 
+import Control.Concurrent ( threadDelay )
 import Control.Monad ( (>=>) )
 import           Data.Either ( partitionEithers )
 import           Data.List ( intercalate, isInfixOf, isPrefixOf )
 import           Data.Maybe ( fromJust, fromMaybe )
 import qualified Data.Text as T
 import           Data.Time.Calendar ( toGregorian )
---import           Debug.Trace ( trace )
+-- import           Debug.Trace ( trace )
 import qualified KS.Data.Inspection as I
 import           Network.HTTP ( HStream, Request, Request_String,
                   getResponseBody, getRequest, postRequestWithBody,
@@ -55,12 +56,16 @@ download options destDir = runDL options $ do
 -- Get all (4) facilities from a page at the supplied URL
 getFacilities :: String -> IO [I.Inspection]
 getFacilities url = do
+   -- 3 seconds
+   threadDelay 3000000
+
    printf "Retrieving %s\n" url
 
    tags <- either error return =<< withRetry 5 2
       (parseTags `fmap` (openURL . getRequest $ urlPrefix ++ url)) putStrLn
 
    let itags = isolateInspTags tags
+   putStrLn $ "Facilities on this page (should never be 0): " ++ (show . length $ itags)  -- FIXME
    (failures, successes) <- partitionEithers <$> mapM extractInsp itags
    mapM_ putStrLn failures
    return successes
@@ -68,7 +73,7 @@ getFacilities url = do
 
 -- Extract the block of tags containing each separate facility
 isolateInspTags :: [Tag String] -> [[Tag String]]
-isolateInspTags= partitions isFacAnchor
+isolateInspTags = partitions isFacAnchor
    where isFacAnchor e =
             (e ~== "<a href>") &&
             (isPrefixOf "facilities" $ fromAttrib "href" e) &&
