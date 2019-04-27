@@ -68,65 +68,64 @@ dependencies:
 library:
   source-dirs: src/lib
   dependencies:
-  - aeson
-  - aeson-pretty
-  - ansi-wl-pprint
-  - attoparsec
-  - bson
-  - bson-generic
   - bytestring
-  - containers
   - exceptions
   - filepath
-  - hcoord
   - hslogger
-  - hspec
   - HTTP
-  - http-conduit
   - ks-library >=1.13
   - lens
   - mongoDB
   - mtl
-  - optparse-applicative
   - regex-compat
-  - regex-pcre
-  - string-conv
   - tagsoup
   - tce-conf
   - text
   - time
-  - utf8-string
   - wreq
 
 
 executables:
 
   ks-dlinsp-cdp:
-    main: ks-dlinsp-cdp.hs
-    source-dirs: src/app
+    main: Main.hs
+    source-dirs: src/ks-dlinsp-cdp
     dependencies:
     - ks-download
 
   ks-dlinsp-dhd:
-    main: ks-dlinsp-dhd.hs
-    source-dirs: src/app
+    main: Main.hs
+    source-dirs: src/ks-dlinsp-dhd
     dependencies:
     - ks-download
 
   ks-locate:
-    main: ks-locate.hs
-    source-dirs: src/app
+    main: Main.hs
+    source-dirs: src/ks-locate
     dependencies:
+    - aeson
     - aeson-pretty
+    - attoparsec
     - bytestring
     - directory
+    - exceptions
     - filepath
+    - hcoord
+    - hslogger
+    - hspec
+    - HTTP
+    - http-conduit
     - ks-download
     - ks-library
+    - mtl
+    - string-conv
+    - regex-pcre
+    - tce-conf
+    - text
 
   ks-dbinsert:
-    main: ks-dbinsert.hs
-    source-dirs: src/app
+    main: Main.hs
+    source-dirs: src/ks-dbinsert
     dependencies:
     - bson-generic
     - directory
@@ -138,8 +137,8 @@ executables:
     - text
 
   ks-regionupd:
-    main: ks-regionupd.hs
-    source-dirs: src/app
+    main: Main.hs
+    source-dirs: src/ks-regionupd
     dependencies:
     - aeson
     - bson
@@ -154,10 +153,23 @@ executables:
     - time
 
   ks-clean:
-    main: ks-clean.hs
-    source-dirs: src/app
+    main: Main.hs
+    source-dirs: src/ks-clean
     dependencies:
+    - aeson
+    - ansi-wl-pprint
+    - bson
+    - bson-generic
     - ks-download
+    - ks-library >=1.13
+    - lens
+    - mongoDB
+    - mtl
+    - optparse-applicative
+    - string-conv
+    - text
+    - time
+    - wreq
 
 
 tests:
@@ -165,11 +177,19 @@ tests:
   test-Locate:
     main: test-Locate.hs
     source-dirs:
-    - src
+    - src/ks-locate
     - testsuite
     dependencies:
+    - aeson
+    - attoparsec
+    - bytestring
+    - hcoord
     - hspec
+    - HTTP
+    - http-conduit
     - ks-download
     - ks-library
+    - regex-pcre
+    - string-conv
     - text
     - time
