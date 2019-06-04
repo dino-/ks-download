@@ -10,21 +10,21 @@ extra-source-files:
 - changelog.md
 - README.md
 - stack.yaml
-- util/inspconv.coffee
-- util/install.hs
-- util/ks-dl-nightly-cdp.sh
-- util/ks-dl-nightly-dhd.sh
-- util/resources/geocode.json
-- util/resources/nc-wake/searchResultPage.html
-- util/resources/places.json
+# - util/inspconv.coffee
+# - util/install.hs
+# - util/ks-dl-nightly-cdp.sh
+# - util/ks-dl-nightly-dhd.sh
+# - util/resources/geocode.json
+# - util/resources/nc-wake/searchResultPage.html
+# - util/resources/places.json
 
-data-files:
-- resources/ks-download.conf
-- resources/ks-download-nc_chatham.conf
-- resources/ks-download-nc_durham.conf
-- resources/ks-download-nc_orange.conf
-- resources/ks-download-nc_wake.conf
-- resources/mongodb.conf
+# data-files:
+# - resources/ks-download.conf
+# - resources/ks-download-nc_chatham.conf
+# - resources/ks-download-nc_durham.conf
+# - resources/ks-download-nc_orange.conf
+# - resources/ks-download-nc_wake.conf
+# - resources/mongodb.conf
 
 github: dino-/ks-download
 
