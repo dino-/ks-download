@@ -1,3 +1,16 @@
+# ks-download development notes
+
+## Google Place Search API notes (2019-06-06)
+
+service                     API call                          cost    free/month (max for $200 credit)
+Find Place                  maps/api/place/findplacefromtext  0.017   11000
+Place Search, Nearby Search maps/api/place/nearbysearch       0.032    5000
+Place Search, Text Search   maps/api/place/textsearch         0.032    5000
+Geocoding                                                     0.005   40000
+
+What this means is, if we ONLY used Find Place, and NOTHING ELSE, we'd be able to do 11000 calls per month and have it covered by the $200. So, our overall usage has to be a combination of some amount of these. Also, Place Details is not on this chart yet, but we have a very small amount of those, we think.
+
+
 ## Importing the data into Mongo
 
 - The example Mongo introduction stuff is suggesting that we may want to store one document for an entire place, and have all of the inspections in that document.
