@@ -68,7 +68,7 @@ instance FromJSON RawPlace where
       lat' <- l .: "lat"
       RawPlace
          <$> o .: "name"
-         <*> o .: "vicinity"
+         <*> o .: "formatted_address"
          <*> (return $ GeoPoint lat' lng')
          <*> o .: "types"
          <*> o .: "place_id"
@@ -83,7 +83,7 @@ instance FromJSON Places where
       status <- v .: "status"
       when (status /= "OK") $ fail status
 
-      rs <- v .: "results"
+      rs <- v .: "candidates"
       when (L.null rs) $ fail . show $ v
 
       return $ Places rs
@@ -160,4 +160,6 @@ mkPlacesUrl (GeoPoint lat' lng') nameList = do
    searchTypes <-
       L.intercalate "|" `fmap` asks (placesTypes . getSourceConfig)
 
-   return $ printf "https://maps.googleapis.com/maps/api/place/nearbysearch/json?key=%s&location=%f,%f&rankby=distance&keyword=%s&types=%s" key lat' lng' nameWordsParam searchTypes
+   let fieldsQuery :: String = "&fields=place_id,name,formatted_address,geometry,types,permanently_closed"
+
+   return $ printf "https://maps.googleapis.com/maps/api/place/findplacefromtext/json?key=%s%s&inputtype=textquery&input=%s&locationbias=circle:400@%f,%f&types=%s" key fieldsQuery nameWordsParam lat' lng' searchTypes

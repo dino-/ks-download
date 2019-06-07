@@ -32,7 +32,8 @@ type Match = (I.Inspection, P.Place)
 match :: [(Distance, P.Place)] -> KSDL Match
 match dps = do
    insp <- asks getInspection
-   let cleanedDps = map (second cleanPlaceAddress) dps
+   let supermarketsRemoved = filter (isNotSupermarket . snd) dps
+   let cleanedDps = map (second cleanPlaceAddress) supermarketsRemoved
 
    finalMatches <- do
       -- First, let's try by address
@@ -63,6 +64,17 @@ match dps = do
    return (insp, (snd . head $ finalMatches))
 
    where
+      {- Grocery stores often contain multiple inspectable entities. For
+         example: a deli, a meat counter, a fish counter. Google does not
+         distinguish between these for purposes of assigning a Place ID and so
+         we can't really match at that granularity. Best to drop these
+         altogether.
+      -}
+      isNotSupermarket :: P.Place -> Bool
+      isNotSupermarket pl = not (elem "supermarket" (P.types pl) ||
+        elem "grocery_or_supermarket" (P.types pl))
+
+
       cleanPlaceAddress :: P.Place -> P.Place
       cleanPlaceAddress oldPlace = oldPlace { P.vicinity = newPvic }
          where newPvic = cleanAddress . P.vicinity $ oldPlace
