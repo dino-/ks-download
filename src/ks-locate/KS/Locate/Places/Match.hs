@@ -131,48 +131,60 @@ cleanAddress pvic
    | T.null pvic = pvic
 
    -- Starts with a number, send to the pre-zip-code remover
-   | isDigit $ T.head pvic = removePrefixZip pvic
+   | isDigit $ T.head pvic = removeCountry . removePrefixZip $ pvic
 
    -- No number, send to the thing that tries to remove the building name or whatever they did at Google
-   | otherwise = removeFirstLine pvic
+   | otherwise = removeCountry . removeFirstLine $ pvic
 
 
 removePrefixZip :: T.Text -> T.Text
 removePrefixZip =
-   either T.pack id . parseOnly (choice [prefixZip, everythingElse])
+   either T.pack id . parseOnly (choice [prefixZip, takeText])
 
    where
-      everythingElse :: Parser T.Text
-      everythingElse = takeWhile $ const True
-
       prefixZip :: Parser T.Text
       prefixZip = do
          try $ manyTill digit $ string ", "
-         everythingElse
+         takeText
 
 
 removeFirstLine :: T.Text -> T.Text
 removeFirstLine =
-   either T.pack id . parseOnly (choice [prefixZip, everythingElse])
+   either T.pack id . parseOnly (choice [noNumbersUpToComma, takeText])
 
    where
-      everythingElse :: Parser T.Text
-      everythingElse = takeWhile $ const True
-
-      prefixZip :: Parser T.Text
-      prefixZip = do
+      noNumbersUpToComma :: Parser T.Text
+      noNumbersUpToComma = do
          try $ manyTill anyChar $ string ", "
-         everythingElse
+         takeText
+
+
+removeSuffix :: T.Text -> T.Text -> T.Text
+removeSuffix suffix = fst . T.breakOn suffix
+
+
+removeCountry :: T.Text -> T.Text
+removeCountry = removeSuffix ", United States" . removeSuffix ", USA"
 
 
 test_cleanAddress :: SpecWith ()
 test_cleanAddress = describe "cleanAddress" $ do
-   it "conventional address" $
+   it "conventional address, no state, zip or country" $
       cleanAddress "4035 Lake Boone Trail #109, Raleigh"
       `shouldBe` "4035 Lake Boone Trail #109, Raleigh"
+   it "conventional address, no country" $
+      cleanAddress "4035 Lake Boone Trail #109, Raleigh, NC 27513"
+      `shouldBe` "4035 Lake Boone Trail #109, Raleigh, NC 27513"
+   it "conventional address with short USA" $
+      cleanAddress "4035 Lake Boone Trail #109, Raleigh, NC 27513, USA"
+      `shouldBe` "4035 Lake Boone Trail #109, Raleigh, NC 27513"
+   it "conventional address with long USA" $
+      cleanAddress "4035 Lake Boone Trail #109, Raleigh, NC 27513, United States"
+      `shouldBe` "4035 Lake Boone Trail #109, Raleigh, NC 27513"
    it "building before street address" $
-      cleanAddress "Wells Fargo Capitol Center, 150 Fayetteville Street #2800, Raleigh"
-      `shouldBe` "150 Fayetteville Street #2800, Raleigh"
+      cleanAddress "Wells Fargo Capitol Center, 150 Fayetteville Street #2800, Raleigh, NC 27513, USA"
+      `shouldBe` "150 Fayetteville Street #2800, Raleigh, NC 27513"
    it "prefixed by zip code" $
-      cleanAddress "27604, 3501 Capital Boulevard, Raleigh"
-      `shouldBe` "3501 Capital Boulevard, Raleigh"
+      cleanAddress "27604, 3501 Capital Boulevard, Raleigh, NC 27604, United States"
+      `shouldBe` "3501 Capital Boulevard, Raleigh, NC 27604"
+   it "empty string for address" $ cleanAddress "" `shouldBe` ""
