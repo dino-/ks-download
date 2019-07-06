@@ -1,0 +1,7 @@
+Package: ks-download
+Architecture: all
+Maintainer: Dino Morelli
+Depends: debconf (>= 0.5.00)
+Priority: optional
+Version: 2.1
+Description: Kitchen Snitch server inspection download software

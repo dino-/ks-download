@@ -11,22 +11,33 @@ Data downloader and parser for the KitchenSnitch project (Haskell)
 
 ## Installing
 
+Installation is usually from a .deb file located on
+[github](https://github.com/dino-/ks-download/releases)
+
+Instructions for building the .deb file are below, under Building for
+deployment.
+
 
 ## Configuration and execution
 
-Make a directory for config files, and copy or link the conf files into
-it, along with your Google API key in a file. The defaults are
-expecting `$HOME/.config/kitchensnitch`
-
-      $HOME/
-         .config/
-            kitchensnitch/
-               GoogleAPIKey
-               ks-locate.conf
-               mongodb.conf
+Make a directory for config files, and copy all the files from
+`/usr/share/ks-download/resources` into it, along with your Google API key in a
+file.
 
 The key should be the only thing in the `GoogleAPIKey` file, on a
 line by itself. 
+
+You will need to put real credentials in `monbodb.conf` as well.
+
+The directory should look something like this:
+
+      $HOME/
+         .config/
+            ksnitch/
+               GoogleAPIKey
+               ks-locate.conf
+               mongodb.conf
+               .. more conf files from share ..
 
 
 ### ks-locate - Google Places lookup utility
@@ -41,7 +52,7 @@ To run, have a directory structure like this:
 Then, to run:
 
     $ cd inspectionsToProcess
-    $ ks-locate -c $HOME/.config/kitchensnitch -s succ/ -f fail/ --delete insp | tee ks-locate.log
+    $ ks-locate -c $HOME/.config/ksnitch -s succ/ -f fail/ --delete insp | tee ks-locate.log
 
 When it's finished:
 
@@ -66,38 +77,50 @@ job shoulld look something like this:
 
 Put this in a cron job:
 
-    45 1 * * *  /opt/ks-download/bin/ks-regionupd --log-priority=NOTICE $HOME/.config/kitchensnitch > /some/dir/ks-regionupd.log
+    45 1 * * *  /opt/ks-download/bin/ks-regionupd --log-priority=NOTICE $HOME/.config/ksnitch > /some/dir/ks-regionupd.log
 
 
 ## Building from source
 
-Follow the instructions on the wiki for setting up a sandbox for all KS development, in the section "Building the KitchenSnitch Haskell server-side components for deployment"
-
 
 ### Building for development
 
-      $ cabal sandbox init --sandbox=/home/USER/.cabal/sandbox/kitchensnitch
-      $ cabal install --only-dep --enable-tests
-      $ cabal configure --enable-tests
-      $ cabal build
-      $ cabal test
-
-And you should be good for development from here.
+    $ stack build
+    $ stack exec BIN_NAME -- ARGS
+    $ stack test
+    $ stack clean
 
 
 ### Building for deployment
 
-This will build everything into a deployable directory structure
-that you can put somewhere like `/opt/` for instance.
+Our production servers have so far been Ubuntu, so what follows are
+instructions for building a .deb file which can be installed with dpkg.
 
-    $ cabal install --prefix=/tmp/ks-download-VER --datasubdir=.
-    $ pushd /tmp
-    $ tar czvf ks-download-VER.tgz ks-download-VER
-    $ popd
+You will need the [hsinstall](https://github.com/dino-/hsinstall/releases)
+utility version 2.5 for this procedure.
+
+Now, starting in the root of the project, do this, where VER is the version of
+ks-download you are building:
+
+    $ hsinstall --prefix=ks-download/ks-download_VER
+    $ mkdir ks-download/ks-download_VER/DEBIAN
+    $ cp -t ks-download/ks-download_VER/DEBIAN util/resources/DEBIAN/control util/resources/DEBIAN/conffiles
+
+Edit `ks-download/ks-download_VER/DEBIAN/control` to make sure the version
+matches what you're building.
+
+    $ sudo chown -R root:root ks-download/ks-download_VER
+    $ dpkg-deb --build ks-download/ks-download_VER
+
+And you should see a `ks-download/ks-download_VER.deb` file. Check the contents
+if you wish with `dpkg-deb -c ...` This file can be added to the ks-download
+release page on github or distributed however you wish.
 
 Some of these notes exist in a more detailed form on the developer wiki.
 
-When you want to insert records into the database, make sure you do not forget to edit the `bin/ks-dl-nightly.sh` script. By default ks-dbinsert execution is commented out and fake one runs!
+When you want to insert records into the database, make sure you do not forget
+to edit the `PREFIX/bin/ks-dl-nightly-XXX.sh` scripts. By default ks-dbinsert
+execution is commented out and a fake one runs!
 
 
 ## Contact
