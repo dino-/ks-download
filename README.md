@@ -102,7 +102,7 @@ utility version 2.5 for this procedure.
 Now, starting in the root of the project, do this, where VER is the version of
 ks-download you are building:
 
-    $ hsinstall --prefix=ks-download/ks-download_VER
+    $ hsinstall --prefix=ks-download/ks-download_VER/usr
     $ mkdir ks-download/ks-download_VER/DEBIAN
     $ cp -t ks-download/ks-download_VER/DEBIAN util/resources/DEBIAN/control util/resources/DEBIAN/conffiles
 
