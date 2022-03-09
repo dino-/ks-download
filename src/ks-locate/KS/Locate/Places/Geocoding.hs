@@ -22,7 +22,7 @@ import KS.Locate.Locate ( Env (..), ErrMsg (..), KSDL, asks,
 import KS.Locate.Config ( Config (geocodingApiDelay, googleApiKey),
    keyString )
 import KS.Log ( Priority (ERROR), debugM, errorM, lname, noticeM )
-import KS.Util ( withRetry )
+import KS.Util ( Seconds (..), TryCount (Remaining), withRetry )
 
 
 newtype GCPoint = GCPoint { unwrapGCPoint :: GeoPoint }
@@ -52,7 +52,7 @@ forwardLookup = do
 
    asks (geocodingApiDelay . getConfig) >>= (liftIO . threadDelay)
 
-   gcJSON <- eitherThrowCritical $ withRetry 5 3 (simpleHttp url) (errorM lname)
+   gcJSON <- eitherThrowCritical $ withRetry (Remaining 5) (Seconds 3) (simpleHttp url) (errorM lname)
 
    liftIO $ debugM lname $ "Geocoding result JSON: " ++ (toS gcJSON)
 

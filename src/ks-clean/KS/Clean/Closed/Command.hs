@@ -43,7 +43,7 @@ import KS.Locate.Config ( Config (googleApiKey, logPriority),
    keyString, loadConfig )
 import KS.Log ( Priority (NOTICE, WARNING), criticalM, errorM, initLogging, line, lname,
    logM, logStartMsg, logStopMsg, noticeM, warningM )
-import KS.Util ( withRetry )
+import KS.Util ( Seconds (..), TryCount (Remaining), withRetry )
 
 
 data AppConfig = AppConfig
@@ -183,7 +183,7 @@ isClosed doc = do
 
    let wopts = defaults & param "key" .~ [key] & param "placeid" .~ [placeID]
 
-   er <- liftIO $ withRetry 5 3 (getWith wopts url >>= asJSON) (warningM lname)
+   er <- liftIO $ withRetry (Remaining 5) (Seconds 3) (getWith wopts url >>= asJSON) (warningM lname)
 
    liftIO $ either placeLookupFailed placeLookupSucceeded er
 

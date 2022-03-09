@@ -37,7 +37,7 @@ import KS.Locate.Config ( Config (googleApiKey, logPriority),
    keyString, loadConfig )
 import KS.Locate.Locate
 import KS.Log
-import KS.Util ( dayToDateInt, nDaysAgo, withRetry )
+import KS.Util ( Seconds (..), TryCount (Remaining), dayToDateInt, nDaysAgo, withRetry )
 
 
 run :: OldOptions -> IO ()
@@ -105,7 +105,7 @@ isClosed locateConf doc = do
 
    let wopts = defaults & param "key" .~ [key] & param "placeid" .~ [placeID]
 
-   er <- withRetry 5 3 (getWith wopts url >>= asJSON) (warningM lname)
+   er <- withRetry (Remaining 5) (Seconds 3) (getWith wopts url >>= asJSON) (warningM lname)
 
    -- Slow down hits to Google
    threadDelay 250000  -- 0.25s

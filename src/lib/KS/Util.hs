@@ -2,7 +2,9 @@
 -- Author: Dino Morelli <dino@ui3.info>
 
 module KS.Util
-   ( dateIntToDay
+   ( TryCount (Remaining)
+   , Seconds (..)
+   , dateIntToDay
    , dayToDateInt
    , nDaysAgo
    , today
@@ -19,17 +21,31 @@ import Data.Time.Calendar ( fromGregorian, toGregorian )
 import Text.Printf ( printf )
 
 
-withRetry :: Int -> Int -> IO a -> (String -> IO ()) -> IO (Either String a)
-withRetry tryNumber delay action logF = withRetry' tryNumber where
-   withRetry' 0          = return . Left $ "Failed because retries are exhausted"
-   withRetry' tryNumber' = do
+data TryCount
+  = NoneLeft
+  | Remaining Int
+
+decrementTry :: TryCount -> TryCount
+decrementTry NoneLeft = NoneLeft
+decrementTry (Remaining n)
+  | n > 1 = Remaining $ n - 1
+  | otherwise = NoneLeft
+
+
+newtype Seconds = Seconds Int
+
+
+withRetry :: TryCount -> Seconds -> IO a -> (String -> IO ()) -> IO (Either String a)
+withRetry tryCount (Seconds delay) action logF = withRetry' tryCount where
+   withRetry' NoneLeft = return . Left $ "Failed because retries are exhausted"
+   withRetry' remaining = do
       response <- catchAll (Right <$> action) (return . Left . show)
       case response of
          r@(Right _) -> return r
          Left e      -> do
             logF $ "Failed, retrying. Error: " ++ e
             threadDelay $ delay * 1000 * 1000
-            withRetry' $ tryNumber' - 1
+            withRetry' $ decrementTry remaining
 
 
 today :: TimeZone -> IO Day

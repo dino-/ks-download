@@ -48,7 +48,7 @@ import KS.Locate.Places.Geocoding ( forwardLookup )
 import KS.Locate.Places.NameWords ( matchRuleFromInsp )
 import KS.Log ( Priority (ERROR), debugM, errorM, lname, noticeM )
 import KS.SourceConfig ( MatchRule (KW, RJ), SourceConfig (placesTypes) )
-import KS.Util ( withRetry )
+import KS.Util ( Seconds (..), TryCount (Remaining), withRetry )
 
 
 data RawPlace = RawPlace
@@ -114,7 +114,7 @@ getPossiblePlaces = do
          url <- mkPlacesUrl coords nameWords
          liftIO $ noticeM lname $ "Places URL: " ++ url
 
-         plJSON <- eitherThrowCritical $ withRetry 5 3 (simpleHttp url) (errorM lname)
+         plJSON <- eitherThrowCritical $ withRetry (Remaining 5) (Seconds 3) (simpleHttp url) (errorM lname)
 
          liftIO $ debugM lname $ "Places result JSON: "
             ++ (BL.unpack plJSON)

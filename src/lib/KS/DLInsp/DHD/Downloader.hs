@@ -31,7 +31,7 @@ import Text.Regex ( subRegex, mkRegex )
 
 import KS.DLInsp.DHD.Types ( DL, Downloader, Options ( optEndDate,
    optEstType, optPageLimit, optStartDate ), asks, liftIO, runDL )
-import           KS.Util ( withRetry )
+import KS.Util ( Seconds (..), TryCount (Remaining), withRetry )
 
 
 urlPrefix :: String
@@ -69,7 +69,7 @@ getFacilities url = do
 
    printf "Retrieving %s\n" url
 
-   tags <- either error return =<< withRetry 5 2
+   tags <- either error return =<< withRetry (Remaining 5) (Seconds 2)
       (reqToTags (get $ urlPrefix <> url)) putStrLn
 
    let itags = isolateInspTags tags
@@ -160,7 +160,7 @@ getPageUrls :: DL [String]
 getPageUrls = do
    liftIO $ putStrLn "\nRetrieving all page URLs"
    formParams <- searchParams
-   etags <- liftIO $ withRetry 5 2
+   etags <- liftIO $ withRetry (Remaining 5) (Seconds 2)
       (reqToTags (post (urlPrefix ++ "reports.cfm") formParams))
       putStrLn
    tags <- either error return etags
