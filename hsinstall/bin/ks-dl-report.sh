@@ -1,10 +1,10 @@
 #! /bin/bash
 
 # To send output via email:
-#   ks-dl-report.sh | sed 's/^/  /' | mail -s "ks report $(date +'%Y-%m-%d')" ADDRESS1,ADDRESS2,...
+#   ks-dl-report.sh | ks-mail.sh RECIPIENT1,RECIPIENT2...
 #
 # Sample for crontab (note the escaped %s!)
-#   45 11 * * *  /opt/ksnitch/ks-download/bin/ks-dl-report.sh | sed 's/^/  /' | mail -s "ks report $(date +'\%Y-\%m-\%d')" ADDRESS1,ADDRESS2,...
+#   45 11 * * *  /usr/bin/ks-dl-report.sh | /usr/bin/ks-mail.sh RECIPIENT1,RECIPIENT2...
 
 
 export TZ="America/New_York"
@@ -14,10 +14,9 @@ function report {
    ksSource=$1
 
    workDirParent=/data/ksnitch/download/$ksSource
-   workDir=${workDirParent}/${ksSource}_$(date +"%Y-%m-%d")
+   workDir=${workDirParent}/${ksSource}_$(date --date='yesterday' +"%Y-%m-%d")
    cd $workDir
 
-   echo
    echo "------------------------------------------------------------"
    echo -n "Run in directory "
    pwd
