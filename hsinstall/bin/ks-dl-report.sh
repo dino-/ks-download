@@ -14,7 +14,7 @@ function report {
    ksSource=$1
 
    workDirParent=/data/ksnitch/download/$ksSource
-   workDir=${workDirParent}/${ksSource}_$(date --date='yesterday' +"%Y-%m-%d")
+   workDir=${workDirParent}/${ksSource}_$(date +"%Y-%m-%d")
    cd $workDir
 
    echo "------------------------------------------------------------"
